@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/compute"/>
+	<classpathentry kind="src" path="src/rgutils"/>
+	<classpathentry kind="src" path="src/meshloader"/>
+	<classpathentry kind="src" path="src/recon"/>
+	<classpathentry kind="src" path="src/utilities"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

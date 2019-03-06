@@ -1,0 +1,35 @@
+Computation of Reeb graphs
+----------------------------
+This folder contains the following files / folders:
+1. javadoc folder
+2. src folder 
+3. build.xml
+4. and this readme file
+
+Requirements
+------------
+This program requires **Java 1.5** or higher
+To compile this code using the given build.xml Apache Ant is required. (tested on Apache Ant 1.8.0)
+
+Extending code to support other file formats
+---------------------------------------------
+
+1. You need to write a loader that extend the interface iisc.vgl.external.loader.MeshLoader
+2. Add this loader source in the src/meshloader folder in the appropriate package
+3. Run ant to compile and create a new meshloader.jar file in the build folder
+4. replace this jar file in the executable folder.
+5. Register this new loader by providing its name and class information in the loaders.xml file present in the executable folder.
+6. You can now use this loader by providing its registered name in the input.properties file.
+
+If you make changes to the Reebgraph computation code
+-----------------------------------------------------
+You can compile the complete code by using the command
+ant buildAll
+
+This will create both the reebgraph.jar and meshloader.jar file in the build folder.
+
+
+
+See the javadoc for more details regarding the Loader interface. 
+
+

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<loaders>
+	<mesh>
+		<type>TET</type>
+		<class>vgl.iisc.external.loader.impl.TetMeshLoader</class>
+	</mesh>
+	
+	<mesh>
+		<type>OFF</type>
+		<class>vgl.iisc.external.loader.impl.OffLoader</class>
+	</mesh>
+	
+	<mesh>
+		<type>SIM</type>
+		<class>vgl.iisc.external.loader.impl.SimLoader</class>
+	</mesh>
+	
+	<mesh>
+		<type>PLY</type>
+		<class>vgl.iisc.external.loader.impl.PlyLoader</class>
+	</mesh>
+	
+</loaders>

@@ -1,0 +1,19 @@
+To convert ReCon from float to double, run the following commands from the recon/src directory (containing this file):
+
+find . -type f -name "[a-zA-Z]*.java" -print0 | xargs -0 sed -i '' 's/intBitsToFloat/longBitsToDouble/g'
+find . -type f -name "[a-zA-Z]*.java" -print0 | xargs -0 sed -i '' 's/float/double/g'
+find . -type f -name "[a-zA-Z]*.java" -print0 | xargs -0 sed -i '' 's/Float/Double/g'
+find . -type f -name "[a-zA-Z]*.java" -print0 | xargs -0 sed -i '' 's/0f/0.0/g'
+
+Note: on unix, the '' between the -i option of sed and the string replacement expression should be removed.
+
+One can delete entire src/compute folder
+
+
+The following files have been modified in other ways, namely to enable direct commutation between ReCon and MATLAB:
+build.xml
+CleanReebGraph.java
+TriangleDataPrim.java
+ReconAlgorithmAug.java
+ReebGraphData.java
+recon/vgk/iisc/recon/incore/MyIntList.java

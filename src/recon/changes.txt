@@ -1,0 +1,20 @@
+The ReCon code included with this software has been modified for suitable use with Topobaric Surface. Namely, ReCon has been modified to work with double precision, and methods have been added (commented with “GJS” in the code) that allow the input and output to be from memory rather than files on the hard disk. All changes are marked with a comment “GJS” (found via “grep -r GJS .”) as follows:
+
+
+./build.xml:	    <!-- GJS changed order: brought rgUtilsSrc ahead of rgSrc -->
+./src/recon/vgl/iisc/recon/incore/CleanReebGraph.java:import vgl.iisc.reebgraph.ui.ReebGraphData; // GJS
+./src/recon/vgl/iisc/recon/incore/CleanReebGraph.java:	public int [] amap; // GJS
+./src/recon/vgl/iisc/recon/incore/CleanReebGraph.java:	public int[][] returnSegments(int noVerts, int shift) { // GJS 
+./src/recon/vgl/iisc/recon/incore/CleanReebGraph.java:	public ReebGraphData returnReebGraph() { // GJS
+./src/recon/vgl/iisc/recon/incore/ReconAlgorithmAug.java:import vgl.iisc.reebgraph.ui.ReebGraphData; // GJS added
+./src/recon/vgl/iisc/recon/incore/ReconAlgorithmAug.java:	public void run(double[] xx, double[] yy, double[] zz, double[] ff, int[] v1, int[] v2, int[] v3) { // GJS added
+./src/recon/vgl/iisc/recon/incore/ReconAlgorithmAug.java:	public class AugReeb { // GJS added
+./src/recon/vgl/iisc/recon/incore/ReconAlgorithmAug.java:	public AugReeb pack(int noVerts) { // GJS added
+./src/recon/vgl/iisc/recon/incore/ReconAlgorithmAug.java:	public AugReeb pack(int noVerts, int shift) { // GJS added
+./src/recon/vgl/iisc/recon/incore/StoreReebGraph.java:		 // System.out.println("No. of Nodes: " + curNode); // GJS commented out
+./src/recon/vgl/iisc/recon/incore/TriangleDataPrim.java:	public TriangleDataPrim(boolean useAdj, boolean storeCoords, int nv, int nt) { // GJS
+./src/rgutils/vgl/iisc/reebgraph/ui/ReebGraphData.java:	public ReebGraphData(int nv, int na) { // GJS
+./src/rgutils/vgl/iisc/reebgraph/ui/ReebGraphData.java:	int curNode = 0; // GJS
+./src/rgutils/vgl/iisc/reebgraph/ui/ReebGraphData.java:	public void addNode(int v, double fn, String type) { // GJS
+./src/rgutils/vgl/iisc/reebgraph/ui/ReebGraphData.java:	int curArc = 0; // GJS
+./src/rgutils/vgl/iisc/reebgraph/ui/ReebGraphData.java:	public void addArc(int v1, int v2) { // GJS

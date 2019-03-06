@@ -1,0 +1,59 @@
+<project name="Reebgraph" default="build" basedir=".">
+	
+	<description>
+		This file is used to build the source.	
+	</description>
+	
+	<property name="rgSrc" location="src/recon"/>
+	<property name="loaderSrc" location="src/meshloader"/>
+	<property name="utilsSrc" location="src/utilities"/>
+	<property name="rgUtilsSrc" location="src/rgutils"/>
+	<property name="computationSrc" location="src/compute"/>
+	
+	<property name="classFol" location="build/bin"/>
+	<property name="build" location="build"/>
+
+	<target name="init">
+		<mkdir dir="${classFol}"/>
+	</target>
+
+	<target name="compile" depends="init">
+		<!-- GJS added source and target options for each javac -->
+	    <javac includeantruntime="false" srcdir="${utilsSrc}" destdir="${classFol}" source="1.8" target="1.8">
+	    	<classpath>
+	    		<pathelement location="${buildLoader}"/>
+	    	</classpath>
+	    </javac>
+	    <javac includeantruntime="false" srcdir="${loaderSrc}" destdir="${classFol}" source="1.8" target="1.8">
+	    	<classpath>
+	    		<pathelement location="${buildLoader}"/>
+	    	</classpath>
+	    </javac>
+	    <!-- GJS changed order: brought rgUtilsSrc ahead of rgSrc -->
+	    <javac includeantruntime="false" srcdir="${rgUtilsSrc}" destdir="${classFol}" source="1.8" target="1.8"> 
+   	    	<classpath>
+   	    		<pathelement location="${buildLoader}"/>
+   	    	</classpath>
+	    </javac> 
+	    <javac includeantruntime="false" srcdir="${rgSrc}" destdir="${classFol}" source="1.8" target="1.8">
+	    	<classpath>
+	    		<pathelement location="${buildLoader}"/>
+	    	</classpath>
+	    </javac>
+	    <javac includeantruntime="false" srcdir="${computationSrc}" destdir="${classFol}" source="1.8" target="1.8">
+	    	<classpath>
+	    		<pathelement location="${classFol}"/>
+	    	</classpath>
+	    </javac>
+	</target>
+	
+	<target name="build" depends="compile" description="generate the distribution" >
+		<jar jarfile="${build}/recon.jar" basedir="${classFol}"/>
+		<delete dir="${build}/bin"/>
+	</target>
+	
+	<target name="clean" description="clean up" >
+		<delete dir="${build}"/>
+	</target>
+	
+</project>

@@ -1,0 +1,176 @@
+--- Calculate surfaces ---
+(721,361,997.9861m): GAMMA = 27.5400
+(721,361,997.9861m): SIGMA = 1032.0053, z_ref = 1000.0000
+(721,361,997.9861m): DELTA = -1.4026e-02, S_delta = 34.3389, T_delta = 3.0272
+Iter 01 (2.85sec): 1788 casts unsolved; z change has: Mean 5.5081, L_2 20.644, L_inf 301.62
+Iter 02 (2.55sec): 1 casts unsolved; z change has: Mean -0.16778, L_2 0.65867, L_inf 84.434
+Iter 03 (2.71sec): 0 casts unsolved; z change has: Mean 0.0091451, L_2 0.062409, L_inf 10.728
+Iter 04 (2.41sec): 0 casts unsolved; z change has: Mean -0.00060224, L_2 0.012257, L_inf 8.8077
+Iter 05 (2.62sec): 0 casts unsolved; z change has: Mean 2.5209e-05, L_2 0.00012753, L_inf 0.014944
+(721,361,997.9861m): ORTHOBARIC done in time 13.45
+Iter 01 (12.22sec): 1591 casts unsolved; z change has: Mean 5.1122, L_2 14.502, L_inf 282.43
+Iter 02 (9.39sec): 29 casts unsolved; z change has: Mean -0.082699, L_2 0.89525, L_inf 82.688
+Iter 03 (8.71sec): 0 casts unsolved; z change has: Mean -0.0015482, L_2 0.049967, L_inf 20.711
+Iter 04 (8.72sec): 0 casts unsolved; z change has: Mean -0.00036879, L_2 0.0027903, L_inf 1.4019
+Iter 05 (8.54sec): 0 casts unsolved; z change has: Mean -0.00015088, L_2 0.00044612, L_inf 0.03804
+(721,361,997.9861m): TOPOBARIC done in time 47.75
+Iter 01 (9.47sec): 1590 casts unsolved; z change has: Mean 5.0839, L_2 14.492, L_inf 282.28
+Iter 02 (9.21sec): 30 casts unsolved; z change has: Mean -0.078798, L_2 0.88937, L_inf 82.169
+Iter 03 (9.25sec): 0 casts unsolved; z change has: Mean -0.001066, L_2 0.047928, L_inf 18.666
+Iter 04 (9.09sec): 0 casts unsolved; z change has: Mean 0.00010951, L_2 0.0023571, L_inf 1.0896
+Iter 05 (9.08sec): 0 casts unsolved; z change has: Mean -5.9989e-05, L_2 0.0002515, L_inf 0.044075
+(721,361,997.9861m): MODIFIED TOPOBARIC done in time 46.25
+(721,361,1988.5955m): GAMMA = 27.9248
+(721,361,1988.5955m): SIGMA = 1036.9551, z_ref = 2000.0000
+(721,361,1988.5955m): DELTA = -3.4759e-03, S_delta = 34.6568, T_delta = 2.0899
+Iter 01 (2.77sec): 392 casts unsolved; z change has: Mean 7.9825, L_2 39.556, L_inf 932.74
+Iter 02 (2.63sec): 14 casts unsolved; z change has: Mean 0.70382, L_2 2.5169, L_inf 71.784
+Iter 03 (2.52sec): 0 casts unsolved; z change has: Mean -0.11043, L_2 0.30449, L_inf 20.629
+Iter 04 (2.63sec): 0 casts unsolved; z change has: Mean 0.013088, L_2 0.034744, L_inf 2.4435
+Iter 05 (2.52sec): 0 casts unsolved; z change has: Mean -7.5542e-05, L_2 0.0050452, L_inf 0.18031
+Iter 06 (2.65sec): 0 casts unsolved; z change has: Mean 0.0001957, L_2 0.0011765, L_inf 0.020014
+Iter 07 (2.59sec): 0 casts unsolved; z change has: Mean 2.9808e-05, L_2 0.00028083, L_inf 0.0048229
+(721,361,1988.5955m): ORTHOBARIC done in time 18.46
+Iter 01 (9.72sec): 266 casts unsolved; z change has: Mean -3.9487, L_2 34.093, L_inf 423.08
+Iter 02 (9.35sec): 0 casts unsolved; z change has: Mean -0.97107, L_2 3.4311, L_inf 124.15
+Iter 03 (7.31sec): 0 casts unsolved; z change has: Mean -0.12225, L_2 0.23925, L_inf 9.4175
+Iter 04 (7.76sec): 0 casts unsolved; z change has: Mean 0.0030693, L_2 0.012929, L_inf 0.50244
+Iter 05 (8.91sec): 0 casts unsolved; z change has: Mean -0.0014666, L_2 0.0028196, L_inf 0.10551
+Iter 06 (7.35sec): 0 casts unsolved; z change has: Mean -9.4721e-05, L_2 0.00060936, L_inf 0.019201
+(721,361,1988.5955m): TOPOBARIC done in time 50.56
+Iter 01 (8.02sec): 274 casts unsolved; z change has: Mean -1.113, L_2 32.429, L_inf 430.55
+Iter 02 (8.85sec): 0 casts unsolved; z change has: Mean -0.9115, L_2 3.375, L_inf 119.06
+Iter 03 (7.46sec): 0 casts unsolved; z change has: Mean -0.03093, L_2 0.12387, L_inf 9.1504
+Iter 04 (7.69sec): 0 casts unsolved; z change has: Mean -0.0056134, L_2 0.015079, L_inf 0.99373
+Iter 05 (9.22sec): 0 casts unsolved; z change has: Mean -0.0017257, L_2 0.0044598, L_inf 0.21799
+Iter 06 (7.42sec): 0 casts unsolved; z change has: Mean -0.0003697, L_2 0.0010396, L_inf 0.045609
+Iter 07 (7.70sec): 0 casts unsolved; z change has: Mean 0.00083537, L_2 0.0022096, L_inf 0.070969
+Iter 08 (8.70sec): 0 casts unsolved; z change has: Mean 0.00023029, L_2 0.00074257, L_inf 0.035573
+(721,361,1988.5955m): MODIFIED TOPOBARIC done in time 65.22
+Neutral errors calculated in time 44.27
+--- Norms of errors ---
+|eps|_1, |eps|_2, |fdd|_1, |fdd|_2,
+Surfaces through (721,361,997.9861m)
+1.3560e-08; 7.2828e-08; 5.1900e-05; 3.1310e-02;  \sigma
+1.2893e-08; 3.6932e-08; 4.9096e-06; 5.9961e-04;  \delta
+4.0716e-09; 9.4548e-08; 2.2022e-04; 4.0808e-02;  \gamma^n
+9.8271e-09; 2.9878e-08; 2.6651e-06; 2.3936e-05;  \sigma_\nu
+3.7552e-10; 1.0004e-09; 2.3101e-08; 4.5986e-06;  \omega
+1.0539e-09; 4.5027e-09; 1.8117e-07; 1.1621e-05;  \tau
+1.0643e-09; 4.5138e-09; 1.8108e-07; 1.1531e-05;  \tau'
+Surfaces through (721,361,1988.5955m)
+1.8425e-08; 2.0096e-07; 7.1150e-05; 5.2258e-03;  \sigma
+7.1901e-09; 2.4395e-08; 4.8218e-05; 2.0051e-03;  \delta
+2.3414e-09; 2.9158e-08; 6.6369e-07; 2.1528e-05;  \gamma^n
+5.7246e-09; 1.6654e-08; 1.8973e-05; 3.2890e-04;  \sigma_\nu
+1.9842e-10; 5.2826e-10; 7.1666e-09; 1.2428e-07;  \omega
+5.7372e-10; 2.2928e-09; 7.1096e-08; 7.3361e-07;  \tau
+6.2628e-10; 2.4173e-09; 8.9292e-08; 8.6882e-07;  \tau'
+--- Norms of errors, as ratio ---
+|eps|_1, |eps|_2, |fdd|_1, |fdd|_2,
+  all as ratios from given surface to \tau
+Surfaces through (721,361,997.9861m)
+1.2867e+01; 1.6174e+01; 2.8647e+02; 2.6942e+03;  \sigma
+1.2233e+01; 8.2020e+00; 2.7099e+01; 5.1597e+01;  \delta
+3.8634e+00; 2.0998e+01; 1.2155e+03; 3.5116e+03;  \gamma^n
+9.3245e+00; 6.6355e+00; 1.4710e+01; 2.0597e+00;  \sigma_\nu
+3.5632e-01; 2.2218e-01; 1.2751e-01; 3.9571e-01;  \omega
+1.0000e+00; 1.0000e+00; 1.0000e+00; 1.0000e+00;  \tau
+1.0099e+00; 1.0025e+00; 9.9948e-01; 9.9228e-01;  \tau'
+Surfaces through (721,361,1988.5955m)
+3.2115e+01; 8.7650e+01; 1.0008e+03; 7.1235e+03;  \sigma
+1.2533e+01; 1.0640e+01; 6.7821e+02; 2.7332e+03;  \delta
+4.0812e+00; 1.2717e+01; 9.3351e+00; 2.9346e+01;  \gamma^n
+9.9781e+00; 7.2637e+00; 2.6686e+02; 4.4833e+02;  \sigma_\nu
+3.4585e-01; 2.3040e-01; 1.0080e-01; 1.6940e-01;  \omega
+1.0000e+00; 1.0000e+00; 1.0000e+00; 1.0000e+00;  \tau
+1.0916e+00; 1.0543e+00; 1.2559e+00; 1.1843e+00;  \tau'
+--- Fraction of area with FDD > 1e-5 ---
+Column 1: # grid points with FDD > 1e-5 m2 s-1
+Column 2: areal fraction of grid points with FDD > 1e-5 m2 s-1
+Column 3: surface through (721,361,997.9861m)
+031243 ; 4.862191e-02 ;  \sigma
+034313 ; 7.714141e-02 ;  \delta
+006535 ; 1.040693e-02 ;  \gamma^n
+043476 ; 8.512514e-02 ;  \sigma_\nu
+000013 ; 2.289468e-05 ;  \omega
+000422 ; 8.469649e-04 ;  \tau
+000549 ; 1.063570e-03 ;  \tau'
+Column 1: # grid points with FDD > 1e-5 m2 s-1
+Column 2: areal fraction of grid points with FDD > 1e-5 m2 s-1
+Column 3: surface through (721,361,1988.5955m)
+031243 ; 4.862191e-02 ;  \sigma
+034313 ; 7.714141e-02 ;  \delta
+006535 ; 1.040693e-02 ;  \gamma^n
+043476 ; 8.512514e-02 ;  \sigma_\nu
+000013 ; 2.289468e-05 ;  \omega
+000422 ; 8.469649e-04 ;  \tau
+000549 ; 1.063570e-03 ;  \tau'
+--- Calculate geostrophic streamfunctions ---
+Streamfunctions calculated in time 70.07
+--- Table of L1 and L2 norms of geostrophic velocity error ---
+\tabcolsep=0.1cm
+\begin{center}
+\begin{tabular}{|c|ccc|ccc|}
+\hline
+ (a) & \multicolumn{3}{c|}{$\zn(\bm{x}_\rv) = \SI{-997.99}{m}$} & \multicolumn{3}{c|}{$\zn(\bm{x}_\rv) = \SI{-1988.60}{m}$} \\ 
+$||\mathbf{\epsilon}||_1$& $\sigma_{1}$ & $\tau'$ & $\omega$ & $\sigma_{2}$ & $\tau'$ & $\omega$ \\[5pt]
+\hline
+& & & & & & \\[-7pt]
+$\utilde{\mathbf{u}}$ & 6.0e-03 & 6.0e-03 & 5.9e-03 & 4.4e-03 & 4.4e-03 & 4.3e-03 \\[5pt]
+$\utilde{\mathbf{u}_g^{(ZH)}$ & 1.5e-03 & 4.0e-04 & 3.3e-04 & 3.6e-03 & 3.7e-04 & 3.0e-04 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(Cu)}$ & 6.2e-04 & 6.0e-04 & 4.0e-04 & 1.7e-03 & 1.3e-03 & 7.9e-04 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(MK)}$ & 5.1e-04 & 1.4e-04 & 9.3e-05 & 1.4e-03 & 2.3e-04 & 1.4e-04 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(oM)}$ & 2.3e-04 & 9.3e-05 & 8.9e-05 & 2.1e-04 & 3.1e-05 & 6.4e-05 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(tb)}$ & 3.8e-05 & 1.0e-06 & 1.7e-05 & 5.9e-05 & 1.3e-06 & 1.4e-05 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(\nabla_z p)}$ & 1.7e-05 & 1.4e-05 & 1.2e-05 & 2.0e-05 & 1.0e-05 & 1.0e-05 \\[5pt]
+\hline
+\end{tabular}
+\end{center}
+\begin{center}
+\begin{tabular}{|c|ccc|ccc|}
+\hline
+ (b) & \multicolumn{3}{c|}{$\zn(\bm{x}_\rv) = \SI{-997.99}{m}$} & \multicolumn{3}{c|}{$\zn(\bm{x}_\rv) = \SI{-1988.60}{m}$} \\ 
+$||\mathbf{\epsilon}||_2$& $\sigma_{1}$ & $\tau'$ & $\omega$ & $\sigma_{2}$ & $\tau'$ & $\omega$ \\[5pt]
+\hline
+& & & & & & \\[-7pt]
+$\utilde{\mathbf{u}}$ & 1.1e-02 & 1.1e-02 & 1.1e-02 & 8.1e-03 & 8.0e-03 & 7.9e-03 \\[5pt]
+$\utilde{\mathbf{u}_g^{(ZH)}$ & 7.1e-03 & 1.5e-03 & 1.4e-03 & 3.5e-02 & 1.3e-03 & 1.0e-03 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(Cu)}$ & 3.2e-03 & 3.0e-03 & 2.3e-03 & 1.7e-02 & 8.9e-03 & 6.5e-03 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(MK)}$ & 2.6e-03 & 5.4e-04 & 3.6e-04 & 1.4e-02 & 1.3e-03 & 9.3e-04 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(oM)}$ & 1.3e-03 & 4.1e-04 & 3.8e-04 & 1.2e-03 & 7.6e-05 & 1.4e-04 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(tb)}$ & 2.5e-04 & 1.7e-05 & 7.4e-05 & 7.8e-04 & 1.4e-05 & 5.9e-05 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(\nabla_z p)}$ & 1.9e-04 & 1.3e-04 & 9.3e-05 & 3.5e-04 & 6.3e-05 & 6.7e-05 \\[5pt]
+\hline
+\end{tabular}
+\end{center}
+--- Fraction of area with geostrophic error > ageostrophic velocity ---
+\tabcolsep=0.28cm
+\begin{center}
+\begin{tabular}{|c|ccc|ccc|}
+\hline
+& \multicolumn{3}{c|}{$\zn(\bm{x}_\rv) = \SI{-997.99}{m}$} & \multicolumn{3}{c|}{$\zn(\bm{x}_\rv) = \SI{-1988.60}{m}$} \\ 
+& $\sigma_{1}$ & $\tau'$ & $\omega$ & $\sigma_{2}$ & $\tau'$ & $\omega$ \\[5pt]
+\hline
+& & & & & & \\[-7pt]
+$\utilde{\mathbf{u}_g^{(ZH)}$ & 6.90 & 3.30 & 2.50 & 7.91 & 5.05 & 4.25 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(Cu)}$ & 3.41 & 3.39 & 2.04 & 4.31 & 4.84 & 3.21 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(MK)}$ & 3.07 & 1.32 & 0.71 & 4.24 & 2.34 & 1.40 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(oM)}$ & 2.00 & 1.08 & 1.09 & 3.11 & 0.48 & 1.02 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(tb)}$ & 0.28 & 0.00 & 0.14 & 0.47 & 0.01 & 0.15 \\[5pt]
+$\utilde{\mathbf{u}_g}^{(\nabla_z p)}$ & 0.12 & 0.11 & 0.10 & 0.19 & 0.15 & 0.15 \\[5pt]
+\hline
+\end{tabular}
+\end{center}
+--- Geostrophic velocity errors when streamfunction is ill-defined ---
+On OMEGA at (721,361,1988.5955m), the geostrophic velocity from
+  from the ill-defined topobaric geostrophic streamfunction
+  has 41140 discontinuous data points in the good mask which has 868954 points (ratio: 0.0473) 
+  and of these points, the L1 error is 1.1345e-04, and the L2 error is 3.5630e-04
+--- Orthobaric geostrophic streamfunction vs orthobaric Montgomery potential ---
+On OMEGA through (721,361,997.99), 
+for OM, ||eps||_2 = 3.7784e-04
+for OB, ||eps||_2 = 9.1964e-04
+On OMEGA through (721,361,1988.60), 
+for OM, ||eps||_2 = 1.4201e-04
+for OB, ||eps||_2 = 2.6586e-04
