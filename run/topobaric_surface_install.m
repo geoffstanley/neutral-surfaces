@@ -176,18 +176,24 @@ if isempty(reply) || lower(reply(1)) == 'y'
             disp(['OCCA data will be downloaded from ' URL]);
             while true
                 PATH = input('* Enter path to store OCCA data: ', 's');
+                if PATH(end) ~= V % Add trailing / or \ if not already present
+                    PATH(end+1) = V; %#ok<AGROW>
+                end
                 if exist(PATH, 'dir') || mkdir(PATH)
                     vars = {'salt', 'theta', 'phihyd', 'etan'};
                     for var = vars
                         download(sprintf('%s/DD%s.0406annclim.nc', URL, var{1}), PATH)
                     end
                     
+                    if ~exist([PATH 'omega_v1.1gjs' V], 'dir')
+                        mkdir([PATH 'omega_v1.1gjs' V]);
+                    end
+                    download('https://ndownloader.figshare.com/files/14536133', [PATH 'omega_v1.1gjs' V]); % Omega 1000
+                    movefile([PATH 'omega_v1.1gjs' V '14536133'], [PATH 'omega_v1.1gjs' V 'omega.0406annclim.from_SIGMA1000_through_(180,0,1000).nonBoussinesq.mat']);
+                    
                     % Record path to OCCA data in a text file
                     fprintf('Recording\n %s\nas the path to OCCA data in\n %s\n', PATH, PATH_PATHS);
                     fprintf('You can modify this later if you move the data.\n')
-                    if PATH(end) ~= V % Add trailing / or \ if not already present
-                        PATH(end+1) = V; %#ok<AGROW>
-                    end
                     fprintf(file_paths, ['OCCA:' PATH ':']);
                     
                     break
@@ -207,6 +213,9 @@ if isempty(reply) || lower(reply(1)) == 'y'
             disp(['ECCO2 data will be downloaded from ' URL]);
             while true
                 PATH = input('* Enter path to store ECCO2 data: ', 's');
+                if PATH(end) ~= V % Add trailing / or \ if not already present
+                    PATH(end+1) = V; %#ok<AGROW>
+                end
                 if exist(PATH, 'dir') || mkdir(PATH)
                     TIMESTEP = '20021223';
                     vars = {'SALT', 'THETA', 'UVEL', 'VVEL'};
@@ -219,14 +228,22 @@ if isempty(reply) || lower(reply(1)) == 'y'
                     download(sprintf('%s.nc/%s.1440x720x50.%s.nc', var{1}, var{1}, TIMESTEP                ), PATH);
                     download(sprintf('%s.nc/%s.1440x720x50.%s.nc', var{1}, var{1}, datestr(n+1, 'yyyymmdd')), PATH);
                     
-                    % <<<< Download GAMMA and omega surfaces >>>>
+                    if ~exist([PATH 'GAMMA' V], 'dir')
+                        mkdir([PATH 'GAMMA' V]);
+                    end
+                    if ~exist([PATH 'omega_v1.1gjs' V], 'dir')
+                        mkdir([PATH 'omega_v1.1gjs' V]);
+                    end
+                    download('https://ndownloader.figshare.com/files/14536058', [PATH 'GAMMA' V]); % gamma^n
+                    movefile([PATH 'GAMMA' V '14536058'], [PATH 'GAMMA' V 'GAMMA.1440x720x50.20021223.mat']);
+                    download('https://ndownloader.figshare.com/files/14536061', [PATH 'omega_v1.1gjs' V]); % Omega 1000
+                    movefile([PATH 'omega_v1.1gjs' V '14536061'], [PATH 'omega_v1.1gjs' V 'omega.1440x720.20021223.from_SIGMA1000_through_(180,0,1000).Boussinesq.mat']);
+                    download('https://ndownloader.figshare.com/files/14536064', [PATH 'omega_v1.1gjs' V]); % Omega 2000
+                    movefile([PATH 'omega_v1.1gjs' V '14536064'], [PATH 'omega_v1.1gjs' V 'omega.1440x720.20021223.from_SIGMA2000_through_(180,0,2000).Boussinesq.mat']);
                     
                     % Record path to ECCO2 data in a text file
                     fprintf('Recording\n %s\nas the path to ECCO2 data in\n %s\n', PATH, PATH_PATHS);
                     fprintf('You can modify this later if you move the data.\n')
-                    if PATH(end) ~= V % Add trailing / or \ if not already present
-                        PATH(end+1) = V; %#ok<AGROW>
-                    end
                     fprintf(file_paths, ['ECCO2:' PATH ':']);
                     
                     break
