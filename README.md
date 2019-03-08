@@ -342,6 +342,9 @@ along with Topobaric Surface.  If not, see
 <https://www.gnu.org/licenses/>.
 
 Author(s) : Geoff Stanley
+
 Email     : g.stanley@unsw.edu.au 
+
 Email     : geoffstanley@gmail.com
+
 Version   : 1.0
