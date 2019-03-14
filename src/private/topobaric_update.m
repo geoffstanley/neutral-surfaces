@@ -28,7 +28,8 @@ function p = topobaric_update(S, T, P, K, p, branchmap, dfn, s0, t0, tol) %#code
 % dfn [5, A]: domain and coefficients for each branch's quadratic function
 %             for delta as a function of pressure. dfn(:,a) defines the
 %             a'th branch of the multivalued function for delta as a
-%             function of pressure, which can be evaluated by pvaln.
+%             function of pressure, which can be evaluated by pvaln or
+%             pvallin.
 % s0 [1, 1]: reference S value for delta 
 % t0 [1, 1]: reference T value for delta 
 % tol [1, 1]: tolerance on pressure for bisection solver [dbar]
@@ -49,7 +50,7 @@ function p = topobaric_update(S, T, P, K, p, branchmap, dfn, s0, t0, tol) %#code
 %
 %
 % --- Requirements:
-% eos, bisectguess, interp1q2, pval1
+% eos, bisectguess, interp1q2, pvallin
 %
 %
 % --- Code generation:
