@@ -3,9 +3,10 @@ function F = pintn(f,a,b)
 %
 %
 % F = pintn(f)
-% evaluates the indefinite integral of the polynomials f, producing new
-% polynomials F (one order higher than f and valid on the same domain as
-% f). Evaluating F at x (using pvaln) gives the integral of f from the
+% evaluates the indefinite integral of the polynomials f, with lower
+% integration limit given by the lower limit of the domain of f, producing
+% new polynomials F (one order higher than f and valid on the same domain
+% as f). Evaluating F at x (using pvaln) gives the integral of f from the
 % lower limit of the domain to x. Each column of f and F represents a
 % polynomial.
 %
@@ -19,28 +20,36 @@ function F = pintn(f,a,b)
 % 
 % Though the domain of f is specified, this is ignored for execution speed.
 %
-% Any of f, a, or b can have a singleton second dimension, in which case that
-% polynomial or integration limit is used for all integrals. 
+% Any of f, a, or b can have a singleton second dimension, in which case
+% that polynomial or integration limit is used for all integrals.
 %
-% There are two input/output cases.
+% There are three input/output cases.
 %
 %
 % --- Input (a):
 % f [N+2, L]: L polynomials of order N (may have L = 1)
-% a [1  , L]: lower limits of integration (may have L = 1)
 %
 %
-% --- Output (a): 
-% F [N+2, L]: F(:,l) is the indefinite integral of f(:,l) from a(1,l)
+% --- Output (a):
+% F [N+2, L]: F(:,l) is the indefinite integral of f(:,l) from f(1,l)
 %
 %
 % --- Input (b):
+% f [N+2, L]: L polynomials of order N (may have L = 1)
+% a [1  , L]: lower limits of integration (may have L = 1)
+%
+%
+% --- Output (b): 
+% F [N+2, L]: F(:,l) is the indefinite integral of f(:,l) from a(1,l)
+%
+%
+% --- Input (c):
 % f [N+2, L]: L polynomials of order N (may have L = 1)
 % a [M, L]: lower limits of integration (may have L = 1)
 % b [M, L]: lower limits of integration (may have L = 1)
 %
 %
-% --- Output (b): 
+% --- Output (c): 
 % F [M, L]: F(m,l) is the definite integral of f(:,l) from a(m,l) to b(m,l)
 %
 %
