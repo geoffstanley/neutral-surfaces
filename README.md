@@ -188,7 +188,7 @@ Then try the above mex command in MATLAB again (perhaps restarting MATLAB prior)
   ```
   % Add Topobaric Surface
   tmp_STARTUP_PATH = pwd();
-  cd(['$PATH_TOPOBARIC_SURFACE' filesep 'src']);
+  cd(['$PATH_TOPOBARIC_SURFACE' filesep 'run']);
   topobaric_surface_add_to_path();
   cd(tmp_STARTUP_PATH);
   clearvars tmp_STARTUP_PATH
