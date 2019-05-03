@@ -1,1 +1,0 @@
-TOPOBARIC_SURFACE:/home/stanley/work/dphil/projects/topobaric_surface/:OCCA:~/work/data/OCCA/:ECCO2:~/work/data/ECCO2/latlon/:

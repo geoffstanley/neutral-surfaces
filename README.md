@@ -23,10 +23,9 @@ the density on a surface.
 
 
 ## References:
-Stanley, G. J. (2019a) Neutral surface topology. Ocean Modelling, accepted.
+Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling S1463500318302221. https://doi.org/10.1016/j.ocemod.2019.01.008
 
-Stanley, G. J. (2019b) The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling, submitted.
-
+Stanley, G.J., 2019b. The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling S1463500318302233. https://doi.org/10.1016/j.ocemod.2019.04.002
 
 
 ## Requirements:
@@ -60,25 +59,90 @@ In particular,
 
 ## Installation:
 Run the following commands in MATLAB, replacing 
-  ~/work/dphil/projects/topobaric_surface/
+  ~/work/dphil/projects/Topobaric-Surface/
 with the path to this README.md file
 ```
->> cd('~/work/dphil/projects/topobaric_surface/run')
+>> cd('~/work/dphil/projects/Topobaric-Surface/run')
 >> topobaric_surface_install();
 ```
 
-## Manual Installation:
-If the above installation function does not work, try the following manual installation instructions.
 
-Note: the Windows instructions have not been properly tested. 
-Please contact the author if there are any problems (with Windows or otherwise).
+## Usage:
+./run/examples.m gives examples to create a topobaric surface, a topobaric geostrophic streamfunction, the orthobaric Montgomery potential, and other geostrophic streamfunctions from the literature.
+
+./run/run_ECCO2.m generates most figures in “Neutral surface topology” and “The exact geostrophic streamfunction for neutral surfaces”.
+
+./run/run_OCCA.m generates Figure 3 in “Neutral surface topology”.
+
+./run/pitch.m generates Figure B.7 in “Neutral surface topology”.
+
+Note, these were originally run on MATLAB 2017b and 2018b on a Mac. 
+Running on Linux is known to produce cosmetic colour and font differences.
+
+
+
+## MATLAB software:
+Additional MATLAB software from the MATLAB File Exchange is provided in ./fex/
+
+* binsrchn  by  Geoff Stanley
+    https://www.mathworks.com/matlabcentral/fileexchange/70108
+* bisectguess  by  Geoff Stanley
+    https://www.mathworks.com/matlabcentral/fileexchange/69710
+* bfs, scomponents in the GAIMC toolbox  by  David F. Gleich
+    https://www.mathworks.com/matlabcentral/fileexchange/24134
+* catstruct  by  Jos van der Geest
+    https://www.mathworks.com/matlabcentral/fileexchange/7842
+* CC2periodic  by  Geoff Stanley
+    https://www.mathworks.com/matlabcentral/fileexchange/66079
+* columncalculus  by  Geoff Stanley
+    https://www.mathworks.com/matlabcentral/fileexchange/69713
+* % distinguishable_colors  by   Tim Holy
+    https://www.mathworks.com/matlabcentral/fileexchange/29702
+* % export_fig  by  Yair Altman
+    https://www.mathworks.com/matlabcentral/fileexchange/23629
+* PriorityQueue  by  Andrew Woodward
+    https://www.mathworks.com/matlabcentral/fileexchange/69142
+* splinefit, ppint  by  Jonas Lundgren
+    https://www.mathworks.com/matlabcentral/fileexchange/13812
+* % subaxis  by  Aslak Grinsted
+    https://www.mathworks.com/matlabcentral/fileexchange/3696
+* % textborder  by  Joao Henriques
+    https://www.mathworks.com/matlabcentral/fileexchange/27383
+* % wprctile  by  Durga Lal Shrestha
+    https://www.mathworks.com/matlabcentral/fileexchange/16920
+
+% optional: not required to compute topobaric surfaces, but used by scripts in ./run/
+
+Note, a small modification has been made to line 25 of GAIMC’s bfs.m, which originally read:
+  if ~exist('target','var') || isempty(full), target=0; end
+It now reads:
+  if nargin < 3 || isempty(target), target = 0; end
+
+
+## ReCon
+Topobaric Surface uses ReCon to compute the Reeb Graph.
+
+ReCon is available at
+http://vgl.serc.iisc.ernet.in/software/software.php?pid=003
+
+For more information on ReCon, see
+Doraiswamy, H. & Natarajan, V. Computing Reeb Graphs as a Union of Contour Trees. IEEE Transactions on Visualization and Computer Graphics 19, 249–262 (2013).
+
+The ReCon code included with Topobaric Surface has been modified to work with double precision and to allow the input and output to be from memory rather than files on the hard disk.
+
+Note that ReCon requires Java 1.5 or higher, though it must be built for the version of the Java Runtime Environment that is packaged with MATLAB.  
+
+
+
+## Manual Installation:
+If running topobaric_surface_install() does not work, please email the author (who wants to know what went wrong).  You can also try the following manual installation instructions.
 
 Below, PATH_TOPOBARIC_SURFACE is a generic stand-in for the path to this file.
 
 If you will use a bash shell, start by entering the following command,
 modified to use the path to the location of this file, in a bash shell: 
 ```
-  PATH_TOPOBARIC_SURFACE=~/work/dphil/projects/topobaric_surface
+  PATH_TOPOBARIC_SURFACE=~/work/dphil/projects/Topobaric-Surface
 ```
 
 ### Step 1: Check MATLAB version
@@ -228,9 +292,8 @@ wget -P $OCCA/ ftp://mit.ecco-group.org/ecco_for_las/OCCA_1x1_v2/2004-6/annual/D
 wget -P $OCCA/omega_v1.1gjs https://ndownloader.figshare.com/files/14536133
 mv $OCCA/omega_v1.1gjs/14536133 $OCCA/omega_v1.1gjs/    omega.0406annclim.from_SIGMA1000_through_(180,0,1000).nonBoussinesq.mat
 
-printf PATH_TOPOBARIC_SURFACE:$PATH_TOPOBARIC_SURFACE: > $PATH_TOPOBARIC_SURFACE/run/paths.txt
-printf ECCO2:$ECCO2: >> $PATH_TOPOBARIC_SURFACE/run/paths.txt
-printf OCCA:$OCCA: >> $PATH_TOPOBARIC_SURFACE/run/paths.txt
+printf $ECCO2 > $PATH_TOPOBARIC_SURFACE/run/PATH_ECCO2.txt
+printf $OCCA > $PATH_TOPOBARIC_SURFACE/run/PATH_OCCA.txt
 ```
 
 Alternatively, manually download the data through a web browser.  Go to ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/ and to ftp://mit.ecco-group.org/ecco_for_las/OCCA_1x1_v2/2004-6/annual/ 
@@ -249,77 +312,8 @@ Then, download files from the following URLs to your local computer, editing loc
 - https://ndownloader.figshare.com/files/14536064 to ~/work/data/ECCO2/latlon/omega_v1.1gjs/omega.1440x720.20021223.from_SIGMA2000_through_(180,0,2000).Boussinesq.mat
 - https://ndownloader.figshare.com/files/14536133 to ~/work/data/OCCA/omega_v1.1gjs/omega.0406annclim.from_SIGMA1000_through_(180,0,1000).nonBoussinesq.mat
 
-Then create a text file $PATH_TOPOBARIC_SURFACE/run/paths.txt containing the following text
-```
-PATH_TOPOBARIC_SURFACE~/work/dphil/projects/topobaric_surface:ECCO2:~/work/data/ECCO2/latlon/:OCCA:~/work/data/OCCA/:
-```
-replacing the local paths as appropriate.
-
-
-## Usage:
-./run/examples.m gives examples to create a topobaric surface, a topobaric geostrophic streamfunction, the orthobaric Montgomery potential, and other geostrophic streamfunctions from the literature.
-
-./run/run_ECCO2.m generates most figures in “Neutral surface topology” and “The exact geostrophic streamfunction for neutral surfaces”.
-
-./run/run_OCCA.m generates Figure 3 in “Neutral surface topology”.
-
-./run/pitch.m generates Figure B.7 in “Neutral surface topology”.
-
-Note, these were originally run on MATLAB 2017b and 2018b on a Mac. 
-Running on Linux is known to produce cosmetic colour and font differences.
-
-
-
-## MATLAB software:
-Additional MATLAB software from the MATLAB File Exchange is provided in ./fex/
-
-* binsrchn  by  Geoff Stanley
-    https://www.mathworks.com/matlabcentral/fileexchange/70108
-* bisectguess  by  Geoff Stanley
-    https://www.mathworks.com/matlabcentral/fileexchange/69710
-* bfs, scomponents in the GAIMC toolbox  by  David F. Gleich
-    https://www.mathworks.com/matlabcentral/fileexchange/24134
-* catstruct  by  Jos van der Geest
-    https://www.mathworks.com/matlabcentral/fileexchange/7842
-* CC2periodic  by  Geoff Stanley
-    https://www.mathworks.com/matlabcentral/fileexchange/66079
-* columncalculus  by  Geoff Stanley
-    https://www.mathworks.com/matlabcentral/fileexchange/69713
-* % distinguishable_colors  by   Tim Holy
-    https://www.mathworks.com/matlabcentral/fileexchange/29702
-* % export_fig  by  Yair Altman
-    https://www.mathworks.com/matlabcentral/fileexchange/23629
-* PriorityQueue  by  Andrew Woodward
-    https://www.mathworks.com/matlabcentral/fileexchange/69142
-* splinefit, ppint  by  Jonas Lundgren
-    https://www.mathworks.com/matlabcentral/fileexchange/13812
-* % subaxis  by  Aslak Grinsted
-    https://www.mathworks.com/matlabcentral/fileexchange/3696
-* % textborder  by  Joao Henriques
-    https://www.mathworks.com/matlabcentral/fileexchange/27383
-* % wprctile  by  Durga Lal Shrestha
-    https://www.mathworks.com/matlabcentral/fileexchange/16920
-
-% optional: not required to compute topobaric surfaces, but used by scripts in ./run/
-
-Note, a small modification has been made to line 25 of GAIMC’s bfs.m, which originally read:
-  if ~exist('target','var') || isempty(full), target=0; end
-It now reads:
-  if nargin < 3 || isempty(target), target = 0; end
-
-
-## ReCon
-Topobaric Surface uses ReCon to compute the Reeb Graph.
-
-ReCon is available at
-http://vgl.serc.iisc.ernet.in/software/software.php?pid=003
-
-For more information on ReCon, see
-Doraiswamy, H. & Natarajan, V. Computing Reeb Graphs as a Union of Contour Trees. IEEE Transactions on Visualization and Computer Graphics 19, 249–262 (2013).
-
-The ReCon code included with Topobaric Surface has been modified to work with double precision and to allow the input and output to be from memory rather than files on the hard disk.
-
-Note that ReCon requires Java 1.5 or higher, though it must be built for the version of the Java Runtime Environment that is packaged with MATLAB.  
+Then create a text file $PATH_TOPOBARIC_SURFACE/run/PATH_ECCO2.txt containing, as single line of text, the base ECCO2 data directory.
+Also create a text file $PATH_TOPOBARIC_SURFACE/run/PATH_OCCA.txt containing, as single line of text, the base OCCA data directory.
 
 
 ## Copyright:

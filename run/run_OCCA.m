@@ -40,6 +40,7 @@ set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 V = filesep(); % /  or  \  depending on OS.
 
 PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
+%PATH_LOCAL = '~/work/dphil/projects/Topobaric-Surface/run/'; % Manually set path to this file. 
 
 run([PATH_LOCAL 'topobaric_surface_add_to_path.m']); % Add Topobaric Surface to MATLAB's path
 
@@ -53,9 +54,11 @@ copyfile([PATH_LOCAL '..' V 'lib' V 'eos' V 'densjmd95_tb.m'   ], [PATH_LOCAL '.
 copyfile([PATH_LOCAL '..' V 'lib' V 'eos' V 'densjmd95_tb_dp.m'], [PATH_LOCAL '..' V 'lib' V 'eosdp.m']);
 clear eos eosdp % Make sure the copied file gets used
 
-% Read path to OCCA data from paths.txt
-PATH_OCCA = regexp(fileread([PATH_LOCAL 'paths.txt']), 'OCCA:(.+?):', 'tokens');
+% Read path to OCCA data from PATH_OCCA.txt
+file_id = fopen([PATH_LOCAL 'PATH_OCCA.txt']);
+PATH_OCCA = textscan(file_id, '%s');
 PATH_OCCA = PATH_OCCA{1}{1};
+fclose(file_id);
 
 db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion

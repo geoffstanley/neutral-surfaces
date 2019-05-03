@@ -52,9 +52,11 @@ clear eos eosdp % Make sure the copied file gets used
 % Set time step of ECCO2 data to use:
 TIMESTEP = '20021223';
 
-% Read path to ECCO2 data from paths.txt
-PATH_ECCO2 = regexp(fileread([PATH_LOCAL 'paths.txt']), 'ECCO2:(.+?):', 'tokens');
+% Read path to ECCO2 data from PATH_ECCO2.txt
+file_id = fopen([PATH_LOCAL 'PATH_ECCO2.txt']);
+PATH_ECCO2 = textscan(file_id, '%s');
 PATH_ECCO2 = PATH_ECCO2{1}{1};
+fclose(file_id);
 
 db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion

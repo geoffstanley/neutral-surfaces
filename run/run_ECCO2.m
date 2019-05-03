@@ -38,7 +38,7 @@ set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 V = filesep(); % /  or  \  depending on OS.
 
 PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-%PATH_LOCAL = '~/work/dphil/projects/topobaric_surface/run/'; % Manually set path to this file. 
+%PATH_LOCAL = '~/work/dphil/projects/Topobaric-Surface/run/'; % Manually set path to this file. 
 
 run([PATH_LOCAL 'topobaric_surface_add_to_path.m']); % Add Topobaric Surface to MATLAB's path
 
@@ -55,9 +55,11 @@ clear eos eosdp % Make sure the copied file gets used
 % Set time step of ECCO2 data to use:
 TIMESTEP = '20021223';
 
-% Read path to ECCO2 data from paths.txt
-PATH_ECCO2 = regexp(fileread([PATH_LOCAL 'paths.txt']), 'ECCO2:(.+?):', 'tokens');
+% Read path to ECCO2 data from PATH_ECCO2.txt
+file_id = fopen([PATH_LOCAL 'PATH_ECCO2.txt']);
+PATH_ECCO2 = textscan(file_id, '%s');
 PATH_ECCO2 = PATH_ECCO2{1}{1};
+fclose(file_id);
 
 %fileID = 1; % For standard output to the screen
 fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'w'); % For output to a file

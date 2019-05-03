@@ -41,13 +41,6 @@ PATH_LOCAL = fileparts(mfilename('fullpath'));
 % Get path to one directory up, containing all of Topobaric Surface
 PATH_TOPOBARIC_SURFACE = PATH_LOCAL(1 : find(PATH_LOCAL == V, 1, 'last'));
 
-% Make a file containing path information (read by scripts in the run
-% sub-directory). 
-PATH_PATHS = [PATH_LOCAL V 'paths.txt'];
-file_paths = fopen(PATH_PATHS, 'w'); % overwrite contents
-fprintf(file_paths, ['TOPOBARIC_SURFACE:' PATH_TOPOBARIC_SURFACE ':']);
-
-
 % Step 1: Check MATLAB version
 VER_MATLAB_STR = version();
 j = find(VER_MATLAB_STR == '.', 2, 'first');
@@ -60,7 +53,7 @@ VER_JAVA_STR = version('-java');
 i = find(VER_JAVA_STR == ' ', 1, 'first');
 j = find(VER_JAVA_STR == '.', 2, 'first');
 VER_JAVA = VER_JAVA_STR(i+1 : j(2)-1);
-fprintf('Found MATLAB uses version %s of the Java Runtime Environment (JRE)\n', VER_JAVA);
+fprintf('* Found MATLAB uses version %s of the Java Runtime Environment (JRE)\n', VER_JAVA);
 if ~strcmp(VER_JAVA, '1.7') && ~strcmp(VER_JAVA, '1.8')
     % Must be that VER_JAVA > 1.8, since we already checked MATLAB >= 2016b
     % which had Java 1.7.
@@ -98,13 +91,13 @@ fprintf('* Shall I add \n %s\nto MATLAB''s javaclasspath in\n %s%sjavaclasspath.
 reply = input('? Answer Y unless you have done this already. [Y/n]: ', 's');
 if isempty(reply) || lower(reply(1)) == 'y'
     fileID = fopen([PATH_PREF V 'javaclasspath.txt'], 'a');
-    fprintf(fileID, ['\n' PATH_TOPOBARIC_SURFACE 'src' V 'recon' V 'build' V 'recon.jar\n']);
+    fprintf(fileID, '\n%s\n', [PATH_TOPOBARIC_SURFACE 'src' V 'recon' V 'build' V 'recon.jar']);
     fclose(fileID);
 end
 
 
 % Step 4: Increase memory that MATLAB allocates to Java
-disp('Increase the memory that MATLAB allocates to Java:');
+disp('* Increase the memory that MATLAB allocates to Java:');
 disp('Go to MATLAB Preferences -> General -> Java HEAP Memory');
 disp('Move the slider far to the right.');
 disp('e.g. the default value is 512 MB, and you increase it to 2048 MB.');
@@ -112,7 +105,7 @@ input('Press any key to continue.')
 
 
 % Step 5: Setup MEX with C
-disp('About to setp MEX for use with C. You should have a working C compiler');
+disp('* About to setup MEX for use with C. You should have a working C compiler');
 disp('installed on this system, such as gcc. On MacOS, you can install Xcode to get clang.');
 disp('Note: Topobaric Surface can run without MEX compiled code, but it will be far slower.');
 input('Press any key to continue.', 's');
@@ -120,7 +113,7 @@ mex('-setup', 'C');
 
 
 % Step 6: Add Topobaric Surface to MATLAB's search path
-fprintf('Adding\n %s\nand sub-folders to MATLAB''s search path.\n', PATH_TOPOBARIC_SURFACE)
+fprintf('* Adding\n %s\nand sub-folders to MATLAB''s search path.\n', PATH_TOPOBARIC_SURFACE)
 topobaric_surface_add_to_path();
 
 reply = input('* Do you want to add these folders to MATLAB''s search path every time MATLAB starts? [Y/n]: ', 's');
@@ -129,7 +122,7 @@ if isempty(reply) || lower(reply(1)) == 'y'
     file_startup = fopen([PATH_USER V 'startup.m'], 'a');
     fprintf(file_startup, '\n%% Add Topobaric Surface\n');
     fprintf(file_startup, 'tmp_STARTUP_PATH = pwd();\n');
-    fprintf(file_startup, 'cd(''%s'');\n', [PATH_TOPOBARIC_SURFACE 'src']);
+    fprintf(file_startup, 'cd(''%s'');\n', [PATH_TOPOBARIC_SURFACE 'run']);
     fprintf(file_startup, 'topobaric_surface_add_to_path();\n');
     fprintf(file_startup, 'cd(tmp_STARTUP_PATH);\n');
     fprintf(file_startup, 'clearvars tmp_STARTUP_PATH\n');
@@ -194,7 +187,9 @@ if isempty(reply) || lower(reply(1)) == 'y'
                     % Record path to OCCA data in a text file
                     fprintf('Recording\n %s\nas the path to OCCA data in\n %s\n', PATH, PATH_PATHS);
                     fprintf('You can modify this later if you move the data.\n')
-                    fprintf(file_paths, ['OCCA:' PATH ':']);
+                    file_id = fopen([PATH_LOCAL V 'PATH_OCCA.txt'], 'w'); % overwrite contents
+                    fprintf(file_id, '%s', PATH);
+                    fclose(file_id);
                     
                     break
                 end
@@ -244,7 +239,9 @@ if isempty(reply) || lower(reply(1)) == 'y'
                     % Record path to ECCO2 data in a text file
                     fprintf('Recording\n %s\nas the path to ECCO2 data in\n %s\n', PATH, PATH_PATHS);
                     fprintf('You can modify this later if you move the data.\n')
-                    fprintf(file_paths, ['ECCO2:' PATH ':']);
+                    file_id = fopen([PATH_LOCAL V 'PATH_ECCO2.txt'], 'w'); % overwrite contents
+                    fprintf(file_id, '%s', PATH);
+                    fclose(file_id);
                     
                     break
                 end
@@ -257,8 +254,6 @@ if isempty(reply) || lower(reply(1)) == 'y'
         end
     end
 end
-
-fclose(file_paths);
 
 % Step 8: Restart MATLAB
 disp('----------------------------------------------------------------')
