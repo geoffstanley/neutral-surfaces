@@ -70,16 +70,16 @@ if nargin == 6
     % Boussinesq form
     rho_c = varargin{1};
     if isvector(X)
-        Y = (db2Pa/rho_c) * ATMP + grav * lead1(ETAN) ...
+        Y = (db2Pa/rho_c) * lead1(ATMP) + grav * lead1(ETAN) ...
             + cumsum((grav/(2*rho_c)) * diff([0; X]) .* (M([1, 1:end-1],:,:) + M), 1);
     else
-        Y = (db2Pa/rho_c) * ATMP + grav * lead1(ETAN) ...
+        Y = (db2Pa/rho_c) * lead1(ATMP) + grav * lead1(ETAN) ...
             + cumsum((grav/(2*rho_c)) * cat(1, X(1,:,:), diff(X,[],1)) .* (M([1, 1:end-1],:,:) + M), 1);
     end
     
 else
     % Non-Boussinesq form
     Y = + grav * lead1(ETAN) ...
-        - (db2Pa / 2) * cumsum(cat(1, X(1,:,:) - ATMP, diff(X,[],1)) .* (M([1 1:end-1],:,:) + M), 1);
+        - (db2Pa / 2) * cumsum(cat(1, X(1,:,:) - lead1(ATMP), diff(X,[],1)) .* (M([1 1:end-1],:,:) + M), 1);
     
 end
