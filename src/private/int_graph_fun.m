@@ -33,8 +33,7 @@ function [F, F2] = int_graph_fun(f, arc_from, arc_to, node_fn, graph, bfs_parent
 % arc_from [A, 1]: the "lower" node that each arc is incident to
 % arc_to   [A, 1]: the "higher" node that each arc is incident to
 % node_fn  [N, 1]: the value associated with each node
-% G [N, N]: sparse matrix representing the graph without duplicate arcs
-% bfs_dist [N, 1]: distance from the root node (1) to each node in a breadth-first search
+% graph [N, N]: sparse matrix representing the graph without duplicate arcs
 % bfs_parent_node [N, 1]: the node from which this node was discovered in the breadth-first search
 % bfs_topo_order [N, 1]: topological ordering of the nodes in the breadth-first search
 % bfs_missing_arc [C, 1]: arcs that were not traversed during the breadth-first search
@@ -74,7 +73,7 @@ function [F, F2] = int_graph_fun(f, arc_from, arc_to, node_fn, graph, bfs_parent
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au 
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 1.01
 %
 % Modified by : --
 % Date        : --
@@ -101,7 +100,37 @@ if n1 == arc_to(e) % Reverse the fact that F had integrated from lower node
     F(end,e) = -pvaln(F(:,e), node_fn(n1));
 end
 
-for k = 3:nNodes
+% Integrate f from node 2 to node 3 in the ordering
+if nNodes > 2
+    n2 = bfs_topo_order(3);
+    n1 = bfs_parent_node(n2);
+    if n1 == 1
+        % Handle rare case where root node (1) has two neighbours:
+        % n2 --> o   o <-- n2
+        %         \ /
+        % root --> o <-- n1
+        n0 = bfs_topo_order(2);
+    else
+        % Handle the usual case, where the root has one neighbour:
+        %         o   o <-- n2
+        %          \ /
+        %           o <-- n1
+        %           |
+        % root -->  o <-- n0
+        n0 = bfs_parent_node(n1);
+    end
+    e = full(graph(n1, n2));
+    
+    if n1 == arc_to(e) % Reverse the fact that F had integrated from lower node
+        F(end,e) = -pvaln(F(:,e), node_fn(n1));
+    end
+end
+
+% Connect this branch with its parent branch
+a01 = full(graph(n0, n1));
+F(end,e) = F(end,e)  +  pvaln(F(:,a01), node_fn(n1));
+
+for k = 4:nNodes
     % Integrate f to node k in the topological ordering
     n2 = bfs_topo_order(k);
     n1 = bfs_parent_node(n2);
