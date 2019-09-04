@@ -23,9 +23,9 @@ the density on a surface.
 
 
 ## References:
-Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling S1463500318302221. https://doi.org/10.1016/j.ocemod.2019.01.008
+Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling 138, 88–106. https://doi.org/10.1016/j.ocemod.2019.01.008
 
-Stanley, G.J., 2019b. The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling S1463500318302233. https://doi.org/10.1016/j.ocemod.2019.04.002
+Stanley, G.J., 2019b. The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling 138, 107–121. https://doi.org/10.1016/j.ocemod.2019.04.002
 
 
 ## Requirements:
