@@ -1,3 +1,6 @@
 **/codegen
-*.mexa64
-*.mexmaci64
+*.mex*
+*info.txt
+./topobaric-surface/install/PATH_ECCO2.txt
+./topobaric-surface/install/PATH_OCCA.txt
+./lib/alias/
