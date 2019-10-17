@@ -1,35 +1,33 @@
-function OPTS = set_defaults(nx, ny)
-%SET_DEFUALTS  Default options for topobaric_surface.
+function OPTS = tbs_defaults(ni, nj)
+%TBS_DEFUALTS  Default options for topobaric_surface.
 %
 %
-% OPTS = set_defaults(nx,ny) 
+% OPTS = tbs_defaults(ni,nj)
 % returns a struct OPTS containing default options for use in
-% topobaric_surface, appropriate for a grid with nx longitude points and ny
+% topobaric_surface, appropriate for a grid with ni longitude points and nj
 % latitude points.
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
-% 
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
-% 
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-% 
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
-% Email     : g.stanley@unsw.edu.au 
+% Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --
@@ -39,28 +37,22 @@ function OPTS = set_defaults(nx, ny)
 % according to the Reeb graph. Set REEB to true.
 % For "orthobaric" surfaces, a single-valued function is fit to the surface
 % using a spline. Set REEB to false and set the SPLINE parameters below.
-OPTS.REEB = true; 
+OPTS.REEB = true;
 
 % Spine parameters, only used for "orthobaric" surfaces
-OPTS.SPLINE_BREAKS = [0 200 1500 1800 6000];
+OPTS.SPLINE_BREAKS = [0 200 1500 1800 6000]; % [dbar] or [m]
 OPTS.SPLINE_ORDER = 4; % Cubic
 
-% Calculate the Mixed Layer Pressure using default values from
-% mixed_layer_pressure()
-OPTS.MLP = struct(); 
+% Do not remove the Mixed Layer
+OPTS.MLX = [];
 
 % Pixel indices for reference water column. Trying to select (180E,0N)
-OPTS.REF_IJ = round([nx/2, ny/2]);
+OPTS.REF_IJ = round([ni/2, nj/2]);
 
-% Reference pressure (if OPTS.RHOB is not provided). If a scalar is
-% provided, the pressure on the topobaric surface at the reference water
-% column will be this value (with precision of OPTS.TOL).
-OPTS.REF_P = []; % [dbar]
-
-% Reference depth (if OPTS.RHOB is provided). If a scalar is provided, the
+% Reference pressure or depth.  If a scalar is provided, the pressure or
 % depth on the topobaric surface at the reference water column will be this
 % value (with precision of OPTS.TOL).
-OPTS.REF_Z = []; % [m, positive]
+OPTS.REF_X = []; % [dbar] or [m, positive]
 
 % Reference practical / Absolute salinity and potential / Conservative
 % temperature. If provided as scalars, these determine the way delta
@@ -76,39 +68,41 @@ OPTS.REF_T = [];
 % option is disabled however, as it can produce arcs with 0 or 1 data
 % points in a segment, which makes fitting affine linear functions
 % under-determined.
-OPTS.DECOMP = 'diagonal'; 
+OPTS.DECOMP = 'diagonal';
 
 % Pre-processing (before Reeb graph computation) of the simplical mesh:
-OPTS.FILL_PIX = 0; % No filling
 OPTS.FILL_IJ = []; % No filling
+OPTS.FILL_PIX = 0; % No filling
 
 % Post-processing of Reeb Graph -- graph simplification parameters:
-OPTS.SIMPLIFY_ARC_REMAIN = Inf;     % No leaf pruning simplification
 OPTS.SIMPLIFY_WEIGHT_PERSIST = 0.5; % Equal weighting between area and persistence
+OPTS.SIMPLIFY_ARC_REMAIN = Inf;     % No leaf pruning simplification
 
-% Error tolerance when root-finding to update surface. If OPTS.RHOB is
-% empty, provide as [dbar]. If OPTS.RHOB is given, provide as [m]
-% (topobaric_surface will internally convert it to dbar).
-OPTS.TOL = 1e-4; 
+% Error tolerance when root-finding to update surface, in the same units as
+% X [dbar] or [m].
+OPTS.X_TOL = 1e-4;
 
-% Damping when updating to the new surface. 
-% No damping at 0. Set > 0 for damping. Set < 0 for overrelaxation.
-OPTS.DAMP = 0; 
+
+% Solutions to the root-finding problem in each water column are sought in
+% the domain of the local branch of the multivalued function expanded
+% outwards by this amount, in the same units as X [dbar] or [m].
+OPTS.X_EXPN = 500;
 
 % Conditions to terminate iterations:
 OPTS.ITER_MAX = 6;  % maximum number of iterations
 
 % quit when the L2 change of pressure on surface exceeds this value (set to
-% 0 to deactivate). If OPTS.RHOB is empty, provide as [dbar]. If OPTS.RHOB
-% is given, provide as [m] (topobaric_surface will internally convert it to
-% dbar).
-OPTS.ITER_L2_CHANGE = 1e-3; 
+% 0 to deactivate), in the same units as X [dbar] or [m].
+OPTS.ITER_L2_CHANGE = 1e-3;
+
+% Iteration number at which to begin wetting (use inf for no wetting)
+OPTS.ITER_START_WETTING = 1; % Start wetting immediately
 
 % When true, adjust the empirical function to ensure exact geostrophic
 % stream function is well-defined
 OPTS.GEOSTRF = false;
 
-% Verbosity level 
+% Verbosity level
 OPTS.VERBOSE = 0;
 
 % File ID to write output

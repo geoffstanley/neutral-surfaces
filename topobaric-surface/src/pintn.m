@@ -12,12 +12,12 @@ function F = pintn(f,a,b)
 %
 % F = pintn(f,a)
 % as above, but the lower limit of the integral is a, which is a scalar or
-% a vector with as many elements as there are columns in f. 
+% a vector with as many elements as there are columns in f.
 %
 % F = pintn(f,a,b)
-% evaluates the definite integral of f from a to b. This simply 
+% evaluates the definite integral of f from a to b. This simply
 % evaluates F = pintn(f,a) at b.
-% 
+%
 % Though the domain of f is specified, this is ignored for execution speed.
 %
 % Any of f, a, or b can have a singleton second dimension, in which case
@@ -39,7 +39,7 @@ function F = pintn(f,a,b)
 % a [1  , L]: lower limits of integration (may have L = 1)
 %
 %
-% --- Output (b): 
+% --- Output (b):
 % F [N+2, L]: F(:,l) is the indefinite integral of f(:,l) from a(1,l)
 %
 %
@@ -49,7 +49,7 @@ function F = pintn(f,a,b)
 % b [M, L]: lower limits of integration (may have L = 1)
 %
 %
-% --- Output (c): 
+% --- Output (c):
 % F [M, L]: F(m,l) is the definite integral of f(:,l) from a(m,l) to b(m,l)
 %
 %
@@ -57,38 +57,36 @@ function F = pintn(f,a,b)
 % pvaln
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
-% 
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
-% 
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-% 
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
-% Email     : g.stanley@unsw.edu.au 
+% Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --
 % Changes     : --
 
 % Np2-2 is the polynomial's order. (e.g. Np2==4 for linear)
-[Np2, M] = size(f); 
+[Np2, M] = size(f);
 
 % F is one order higher than f, so add a row to F
-F = vertcat(f, zeros(1,M)); 
+F = vertcat(f, zeros(1,M));
 
 % Integration from lower limit of domain
 F(3:Np2-1,:) = F(3:Np2-1,:) ./ (Np2-2:-1:2).' ;

@@ -18,39 +18,37 @@ function y = pvallin(f,x)
 % x [1  , 1]: evaluation site
 %
 %
-% --- Output: 
+% --- Output:
 % y [1  , 1]: f evaluated at x
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
-% 
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
-% 
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-% 
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
-% Email     : g.stanley@unsw.edu.au 
+% Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --
 % Changes     : --
 
 % Np2-2 is the polynomial's order. (e.g. Np2==4 for linear)
-Np2 = size(f,1); 
+Np2 = size(f,1);
 
 % Evaluate local coordinate:
 distL = x - f(1);
@@ -63,9 +61,9 @@ if distL < 0
 else
     
     xp = 1;
-    y = f(end); 
+    y = f(end);
     distR = x - f(2);
-
+    
     if distR > 0
         % Interpolate linearly from right.
         
@@ -76,7 +74,7 @@ else
         slope = 0;
         for k = 1:Np2-3
             slope = slope + k * f(Np2-k) * xp; % xp == (f(2)-f(1)) ^ (k-1)
-            xp = xp .* x; 
+            xp = xp .* x;
             y = y + f(Np2-k) * xp; % xp == (f(2)-f(1)) ^ k
         end
         

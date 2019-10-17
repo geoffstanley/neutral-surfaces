@@ -1,74 +1,80 @@
-# Topobaric Surface
-## Software to compute topobaric surfaces and geostrophic streamfunctions
+# Neutral Surfaces
+## Software for approximately neutral surfaces and geostrophic streamfunctions
 
-Topobaric surfaces are approximately neutral surfaces that are highly accurate, fast to
-compute, and possess an exact geostrophic streamfunction. Underlying topobaric surfaces
-is a multivalued functional relationship between the in-situ density and the pressure on
-a neutral surface. The single-valued branches of this function are valid on regions that
-are determined by the Reeb graph of the pressure on the surface. This software generates
-that Reeb graph from any other approximately neutral surface, then empirically fits the 
-density to the pressure using simple functions, then updates the surface such that the
-density on the surface matches that given by the these simple functions, repeating this
-procedure iteratively until the surface converges. 
+### Approximately Neutral Surfaces
 
-The exact geostrophic streamfunction on a hypothetical neutral surface exists but is 
-ill-defined. It is approximated by the topobaric geostrophic streamfunction, which 
-is well-defined and services any approximately neutral surface. It, too, is built upon
-a multivalued function relationship between in-situ density and pressure on a neutral
-surface. 
+In the absence of irreversible mixing, fluid parcels in the ocean move such that they are always at their level of neutral buoyancy with their environment.  This constrains the direction of flow lie in a plane, called the neutral tangent plane. This plane is well-defined at every point in the ocean.  A neutral surface is an extensive 2D surface that is everywhere aligned with the neutral tangent plane (McDougall 1987).  However, neutral surfaces are not well-defined 2D surfaces -- a consequence of the non-linear equation of state for the density of seawater, and the resulting non-zero neutral helicity in the ocean (McDougall and Jackett 1988).  Hence, physical oceanographers craft approximately neutral surfaces, which are well-defined extensive 2D surfaces that are everywhere approximately aligned with the neutral tangent plane.  The following approximately neutral surfaces may be calculated with this software package. 
 
-A simpler variant of the topobaric geostrophic streamfunction is the orthobaric Montgomery
-potential, which inverts the problem and fits the pressure as a single-valued function of
-the density on a surface.
+#### Potential density surfaces
 
+The potential density (Wust 1935) is the density a seawater parcel would have if adiabatically and isentropically moved to a given reference pressure.  A potential density surface is an isosurface of the 3D potential density field. 
 
-## References:
-Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling 138, 88–106. https://doi.org/10.1016/j.ocemod.2019.01.008
+#### Specific volume anomaly surfaces
 
-Stanley, G.J., 2019b. The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling 138, 107–121. https://doi.org/10.1016/j.ocemod.2019.04.002
+The specific volume anomaly (Montgomery 1937) is the difference between the  in-situ specific volume and the specific volume of a seawater parcel at the local pressure but having a reference practical / Absolute salinity and a reference potential / Conservative temperature.   A specific volume anomaly surface is an isosurface of the 3D specific volume anomaly field.  In the Boussinesq approximation, it is more useful to consider the in-situ density anomaly (defined similarly) and its isosurfaces. 
 
+#### Omega surfaces
 
-## Requirements:
-MATLAB 2016b or higher (tested on 2017b and 2018b) with
- - the Image Processing Toolbox (for bwconncomp), and
- - the Optimization Toolbox (for lsqlin)
+Omega surfaces (Klocker et al., 2009) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
+
+#### Topobaric surfaces
+
+Topobaric surfaces (Stanley 2019a) are approximately neutral surfaces that are highly accurate, fast to compute, and possess an exact geostrophic streamfunction (though it is ill-defined, as it is for truly neutral surfaces). Topobaric surfaces are built from a multivalued functional relationship between the in-situ density and the pressure that exists on a truly neutral surface, or on a topobaric surface. The single-valued branches of this function are valid on regions that are determined by the Reeb graph of the pressure on the surface. Topobaric surfaces are constructed from an initial approximately neutral surface of any quality using an iterative procedure.  Each iteration calculates the Reeb graph, empirically fits the density to the pressure using simple functions, then updates the surface such that the density on the surface matches that given by the these simple functions. 
+
+Modified topobaric surfaces are similar to topobaric surfaces, but their empirical fits have extra constraints that ensure these surfaces possess an exact geostrophic streamfunction that is well-defined. 
+
+#### Orthobaric surfaces
+
+Topobaric surfaces are the topologically correct extension of isosurfaces of orthobaric density (de Szoeke et al. 2000) to possess geographical dependence of the functional relationship between pressure and in-situ density.  This software can compute orthobaric surfaces as a special case of topobaric surfaces, though it does not compute isosurfaces of the 3D orthobaric density defined by de Szoeke et al. (2000). 
+
+### Geostrophic streamfunctions
+
+Some approximately neutral surfaces possess an exact geostrophic streamfunction (GSF), while others do not.  Those that do include specific volume anomaly surfaces, orthobaric density surfaces, and modified topobaric surfaces.  (Truly neutral surfaces and topobaric surfaces both possess exact GSFs but they are ill-defined.) 
+
+The exact GSF on a specific volume anomaly surface is the Montgomery (1937) potential.  Using this on other surfaces introduces an error in the geostrophic velocity estimation.  Zhang and Hogg (1992) noted this and derived a simply modification to the Montgomery (1937) potential to minimize this error.  McDougall and Klocker (2010) extend the Zhang and Hogg (1992) GSF for approximately neutral surfaces, while Cunningham (2000) present a GSF useful for inverse estimates.
+
+The "orthobaric Montgomery potential" defined by Stanley (2019b) generalizes the Zhang and Hogg (1992) extension of the Montgomery (1937) potential, by approximating the pressure as a single-valued function of density on the surface.  This is a simple and highly accurate GSF. 
+
+McDougall (1989) proved that an exact GSF does exist, at least locally, on a truly neutral surface.  Stanley (2019b) derived the form of this exact GSF, based on the multivalued functional relation between density and pressure on a neutral surface, but showed that this exact GSF is ill-defined (does not exist globally).  Nonetheless, Stanley (2019b) defined the "topobaric GSF" that is well-defined and approximates the exact GSF for neutral surfaces.  The topobaric GSF can be used on any approximately neutral surface with extremely good accuracy, and is exact on modified topobaric surfaces. 
 
 
 ## Contents:
-- ./COPYING         - GNU general public license
-- ./COPYING.lesser  - GNU lesser general public license
-- ./fex/            - software from the MATLAB file exchange
-- ./lib/            - extra libraries for analysing surfaces, and computing geostrophic streamfunctions
-- ./lib/eos/        - alternative versions of the equation of state (JMD1995, TEOS-10)
-- ./run/            - example scripts
-- ./src/            - source code for topobaric surfaces
-- ./src/private/    - internal functions for topobaric surfaces
-- ./src/recon/      - modified ReCon software
-- ./README.md       - this file
+- ./fex/            					- software from the MATLAB file exchange
+- ./lib/            					- libraries (e.g. surface analysis, equations of state, geostrophic streamfunctions)
+- ./run/            					- example scripts
+- ./omega-surface/ 					    - create omega surfaces
+- ./potential-density-surface/ 			- create potential density surfaces
+- ./specific-volume-anomaly-surface/	- create specific volume anomaly surfaces
+- ./topobaric-surface/ 					- create topobaric surfaces, modified topobaric surfaces, and orthobaric surfaces
+- ./LICENSE         					- GNU general public license
+- ./ns_add_to_path.m 					- function to add relevant subfolders to MATLAB's path
+- ./ns_install.m 						- function to install this package
+- ./README.md       					- this file
 
-In particular,
-- ./src/topobaric_surface.m     - create topobaric surfaces (Stanley 2019a)
-- ./src/topobaric_geostrf.m     - create topobaric geostrophic streamfunction (Stanley 2019b)
-- ./lib/orthobaric_montgomery.m - create orthobaric Montgomery potentials (Stanley 2019b)
-- ./lib/zhanghogg92.m           - create Zhang and Hogg (1992) geostrophic streamfunctions
-- ./lib/mcdougallklocker10.m    - create McDougall and Klocker (2010) geostrophic streamfunctions
-- ./lib/cunningham00.m          - create Cunningham (2000) geostrophic streamfunctions
-- ./lib/isopycnal.m             - create potential density surfaces
-- ./lib/deltasurf.m             - create specific volume anomaly or in-situ density anomaly surfaces
+In addition, the following functions calculate geostrophic streamfunctions:
+- ./topobaric-surface/topobaric_geostrf.m   - create topobaric GSF (Stanley 2019b)
+- ./lib/gsf/zhanghogg92.m           		- create Zhang and Hogg (1992) GSF
+- ./lib/gsf/cunningham00.m          		- create Cunningham (2000) GSF
+- ./lib/gsf/mcdougallklocker10.m    		- create McDougall and Klocker (2010) GSF
+- ./lib/gsf/orthobaric_montgomery.m 		- create orthobaric Montgomery potential (Stanley 2019b)
+
+
+## Requirements:
+MATLAB 2016b or higher (tested on 2017b and 2018b) with the Optimization Toolbox
 
 
 ## Installation:
-Run the following commands in MATLAB, replacing 
-  ~/work/dphil/projects/Topobaric-Surface/
-with the path to this README.md file
+Run the following command in MATLAB, replacing 
+  ~/work/neutral-surfaces/
+with the path to this README.md file:
 ```
->> cd('~/work/dphil/projects/Topobaric-Surface/run')
->> topobaric_surface_install();
+>> run('~/work/neutral-surfaces/ns_install.m')
 ```
+If this does not work, see manual_install.md. 
 
 
 ## Usage:
-./run/examples.m gives examples to create a topobaric surface, a topobaric geostrophic streamfunction, the orthobaric Montgomery potential, and other geostrophic streamfunctions from the literature.
+./run/examples.m gives examples to create the approximately neutral surfaces and geostrophic streamfunctions provided in this toolbox
 
 ./run/run_ECCO2.m generates most figures in “Neutral surface topology” and “The exact geostrophic streamfunction for neutral surfaces”.
 
@@ -76,47 +82,7 @@ with the path to this README.md file
 
 ./run/pitch.m generates Figure B.7 in “Neutral surface topology”.
 
-Note, these were originally run on MATLAB 2017b and 2018b on a Mac. 
-Running on Linux is known to produce cosmetic colour and font differences.
-
-
-
-## MATLAB software:
-Additional MATLAB software from the MATLAB File Exchange is provided in ./fex/
-
-* binsrchn  by  Geoff Stanley
-    https://www.mathworks.com/matlabcentral/fileexchange/70108
-* bisectguess  by  Geoff Stanley
-    https://www.mathworks.com/matlabcentral/fileexchange/69710
-* bfs, scomponents in the GAIMC toolbox  by  David F. Gleich
-    https://www.mathworks.com/matlabcentral/fileexchange/24134
-* catstruct  by  Jos van der Geest
-    https://www.mathworks.com/matlabcentral/fileexchange/7842
-* CC2periodic  by  Geoff Stanley
-    https://www.mathworks.com/matlabcentral/fileexchange/66079
-* columncalculus  by  Geoff Stanley
-    https://www.mathworks.com/matlabcentral/fileexchange/69713
-* % distinguishable_colors  by   Tim Holy
-    https://www.mathworks.com/matlabcentral/fileexchange/29702
-* % export_fig  by  Yair Altman
-    https://www.mathworks.com/matlabcentral/fileexchange/23629
-* PriorityQueue  by  Andrew Woodward
-    https://www.mathworks.com/matlabcentral/fileexchange/69142
-* splinefit, ppint  by  Jonas Lundgren
-    https://www.mathworks.com/matlabcentral/fileexchange/13812
-* % subaxis  by  Aslak Grinsted
-    https://www.mathworks.com/matlabcentral/fileexchange/3696
-* % textborder  by  Joao Henriques
-    https://www.mathworks.com/matlabcentral/fileexchange/27383
-* % wprctile  by  Durga Lal Shrestha
-    https://www.mathworks.com/matlabcentral/fileexchange/16920
-
-% optional: not required to compute topobaric surfaces, but used by scripts in ./run/
-
-Note, a small modification has been made to line 25 of GAIMC’s bfs.m, which originally read:
-  if ~exist('target','var') || isempty(full), target=0; end
-It now reads:
-  if nargin < 3 || isempty(target), target = 0; end
+Note, to reproduce the figures of Stanley (2019a,b) exactly, use the v1.0 Topobaric-Surface code available at https://github.com/geoffstanley/Topobaric-Surface
 
 
 ## ReCon
@@ -133,212 +99,45 @@ The ReCon code included with Topobaric Surface has been modified to work with do
 Note that ReCon requires Java 1.5 or higher, though it must be built for the version of the Java Runtime Environment that is packaged with MATLAB.  
 
 
+## References:
+Cunningham, S.A., 2000. Circulation and volume flux of the North Atlantic using synoptic hydrographic data in a Bernoulli inverse. Journal of marine research 58, 1–35. https://doi.org/10.1357/002224000321511188
 
-## Manual Installation:
-If running topobaric_surface_install() does not work, please email the author (who wants to know what went wrong).  You can also try the following manual installation instructions.
+de Szoeke, R.A., Springer, S.R., Oxilia, D.M., 2000. Orthobaric density: A thermodynamic variable for ocean circulation studies. Journal of physical oceanography 30, 2830–2852.
 
-Below, PATH_TOPOBARIC_SURFACE is a generic stand-in for the path to this file.
+Doraiswamy, H. & Natarajan, V. Computing Reeb Graphs as a Union of Contour Trees. IEEE Transactions on Visualization and Computer Graphics 19, 249–262 (2013).
 
-If you will use a bash shell, start by entering the following command,
-modified to use the path to the location of this file, in a bash shell: 
-```
-  PATH_TOPOBARIC_SURFACE=~/work/dphil/projects/Topobaric-Surface
-```
+Klocker, A., McDougall, T.J., Jackett, D.R., 2009. A new method for forming approximately neutral surfaces. Ocean Science 5, 155–172. https://doi.org/10.5194/os-5-155-2009
 
-### Step 1: Check MATLAB version
-  In MATLAB, run the following command:
-  ```
-  >> version 
-  ```
-  Ensure that the output is something greater than or equal to than 9.1 (R2016b).
-  If not, you must update MATLAB to use Topobaric Surface. 
+McDougall, T.J., 1989. Streamfunctions for the lateral velocity vector in a compressible ocean. Journal of Marine Research 47, 267–284. https://doi.org/10.1357/002224089785076271
 
-### Step 2: Install recon.jar 
-In MATLAB, run
-```
->> version('-java')
-```
-The first numbers below indicate MATLAB's Java Runtime Environment (JRE) version.
+McDougall, T.J., 1987. Neutral Surfaces. Journal of Physical Oceanography. https://doi.org/10.1175/1520-0485(1987)017<1950:NS>2.0.CO;2
 
-If this is 1.7 or 1.8:
+McDougall, T.J., Jackett, D.R., 1988. On the helical nature of neutral trajectories in the ocean. Progress in Oceanography 20, 153–183. https://doi.org/10.1016/0079-6611(88)90001-8
 
-Copy (or move) recon_1.7.jar or recon_1.8.jar to recon.jar, located in $PATH_TOPOBARIC_SURFACE/src/recon/build/  
-For example, run the following in bash (changing 1.8 to 1.7 as appropriate):
-```
-cp $PATH_TOPOBARIC_SURFACE/src/recon/build/recon_1.8 $PATH_TOPOBARIC_SURFACE/src/recon/build/recon.jar
-```
-Continue to Step 3.
+Montgomery, R., 1937. A suggested method for representing gradient flow in isentropic surfaces. Bull. Amer. Meteor. Soc 18, 210–212.
 
-Otherwise:
-You can compile ReCon yourself, or contact the author requesting an update.
+Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling 138, 88–106. https://doi.org/10.1016/j.ocemod.2019.01.008
 
-To compile ReCon yourself,
-- Install Java Development Kit (JDK) and Apache Ant:
-  - On Ubuntu:
-    sudo apt install default-jdk ant
-  - On MacOS:
-    - Install (the most recent version of) the JDK following instructions from
-      https://www.oracle.com/technetwork/java/javase/downloads/index.html
-    - Install homebrew following instructions from 
-      https://brew.sh/
-    - Install Apache Ant by the following command in Terminal:
-      brew install ant
-  - On Windows:
-    - Install (the most recent version of) the JDK following instructions from
-      https://www.oracle.com/technetwork/java/javase/downloads/index.html
-    - Install Apache Ant, following instructions from
-      https://ant.apache.org/manual/install.html
-- Edit the text file PATH_TOPOBARIC_SURFACE/src/recon/build.xml and replace each instance of "1.8" in the <javac ...> lines to specify MATLAB's JRE version.
-    Alternatively, run the following commands in bash, replacing ??? below with MATLAB's JRE version -- with the period escaped, e.g. 1.8 is entered as 1\.8 
-    ```
-    sed -i "s/1\.8/???/g" $PATH_TOPOBARIC_SURFACE/src/recon/build.xml
-    ```
-- Compile ReCon: run the following command in a shell
-  ```
-  ant -buildfile $PATH_TOPOBARIC_SURFACE/src/recon/build.xml
-  ```
-- Confirm the existence of the file $PATH_TOPOBARIC_SURFACE/src/recon/build/recon.jar
+Stanley, G.J., 2019b. The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling 138, 107–121. https://doi.org/10.1016/j.ocemod.2019.04.002
 
-### Step 3: Add ReCon to MATLAB's javaclasspath
-In MATLAB, run
-```
->> prefdir
-```
-to determine MATLAB's preferences directory. 
+Wüst, G., 1935. The stratosphere of the Atlantic ocean. Scientific Results of the German Atlantic Expedition of the Research Vessel “Meteor” 1925–27 6.
 
-Create a text file in this directory called javaclasspath.txt if it does not already exist.
-
-Add the following line to javaclasspath.txt
-```
-$PATH_TOPOBARIC_SURFACE/src/recon/build/recon.jar
-```
-Alternatively, run the following commands in a shell, replacing ~/Documents/MATLAB with the output of MATLAB's prefdir:
-```
-PREFDIR=~/Documents/MATLAB
-echo $PATH_TOPOBARIC_SURFACE/src/recon/build/recon.jar" >> $PREFDIR/javaclasspath.txt
-```
-  
-
-### Step 4: Increase memory that MATLAB allocates to Java
-In MATLAB, navigate to Preferences -> General -> Java HEAP Memory
-
-Move the slider far to the right.
-
-e.g. the default value is 512 MB, and you increase it to 2048 MB.
-
-### Step 5: Setup MEX with C
-Note, this step is optional, but highly recommended for speed of execution.
-
-In MATLAB, run
-```
->> mex('-setup', 'C')
-```
-If that fails, ensure you have a C compiler installed on your system.
-- On Ubuntu: sudo apt install gcc
-- On MacOS: Install Xcode from the App Store (to get clang)
-- On Windows: Install gcc via cygwin following instructions (and links therein) at
-   https://gcc.gnu.org/install/binaries.html
-   
-Then try the above mex command in MATLAB again (perhaps restarting MATLAB prior).
-
-### Step 6: Add Topobaric Surface to MATLAB's search path
-  In MATLAB, run
-  ```
-  >> userpath
-  ```
-  The output is your user path. 
-  Create a text file in this directory called startup.m if it does not already exist.
-  Add the following lines to the end of startup.m:
-  ```
-  % Add Topobaric Surface
-  tmp_STARTUP_PATH = pwd();
-  cd(['$PATH_TOPOBARIC_SURFACE' filesep 'run']);
-  topobaric_surface_add_to_path();
-  cd(tmp_STARTUP_PATH);
-  clearvars tmp_STARTUP_PATH
-  ```
-
-### Step 7: Restart MATLAB. Confirm that the output of
-```
->> javaclasspath
-```
-has recon.jar in the last line. 
-
-### Step 8: Download and link data 
-This step is optional, only necessary to run the scripts in $PATH_TOPOBARIC_SURFACE/run
-
-Download the ECCO2 and OCCA files by running the following in a bash shell, replacing the paths assigned to $ECCO2 and $OCCA with your own choices:
-```
-ECCO2=~/work/data/ECCO2/latlon
-wget -P $ECCO2/SALT/ ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/SALT.nc/SALT.1440x720x50.20021223.nc
-wget -P $ECCO2/THETA/ ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/THETA.nc/THETA.1440x720x50.20021223.nc 
-wget -P $ECCO2/UVEL/ ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/UVEL.nc/UVEL.1440x720x50.20021223.nc 
-wget -P $ECCO2/VVEL/ ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/VVEL.nc/VVEL.1440x720x50.20021223.nc 
-wget -P $ECCO2/SSH/ ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/SSH.nc/SSH.1440x720.20021222.nc
-wget -P $ECCO2/SSH/ ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/SSH.nc/SSH.1440x720.20021223.nc
-wget -P $ECCO2/SSH/ ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/SSH.nc/SSH.1440x720.20021224.nc
-wget -P $ECCO2/GAMMA/ https://ndownloader.figshare.com/files/14536058
-mv $ECCO2/GAMMA/14536058 $ECCO2/GAMMA/ GAMMA.1440x720x50.20021223.mat
-wget -P $ECCO2/omega_v1.1gjs https://ndownloader.figshare.com/files/14536061
-mv $ECCO2/omega_v1.1gjs/14536061 $ECCO2/omega_v1.1gjs/omega.1440x720.20021223.from_SIGMA1000_through_(180,0,1000).Boussinesq.mat
-wget -P $ECCO2/omega_v1.1gjs https://ndownloader.figshare.com/files/14536064
-mv $ECCO2/omega_v1.1gjs/14536064 $ECCO2/omega_v1.1gjs/omega.1440x720.20021223.from_SIGMA2000_through_(180,0,2000).Boussinesq.mat
-
-OCCA=~/work/data/OCCA
-wget -P $OCCA/ ftp://mit.ecco-group.org/ecco_for_las/OCCA_1x1_v2/2004-6/annual/DDsalt.0406annclim.nc
-wget -P $OCCA/ ftp://mit.ecco-group.org/ecco_for_las/OCCA_1x1_v2/2004-6/annual/DDtheta.0406annclim.nc
-wget -P $OCCA/ ftp://mit.ecco-group.org/ecco_for_las/OCCA_1x1_v2/2004-6/annual/DDphihyd.0406annclim.nc
-wget -P $OCCA/ ftp://mit.ecco-group.org/ecco_for_las/OCCA_1x1_v2/2004-6/annual/DDetan.0406annclim.nc
-wget -P $OCCA/omega_v1.1gjs https://ndownloader.figshare.com/files/14536133
-mv $OCCA/omega_v1.1gjs/14536133 $OCCA/omega_v1.1gjs/    omega.0406annclim.from_SIGMA1000_through_(180,0,1000).nonBoussinesq.mat
-
-printf $ECCO2 > $PATH_TOPOBARIC_SURFACE/run/PATH_ECCO2.txt
-printf $OCCA > $PATH_TOPOBARIC_SURFACE/run/PATH_OCCA.txt
-```
-
-Alternatively, manually download the data through a web browser.  Go to ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/ and to ftp://mit.ecco-group.org/ecco_for_las/OCCA_1x1_v2/2004-6/annual/ 
-
-Download the files named in the wget commands above, maintaining the directory structure as on the ftp site. 
-That is, if ~/work/data/ECCO2/latlon/ is your base ECCO2 data directory, then the SALT data file should be in 
-  ~/work/data/ECCO2/latlon/SALT.nc/SALT.1440x720x50.20021223.nc
-and similarly for others. 
-If ~/work/data/OCCA/ is your base OCCA data directory, then the SALT data file should be in
-  ~/work/data/OCCA/DDsalt.0406annclim.nc
-and similarly for others. 
-
-Then, download files from the following URLs to your local computer, editing local paths as necessary:
-- https://ndownloader.figshare.com/files/14536058 to ~/work/data/ECCO2/latlon/GAMMA/GAMMA.1440x720x50.20021223.mat
-- https://ndownloader.figshare.com/files/14536061 to ~/work/data/ECCO2/latlon/omega_v1.1gjs/omega.1440x720.20021223.from_SIGMA1000_through_(180,0,1000).Boussinesq.mat
-- https://ndownloader.figshare.com/files/14536064 to ~/work/data/ECCO2/latlon/omega_v1.1gjs/omega.1440x720.20021223.from_SIGMA2000_through_(180,0,2000).Boussinesq.mat
-- https://ndownloader.figshare.com/files/14536133 to ~/work/data/OCCA/omega_v1.1gjs/omega.0406annclim.from_SIGMA1000_through_(180,0,1000).nonBoussinesq.mat
-
-Then create a text file $PATH_TOPOBARIC_SURFACE/run/PATH_ECCO2.txt containing, as single line of text, the base ECCO2 data directory.
-Also create a text file $PATH_TOPOBARIC_SURFACE/run/PATH_OCCA.txt containing, as single line of text, the base OCCA data directory.
+Zhang, H.-M., Hogg, N.G., 1992. Circulation and water mass balance in the Brazil Basin. Journal of marine research 50, 385–420. https://doi.org/10.1357/002224092784797629
 
 
 ## Copyright:
-Copyright 2019 Geoff Stanley
+This file is part of Neutral Surfaces. Copyright (C) 2019  Geoff Stanley
 
-This file is part of Topobaric Surface.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-Topobaric Surface is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or (at
-your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Topobaric Surface is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Topobaric Surface.  If not, see
-<https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Author(s) : Geoff Stanley
 
-Email     : g.stanley@unsw.edu.au 
+Email     : g.stanley@unsw.edu.au
 
 Email     : geoffstanley@gmail.com
 
-Version   : 1.0
+Version   : 2.0.0

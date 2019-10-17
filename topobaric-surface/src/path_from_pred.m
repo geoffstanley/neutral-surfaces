@@ -2,7 +2,7 @@ function path = path_from_pred(pred,d,t)
 %PATH_FROM_PRED  Convert a predecessor array into a path to a vertex.
 %
 %
-% path = path_from_pred(pred,d,t) 
+% path = path_from_pred(pred,d,t)
 % returns the list of nodes on a walk from a source node to a target node
 % t. The predecessor array pred is a row vector such that
 %   pred(i) = 0 if node i is the source node,
@@ -17,7 +17,7 @@ function path = path_from_pred(pred,d,t)
 % path(i) is the i'th node in the walk from the source node to node t.
 % Typically, pred and d are output from a breadth-first search such as bfs
 % in the GAIMC toolbox.
-% 
+%
 % In the case that the node is the source or unreachable from the source,
 % then path is a scalar, the source node. These input cases must be handled
 % with care, for the output of path_from_pred in these cases are
@@ -28,34 +28,32 @@ function path = path_from_pred(pred,d,t)
 % pred [1, N]: predecessor array
 % d [1, N]: discovery time
 % t [1, 1]: target node
-% 
+%
 %
 % --- Output:
 % path [*, 1]: list of nodes in the walk from source node to target node.
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
-% 
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
-% 
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-% 
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
-% Email     : g.stanley@unsw.edu.au 
+% Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --

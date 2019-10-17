@@ -44,38 +44,37 @@ function gsf = orthobaric_montgomery(s, t, x, X, M, Y, s0, t0, OPTS, varargin)
 % depths Z, with gravitational acceleration grav and Boussinesq reference
 % density rho_c, and with equation of state for the in-situ density given
 % by eos.m in the path. The in-situ density should be calculated by R =
-% eos(S, T, Z * 1e-4 * grav * rho_c) where S is the practical / Absolute
-% salinity and T is the potential / Conservative temperature at the depths
-% Z. The hydrostatic acceleration potential should be calculated as Y =
-% hsap3(Z, ATMP, ETAN, R, grav, rho_c), where ATMP is the atmospheric
-% pressure and ETAN is the sea-surface height. If s0 or t0 are empty, they
-% are both taken as the values of s and t, respectively, where z is a
-% maximum; this is done separately for each connected region of the
-% surface. Inputs s and t may instead be S and T, in which case s and t is
-% determined by linear interpolation of S and T through Z onto z.
-% Algorithmic parameters are determined by OPTS. On each connected region
-% of the surface, the depth is fit as a spline function of the in-situ
-% density anomaly (the in-situ density minus that using the reference
-% values s0 and t0) of order OPTS.SPLINE_ORDER and having at most
-% OPTS.SPLINE_PIECES number of pieces. To determine the connected regions,
-% the surface is treated as periodic in its first dimension (longitude) if
-% OPTS.WRAP(1) is true, and likewise treated periodic in its second
-% dimension (latitude) if OPTS.WRAP(2) is true. Note z and Z must be
-% positive and increase downwards.
+% eos(S, T, Z) where S is the practical / Absolute salinity and T is the
+% potential / Conservative temperature at the depths Z. The hydrostatic
+% acceleration potential should be calculated as Y = hsap3(Z, ATMP, ETAN,
+% R, grav, rho_c), where ATMP is the atmospheric pressure and ETAN is the
+% sea-surface height. If s0 or t0 are empty, they are both taken as the
+% values of s and t, respectively, where z is a maximum; this is done
+% separately for each connected region of the surface. Inputs s and t may
+% instead be S and T, in which case s and t is determined by linear
+% interpolation of S and T through Z onto z. Algorithmic parameters are
+% determined by OPTS. On each connected region of the surface, the depth is
+% fit as a spline function of the in-situ density anomaly (the in-situ
+% density minus that using the reference values s0 and t0) of order
+% OPTS.SPLINE_ORDER and having at most OPTS.SPLINE_PIECES number of pieces.
+% To determine the connected regions, the surface is treated as periodic in
+% its first dimension (longitude) if OPTS.WRAP(1) is true, and likewise
+% treated periodic in its second dimension (latitude) if OPTS.WRAP(2) is
+% true. Note z and Z must be positive and increase downwards.
 %
 %
 % --- Input:
-% s [nx, ny] or [nz, nx, ny]: the practical / Absolute salinity, 
+% s [ni, nj] or [nk, ni, nj]: the practical / Absolute salinity,
 %  on the surface, or at all data sites
-% t [nx, ny] or [nz, nx, ny]: the potential / Conservative temperature
+% t [ni, nj] or [nk, ni, nj]: the potential / Conservative temperature
 %  on the surface, or at all data sites
-% p [nx, ny]: pressure on surface [dbar]
-% z [nx, ny]: depth on surface [m, positive]
-% P [nz, nx, ny] or [nz, 1]: pressure at all data sites [dbar]
-% Z [nz, nx, ny] or [nz, 1]: depth at all data sites [m, positive]
-% A [nz, nx, ny]: specific volume [m^3 kg^-1]
-% R [nz, nx, ny]: in-situ density [kg m^-3]
-% Y [nz, nx, ny]: acceleration potential from hydrostatic balance [m^2 s^-2]
+% p [ni, nj]: pressure on surface [dbar]
+% z [ni, nj]: depth on surface [m, positive]
+% P [nk, ni, nj] or [nk, 1]: pressure at all data sites [dbar]
+% Z [nk, ni, nj] or [nk, 1]: depth at all data sites [m, positive]
+% A [nk, ni, nj]: specific volume [m^3 kg^-1]
+% R [nk, ni, nj]: in-situ density [kg m^-3]
+% Y [nk, ni, nj]: acceleration potential from hydrostatic balance [m^2 s^-2]
 % s0 [1, 1] or []: reference s value
 % t0 [1, 1] or []: reference t value
 % OPTS [struct]: algorithmic parameters.
@@ -85,23 +84,20 @@ function gsf = orthobaric_montgomery(s, t, x, X, M, Y, s0, t0, OPTS, varargin)
 % grav [1, 1]: gravitational acceleration [m s^-2]
 % rho_c [1, 1]: Boussinesq reference density [kg m^-3]
 %
-% Note: nz is the maximum number of data points per water column,
-%       nx is the number of data points in longitude,
-%       ny is the number of data points in latitude.
+% Note: nk is the maximum number of data points per water column,
+%       ni is the number of data points in longitude,
+%       nj is the number of data points in latitude.
 %
 % Note: physical units for s, t, s0, and t0 are determined by eos.m.
 %
 %
 % --- Output:
-% gsf [nx, ny]: geostrophic stream function [m^2 s^-2]
+% gsf [ni, nj]: geostrophic stream function [m^2 s^-2]
 %
 %
 % --- Requirements:
 % hsap2
-% bwconncomp, labelmatrix - Image Processing Toolbox
-% CC2periodic - https://www.mathworks.com/matlabcentral/fileexchange/66079
 % splinefit, ppint - https://www.mathworks.com/matlabcentral/fileexchange/13812
-% interp1qn2 - https://www.mathworks.com/matlabcentral/fileexchange/69713
 %
 %
 % --- References:
@@ -109,28 +105,26 @@ function gsf = orthobaric_montgomery(s, t, x, X, M, Y, s0, t0, OPTS, varargin)
 % surfaces. Ocean Modelling, submitted.
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
 %
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
 %
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-%
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --
@@ -140,19 +134,28 @@ db2Pa = 1e4;  % Conversion from [dbar] to [Pa]
 
 % Input checking
 narginchk(9,11);
-BOUSSINESQ = (nargin == 11);
 
-[nx,ny] = size(x);
-nz = size(X,1);
-is1D = @(F) ismatrix(F) && all(size(F) == [nz,1]);
-is2D = @(F) ismatrix(F) && all(size(F) == [nx,ny]);
-is3D = @(F) ndims(F) == 3 && all(size(F) == [nz,nx,ny]);
+% First check for interpolation function handle as the last argument
+if nargin > 9 && isa(varargin{end}, 'function_handle')
+    interpfn = varargin{end};
+    varargin = varargin(1:end-1);
+else
+    interpfn = @interp1qn2;
+end
+
+BOUSSINESQ = length(varargin) == 2; % grav and rho_c provided
+
+[ni,nj] = size(x);
+nk = size(X,1);
+is1D = @(F) ismatrix(F) && all(size(F) == [nk,1]);
+is2D = @(F) ismatrix(F) && all(size(F) == [ni,nj]);
+is3D = @(F) ndims(F) == 3 && all(size(F) == [nk,ni,nj]);
 lead1 = @(x) reshape(x, [1 size(x)]);
 
-assert((is2D(s) || is3D(s)), 'S must be [nx,ny] or [nz,nx,ny]');
+assert((is2D(s) || is3D(s)), 'S must be [ni,nj] or [nk,ni,nj]');
 assert(all(size(s) == size(t)), 'S and T must be the same size');
-assert(is1D(X) || is3D(X), 'X must be [nz,1] or [nz,nx,ny]');
-assert(is2D(x), 'x must be [nx,ny]');
+assert(is1D(X) || is3D(X), 'X must be [nk,1] or [nk,ni,nj]');
+assert(is2D(x), 'x must be [ni,nj]');
 
 assert(isstruct(OPTS), 'OPTS must be a struct')
 assert(isfield(OPTS, 'WRAP') && isvector(OPTS.WRAP) && length(OPTS.WRAP) == 2, 'OPTS.WRAP must be a vector of length 2');
@@ -176,29 +179,27 @@ else
 end
 
 if is3D(s) % Interpolate 3D s and t onto the surface
-    try
-        [s,t] = interp1qn2_mex(lead1(x), X, s, t);
-    catch
-        [s,t] = interp1qn2(lead1(x), X, s, t);
-    end
+    [s,t] = interpfn(lead1(x), X, s, t);
 end
 
 % Find the connected regions
-ocean = isfinite(x);
-CC_ocean = CC2periodic(bwconncomp(ocean, 4), OPTS.WRAP, 'CC');
+wet = isfinite(x);
+neigh = grid_adjacency([ni,nj], OPTS.WRAP, 4);
+[qu,qts,ncc] = bfs_conncomp(wet, neigh);
 
 % The number of data points in the largest connected region
-maxpix = max(cellfun('length', CC_ocean.PixelIdxList));
+maxpix = max(diff(qts));
+
 
 % Use s0 and t0 if provided, otherwise use the s and t values found where p
 % is a maximum (deepest part of the surface) in each connected region.
-if isscalar(s0) && isscalar(t0) 
+if isscalar(s0) && isscalar(t0)
     [y0, m0] = hsap2(s0, t0, x, varargin{:});
 else
-    y0 = nan(nx,ny);
-    m0 = nan(nx,ny);
-    for l = 1 : CC_ocean.NumObjects
-        reg = CC_ocean.PixelIdxList{l};
+    y0 = nan(ni,nj);
+    m0 = nan(ni,nj);
+    for l = 1 : ncc
+        reg = qu(qts(l) : qts(l+1)-1);
         x_ = x(reg);
         s_ = s(reg);
         t_ = t(reg);
@@ -220,9 +221,9 @@ gsf = y - y0 + fac * d .* x;
 
 % For each connected region, add an integral of p as a function of d to the
 % geostrophic stream function
-for l = 1 : CC_ocean.NumObjects
+for l = 1 : ncc
     
-    reg = CC_ocean.PixelIdxList{l};
+    reg = qu(qts(l) : qts(l+1)-1);
     d_ = d(reg);
     x_ = x(reg);
     

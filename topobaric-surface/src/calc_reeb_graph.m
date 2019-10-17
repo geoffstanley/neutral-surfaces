@@ -1,41 +1,44 @@
-function [p, ocean, arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes] = calc_Reeb_graph(p, OPTS)
-%CALC_REEB_GRAPH  Calculate the Reeb graph
+function [x, varargout] = calc_reeb_graph(x, OPTS)
+%CALC_REEB_GRAPH  Calculate the Reeb graph of x
 %
 %
-% [p, ocean, arc_from, arc_to, arc_segment, node_prev, node_next, node_type,
-% node_fn, node_v, nArcs, nNodes] = calc_Reeb_graph(p, OPTS)
+% [x, RG] = calc_reeb_graph(x, OPTS)
 % performs the following steps:
-% 1, fill small holes with high data in the given rectilinear data p (if
+% 1, fill small holes with high data in the given rectilinear data x (if
 %    OPTS.FILL_PIX is positive or OPTS.FILL_IJ is not empty);
-% 2, build a simplical mesh given rectilinear data in p;
-% 3, select a single connected component of that mesh;
-% 4, perturb the data p on that mesh until all values are unique;
-% 5, calculate the Reeb graph of p on that mesh, using the ReCon software
+% 2, build a simplical mesh given rectilinear data in x;
+% 3, perturb the data x on that mesh until all values are unique;
+% 4, calculate the Reeb graph of x on that mesh, using the ReCon software
 %    (Doraiswamy and Natarajan, 2013);
-% 6, post-process the Reeb graph to take out any holes that were filled with
+% 5, post-process the Reeb graph to take out any holes that were filled with
 %    high data
-% 7, simplify the Reeb graph (if it has more arcs than
+% 6, simplify the Reeb graph (if it has more arcs than
 %    OPTS.SIMPLIFY_ARC_REMAIN).
 %
 %
 % --- Input:
-% p [nx, ny]: rectilinear data
+% x [ni, nj]: rectilinear data, containing exactly ONE connected component
+%             (where each pixel has 4 neighbours, not 8), as can be found
+%             using bfs_conncomp(). 
 % OPTS [struct]: options. See topobaric_surface documentation for details.
 %
 %
 % --- Output:
-% p [nx, ny]: same as the input p, but nan where outside the chosen
-%             connected component of the simplical mesh
-% ocean, arc_from, arc_to, arc_segment, node_prev, node_next, node_type,
-%   node_fn, node_v, nArcs, nNodes: fields of the Reeb graph. See
-%   topobaric_surface documentation for details.
+% x [ni, nj]: identical to the input x but possibly having some values
+%             perturbed by an amount near machine precision.  The input
+%             and output x have identical finite vs NaN structure. 
+% RG [struct]: The Reeb graph. See topobaric_surface.m for details.
+%
+% If more than two outputs are requested, the first output is x and the
+% rest of the outputs are the following fields of RG: arc_from, arc_to,
+% arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs,
+% nNodes, wet, n_casts.
 %
 %
 % --- Requirements:
+% bfs_conncomp, grid_adjacency
 % ReCon, including modifications to call pack() and run() - ../recon/
-% bwconncomp, labelmatrix - Image Processing Toolbox
-% CC2periodic - https://www.mathworks.com/matlabcentral/fileexchange/66079
-% latlon2vertsfaces, perturb_until_unique, SimplifyReebGraph
+% latlon2vertsfaces, perturb_until_unique, simplify_reeb_graph
 %
 %
 % --- References:
@@ -44,63 +47,72 @@ function [p, ocean, arc_from, arc_to, arc_segment, node_prev, node_next, node_ty
 % 19, 249?262 (2013).
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
 %
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
 %
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-%
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --
 % Changes     : --
 
-% --- Pre-processing 1: Select one connected region of the ocean, and possibly fill in small holes
+
+[ni,nj] = size(x);
+
+% wet: a logical map where x is valid. As this function proceeds, wet ==
+% isfinite(x) is maintained.  wet at the end of this function is identical
+% to wet at the start of this function.  That is, isfinite(output x) ==
+% isfinite(input x).
+wet = isfinite(x);  
+
+
+OPTS = catstruct(tbs_defaults(ni,nj), OPTS);
+
+
+% --- Pre-processing 1: Fill in small or specific holes
 DO_FILL = OPTS.FILL_PIX > 0 || ~isempty(OPTS.FILL_IJ);
 if DO_FILL
     
-    Ground = isnan(p);
+    Ground = ~wet;
     
-    % Calculate connected components of Ground
-    CC_ground = CC2periodic(bwconncomp(Ground, 8), OPTS.WRAP, 'CC');
+    % Calculate connected components of Ground.  Use 8 connectivity here!
+    neigh = grid_adjacency([ni,nj], OPTS.WRAP, 8);
+    [qu,qts,~,~,L] = bfs_conncomp(Ground, neigh, []);
     
     % Set to false (will not fill) for land regions that have > specified number of pixels:
     if OPTS.FILL_PIX > 0
-        
-        npix = cellfun('length', CC_ground.PixelIdxList);
-        npix = npix(:).';
-        for i = find(npix > OPTS.FILL_PIX)
-            Ground(CC_ground.PixelIdxList{i}) = false;
+        npix = diff(qts);
+        for c = find(npix(:).' > OPTS.FILL_PIX)
+            Ground(qu(qts(c) : qts(c+1)-1)) = false;
         end
-        
     end
     
     % Set to false (will not fill) for any land regions that are connected
     % to specified locations (e.g. the continents and major islands)
     if ~isempty(OPTS.FILL_IJ)
-        L = labelmatrix(CC_ground);
         
         for I = 1:size(OPTS.FILL_IJ,1)
             i = OPTS.FILL_IJ(I,1);
             j = OPTS.FILL_IJ(I,2);
             if Ground(i,j)
-                Ground(CC_ground.PixelIdxList{L(i,j)}) = false ;
+                c = L(i,j);
+                Ground(qu(qts(c) : qts(c+1)-1)) = false ;
             end
         end
     end
@@ -108,24 +120,28 @@ if DO_FILL
     % Now fill in: It won't matter what values are put in there, so long as
     % they are all greater than all surrounding pixels.
     fill = find(Ground);
-    offset = max(p(:));
-    p(fill) = (1+offset) : (length(fill) + offset);
+    offset = max(x(:));
+    x(fill) = (1+offset) : (length(fill) + offset);
     
+    % And update wet, to maintain wet == isfinite(x) 
+    wet(fill) = true;
 end
 
 
 % --- Pre-processing 2: Make simplical decomposition
-% ij2v is a 2D map from pixel space to the vertex list.
-% That is, verts(ij2v(i,j),3) = p(i,j).
-% Note, nV == sum(ij2v(:) > 0)
-[verts,faces,ij2v,nV] = latlon2vertsfaces(p,OPTS.WRAP,[],[],OPTS.DECOMP,OPTS.REF_IJ);
-ocean = ij2v > 0; % true where the pixel is in the Simplical Decomposition
+[verts,faces,~,nV] = latlon2vertsfaces(x,OPTS.WRAP,[],[],OPTS.DECOMP,false);
+
+% Last argument (select) could be OPTS.REF_IJ as below, but we use false,
+% since we've pre-selected one connected region.
+%[verts,faces,~,nV] = latlon2vertsfaces(x,OPTS.WRAP,[],[],OPTS.DECOMP,OPTS.REF_IJ);
 
 % Ensure all vertices have unique values
 [verts(:,3), perturbed] = perturb_until_unique(verts(:,3));
 
 
 % --- Processing: the Reeb Graph (RG)
+% Note: Recon (version 1.0) can only handle surfaces with one connected
+% component.
 RAA = vgl.iisc.recon.incore.ReconAlgorithmAug;
 faces = int32(faces-1); % -1 because Java wants 0-indexing, but MATLAB does 1-indexing
 RAA.run(verts(:,1), verts(:,2), zeros(size(verts,1),1), verts(:,3), ...
@@ -154,26 +170,19 @@ nArcs       = RG.nArcs;
 nNodes      = RG.nNodes;
 
 
-% --- Post-processing 1: Update p to match the verts used in the Reeb graph
-% (if they were perturbed), and set p to nan on each pixel that is not a
-% vertex in the simplical decomposition (i.e. disconnected regions)
+% --- Post-processing 1: Update x to match the verts used in the Reeb graph
+% (if they were perturbed)
 if perturbed
-    if lower(OPTS.DECOMP(1)) == 'd'
-        % The simplical decomposition contains all vertices of the original rectangular grid
-        p(ocean) = verts(:,3);
-    else
-        % Just take those vertices that were from the original rectangular grid
-        p(ocean) = verts(1:nV,3);
-    end
+    % Just update those vertices that were from the original rectangular grid
+    x(wet) = verts(1:nV,3);
 end
-p(~ocean) = nan;
 clear verts
 
 
 % --- Post-processing 2: if holes were filled, fix node_v and arc_segments
 if DO_FILL
     % Adjust node_v
-    keep_verts = ~Ground(ocean);
+    keep_verts = ~Ground(wet);
     vertmap = cumsum(keep_verts);
     vertmap(~keep_verts) = 0; % Mark, as 0, any vertices (and nodes via node_v) that were inside filled regions
     if lower(OPTS.DECOMP(1)) == 'd'
@@ -187,19 +196,23 @@ if DO_FILL
         arc_segment{e} = vertmap(arc_segment{e}(keep_verts(arc_segment{e})));
     end
     
-
-    % Finally, reset any pixels that were filled to nan
-    p(fill) = nan;
     
-    % and update ocean
-    ocean = isfinite(p);
+    % Finally, reset any pixels that were filled to nan
+    x(fill) = nan;
+    
+    % And update wet, to maintain wet == isfinite(x) 
+    wet(fill) = false;
+    
+    % And update the number of casts
+    nV = nV - length(fill);
+    
 end
 
 % --- Post-processing 3: Simplify the Reeb Graph:
 if OPTS.SIMPLIFY_ARC_REMAIN < nArcs
     assert(OPTS.DECOMP(1) == 'd', 'Reeb graph simplification with CROSS simplical decomposition disabled')
     [arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes] ...
-        = SimplifyReebGraph( ...
+        = simplify_reeb_graph( ...
         arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, ...
         OPTS.SIMPLIFY_ARC_REMAIN, OPTS.SIMPLIFY_WEIGHT_PERSIST ...
         );
@@ -207,14 +220,14 @@ end
 
 % --- Integrity checks:
 %{
-assert(all(ocean(:) == isfinite(p(:))), 'ocean differs from where p is finite');
+assert(all(wet(:) == isfinite(x(:))), 'wet differs from where x is finite');
 
 livenodes = 0 < node_v & node_v <= nV;
 
-p_ = p(ocean);
-chk = p_(node_v(livenodes)) == node_fn(livenodes);
-assert(all(chk), 'Check failed: node_fn, node_v, and p_ are mismatched.');
-clear livenodes chk
+x_ = x(wet);
+chk = x_(node_v(livenodes)) == node_fn(livenodes);
+assert(all(chk), 'Check failed: node_fn, node_v, and x_ are mismatched.');
+clear livenodes chksimplify_reeb_graph
 
 for e = 1:nArcs
     assert( sum(e == node_next{arc_from(e)}) == 1, 'Arc from mismatch!' )
@@ -229,4 +242,36 @@ for n = 1:nNodes
     end
 end
 %}
+
+if nargout == 2
+    % Pack output into a struct
+    RG = struct();
+    RG.arc_from    = arc_from;
+    RG.arc_to      = arc_to;
+    RG.arc_segment = arc_segment;
+    RG.node_fn     = node_fn;
+    RG.node_next   = node_next;
+    RG.node_prev   = node_prev;
+    RG.node_type   = node_type;
+    RG.node_v      = node_v;
+    RG.nArcs       = nArcs;
+    RG.nNodes      = nNodes;
+    RG.wet         = wet;
+    RG.n_casts     = nV;
+    varargout{1} = RG;
+else
+    % Return a long list of outputs
+    varargout{1} = arc_from;
+    varargout{2} = arc_to;
+    varargout{3} = arc_segment;
+    varargout{4} = node_prev;
+    varargout{5} = node_next;
+    varargout{6} = node_type;
+    varargout{7} = node_fn;
+    varargout{8} = node_v;
+    varargout{9} = nArcs;
+    varargout{10} = nNodes;
+    varargout{11} = wet;
+    varargout{12} = nV;
+end
 

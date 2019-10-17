@@ -1,7 +1,7 @@
-function                [arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes] ...
-    = SimplifyReebGraph( arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, ...
+function                  [arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes] ...
+    = simplify_reeb_graph( arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, ...
     nArcRemain, WEIGHT_PERSIST )
-%SIMPLIFYREEBGRAPH  Simplify the Reeb Graph by leaf pruning.
+%SIMPLIFY_REEB_GRAPH  Simplify the Reeb Graph by leaf pruning.
 %
 %
 % --- Input:
@@ -21,7 +21,7 @@ function                [arc_from, arc_to, arc_segment, node_prev, node_next, no
 %
 % --- Output:
 % arc_from, arc_to, arc_id, arc_segment, node_prev, node_next, node_type,
-%   node_fn, node_v, nArcs: the simplified Reeb Graph. 
+%   node_fn, node_v, nArcs: the simplified Reeb Graph.
 %
 %
 % --- Algorithm:
@@ -49,28 +49,26 @@ function                [arc_from, arc_to, arc_segment, node_prev, node_next, no
 % Computational Geometry 43, 42?58 (2010).
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
-% 
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
-% 
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-% 
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
-% Email     : g.stanley@unsw.edu.au 
+% Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --
@@ -90,7 +88,7 @@ nArcAlive = nArcs; % counter for number of arcs remain alive
 
 
 %% --- Prepare for Leaf Pruning. Build Priority Queue
-PQ = PriorityQueue(1); 
+PQ = PriorityQueue(1);
 
 arc_persist = node_fn(arc_to) - node_fn(arc_from);
 WEIGHT_PERSIST = WEIGHT_PERSIST / max(arc_persist);
@@ -383,15 +381,15 @@ end
 %assert(~any(isnan(vertcat(node_prev{:}))), 'Node prev links broken!')
 %assert(~any(isnan(vertcat(node_next{:}))), 'Node next links broken!')
 
-function w = getweight(n1, n2, arc)
-
-    numpix = sum(cellfun('length', arc_segment(arcPart{arc}))); % Don't worry about occasional duplicate vertex (on nodes)
-    if node_v(n1) == 0 || node_v(n2) == 0
-        persist = 0;
-    else
-        persist = node_fn(n1) - node_fn(n2);
+    function w = getweight(n1, n2, arc)
+        
+        numpix = sum(cellfun('length', arc_segment(arcPart{arc}))); % Don't worry about occasional duplicate vertex (on nodes)
+        if node_v(n1) == 0 || node_v(n2) == 0
+            persist = 0;
+        else
+            persist = node_fn(n1) - node_fn(n2);
+        end
+        w = persist * WEIGHT_PERSIST + numpix * WEIGHT_NUMPIX;
     end
-    w = persist * WEIGHT_PERSIST + numpix * WEIGHT_NUMPIX;
-end
 
 end

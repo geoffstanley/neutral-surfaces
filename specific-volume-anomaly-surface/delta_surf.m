@@ -1,144 +1,104 @@
-function [p,d0,s0,t0] = deltasurf(S, T, P, s0, t0, var, tol, Z2P) %#codegen
+function [x,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, tolx, OPTS)
 %DELTASURF Specific volume anomaly surface by nonlinear solution in each water column.
 %
 %
-% p = deltasurf(S, T, P, s0, t0, d0, tol) 
-% finds the pressure p (with precision tol) of the isosurface d0 of delta =
-% eos(S,T,P) - eos(s0,t0,P) with reference practical / Absolute salinity s0
-% and reference potential / Conservative temperature t0, in an ocean with
-% practical / Absolute salinity S, potential / Conservative temperature T,
-% and pressure P, and equation of state for the specific volume given by
-% eos.m in the path.
+% x = delta_surf(S, T, X, s0, t0, d0, tolx)
+% finds pressure or depth x (with precision tolx) of the isosurface d0 of
+% delta = eos(S,T,X) - eos(s0,t0,X) with reference practical / Absolute
+% salinity s0 and reference potential / Conservative temperature t0, in an
+% ocean with practical / Absolute salinity S and potential / Conservative
+% temperature T at data sites where the pressure or depth is X.  The
+% equation of state is given by eos.m in MATLAB's path, which accepts S, T,
+% and X as its 3 inputs.  For a non-Boussinesq ocean, x and X are pressure
+% [dbar] and eos gives the specific volume.  For a Boussinesq ocean, x and
+% X are depth [m] positive and increasing down, and eos gives the in-situ
+% density.
 %
-% p = deltasurf(S, T, P, s0, t0, [i0, j0, p0], tol)
-% as above but finds the surface intersecting a reference cast given by
-% grid indices (i0,j0) at pressure p0.
+% [x, d0] = delta_surf(S, T, X, s0, t0, [i0, j0, x0], tolx)
+% as above but finds the delta isosurface, delta = d0, that intersects the
+% reference cast at grid indices (i0,j0) at pressure or depth x0.
 %
-% p = deltasurf(S, T, P, [], [], [i0, j0, p0], tol)
-% selects the reference practical / Absolute salinity s0 and reference
-% potential / Conservative temperature t0 by linearly interpolating S and T
-% at the reference cast (i0,j0) to pressure p0.
+% [x, d0, s0, t0] = delta_surf(S, T, X, [], [], [i0, j0, x0], tolx)
+% as above but also finds the reference practical / Absolute salinity s0
+% and reference potential / Conservative temperature t0 by interpolating S
+% and T at the reference cast (i0,j0) to pressure or depth x0.
 %
-% z = deltasurf(S, T, Z, s0, t0, d0, tol, Z2P) 
-% finds the depth z (with precision tol) of the isosurface d0 of delta =
-% eos(S,T,Z,Z2P) - eos(s0,t0,Z,Z2P) with reference practical / Absolute
-% salinity s0 and reference potential / Conservative temperature t0, in a
-% Boussinesq ocean with practical / Absolute salinity S and potential /
-% Conservative temperature T at depth Z, equation of state for the in-situ
-% density given by eos.m in the path, and depth to pressure conversion Z2P
-% (typically given by 1e-4 * rho_c * grav, where rho_c is the Boussinesq
-% reference density and grav is the gravitational acceleration).
-%
-% z = deltasurf(S, T, Z, s0, t0, [i0, j0, z0], tol, Z2P)
-% as above but finds the surface intersecting a reference cast given by
-% grid indices (i0,j0) at depth z0.
-%
-% z = deltasurf(S, T, Z, [], [], [i0, j0, z0], tol)
-% selects the reference practical / Absolute salinity s0 and reference
-% potential / Conservative temperature t0 by linearly interpolating S and T
-% at the reference cast (i0,j0) to depth z0.
-%
-% [...,d0,s0,t0] = deltasurf(...)
-% also returns the isovalue of the delta surface d0, the reference
-% practical / Absolute salinity s0, and the reference potential /
-% Conservative temperature t0.
+% ... = delta_surf(..., OPTS)
+% passes the OPTS struct to the code generation.  See
+% delta_surf_vertsolve_codegen.m for details.
 %
 %
 % --- Input:
-% S [nz, nx, ny]: practical / Absolute salinity
-% T [nz, nx, ny]: potential / Conservative temperature
-% P [nz, nx, ny]: pressure [dbar]
-% Z [nz, nx, ny] or [nz, 1]: depth [m, positive]
+% S [nk, ni, nj]: practical / Absolute salinity
+% T [nk, ni, nj]: potential / Conservative temperature
+% X [nk, ni, nj] or [nk, 1]: pressure [dbar] or depth [m, positive]
 % s0 [1, 1] or []: reference S
 % t0 [1, 1] or []: reference T
 % var [1, 1] or [1, 3]: isovalue of delta, or location to intersect
-% tol [1, 1]: precision of the pressure or depth of the surface [dbar or m]
-% Z2P [1, 1]: Boussinesq conversion from depth to pressure [m dbar^-1]
+% tolx [1, 1]: precision of the pressure [dbar] or depth [m] of the surface
+% OPTS [struct]: code generation options
 %
-% Note: nz is the maximum number of data points per water column,
-%       nx is the number of data points in longitude,
-%       ny is the number of data points in latitude.
+% Note: nk is the maximum number of data points per water column,
+%       ni is the number of data points in longitude,
+%       nj is the number of data points in latitude.
 %
-% Note: physical units for S, T, s0, and t0 are determined by eos.m. 
+% Note: physical units for S, T, X, x, d0, s0, t0, x0 are determined by eos.m.
 %
-% Note: P and Z increase monotonically along the first dimension. 
+% Note: X must increase monotonically along its first dimension.
 %
 %
 % --- Output:
-% p [nx, ny]: pressure of the delta surface [dbar]
-% z [nx, ny]: depth of the delta surface [m, positive]
-% d0 [1, 1]: isovalue of the delta surface [kg m^-3]
+% x [ni, nj]: pressure [dbar] or depth [m] of the delta surface
+% d0 [1, 1]: isovalue of the delta surface
 % s0 [1, 1]: reference S
 % t0 [1, 1]: reference T
 %
 %
 % --- Requirements:
-% eos
+% eos, interp_firstdim_twovars
 % bisectguess - https://www.mathworks.com/matlabcentral/fileexchange/69710
-% interp1qn, interp1qn2 - https://www.mathworks.com/matlabcentral/fileexchange/69713
-%
-%
-% --- Code generation:
-% codegen can be run as follows, for the Boussinesq version (modify as
-% needed for other input forms):
-% >> mexconfig = coder.config('mex');
-% >> mexconfig.ExtrinsicCalls = false;
-% >> mexconfig.ResponsivenessChecks = false;
-% >> mexconfig.IntegrityChecks = false;
-% >> type_S = coder.typeof(0, [nz, nx, ny], [false, false, false]);
-% >> type_Z  = coder.typeof(0, [nz, 1], [false, false]);
-% >> codegen('deltasurf', '-args', {type_S, type_S, type_P, 0, 0, [0, 0, 0], 0, 0}, '-config', mexconfig, '-o', 'deltasurf_mex');
+% interp1qn - https://www.mathworks.com/matlabcentral/fileexchange/69713
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
-% 
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
-% 
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-% 
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
-% Email     : g.stanley@unsw.edu.au 
+% Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --
 % Changes     : --
 
-[nz, nx, ny] = size(S); 
-[~,pj] = size(P);
-NP = nz * double(pj > 1);
+[nk, ni, nj] = size(S);
+[~,xj] = size(X);
+NX = nk * double(xj > 1);
 
 
-if nargin < 7 || isempty(tol)
-    tol = 1e-4;
+if nargin < 7 || isempty(tolx)
+    tolx = 1e-4;
 end
-BOUSSINESQ = nargin == 8 && isscalar(Z2P);
-if BOUSSINESQ
-    P = P * Z2P;
-    tol = tol * Z2P;
+if nargin < 8 || isempty(OPTS)
+    OPTS = struct(); % Let the code generation function decide
 end
 
-if eos(35,0,0) > 1
-    sortdir = 'ascend'; % eosis in-situ density, increasing in 3rd dim
-else
-    sortdir = 'descend'; % eos is specific volume, decreasing in 3rd dim
-end
-
-% Count number of valid bottles per cast
-BotK = squeeze(sum(isfinite(S),1));
+% Run codegen to create MEX function handling the main computation
+delta_surf_vertsolve_codegen(nk, ni, nj, isvector(X), OPTS);
 
 
 if isscalar(var)
@@ -149,64 +109,30 @@ else
     % var should be a 3 element vector
     i0 = var(1);
     j0 = var(2);
-    p0 = var(3);
-    if BOUSSINESQ 
-        p0 = p0 * Z2P;
-    end
+    x0 = var(3);
     
     % Get linear index to reference cast
-    ij0 = sub2ind([nx,ny], i0, j0);
-    idx = (ij0-1) * NP;
+    ij0 = sub2ind([ni,nj], i0, j0);
+    idx = (ij0-1) * NX;
     
-    K = BotK(ij0);
+    % Number of valid bottles in reference cast
+    K = sum(isfinite(S(:,ij0)),1);
     
     % Select the reference cast
-    Pc = P((idx+1:idx+K).');
+    Xc = X((idx+1:idx+K).');
     Sc = S(1:K,ij0);
     Tc = T(1:K,ij0);
     
     if nargin < 6 || isempty(s0) && isempty(t0)
         % Get reference salinity and temperature at the chosen location
-        [s0, t0] = interp1qn2(p0, Pc, Sc, Tc);
+        [s0, t0] = interp_firstdim_twovars(x0, Xc, Sc, Tc);
     end
     
     % Choose iso-value that will intersect (i0,j0,p0).
-    Dc = sort(eos(Sc, Tc, Pc) - eos(s0, t0, Pc), 1, sortdir);
-    d0 = interp1qn(p0, Pc, Dc);
+    Dc = eos(Sc, Tc, Xc) - eos(s0, t0, Xc);
+    d0 = interp_firstdim_twovars(x0, Xc, Dc, Dc);
     
 end
 
-
-% Loop over each cast
-idx = 0;
-p = nan(nx,ny);
-for c = 1:nx*ny
-    K = BotK(c);
-    if K >= 2
-        
-        % Select cast
-        Pc = P((idx+1:idx+K).');
-        Sc = S(1:K,c);
-        Tc = T(1:K,c);
-        
-        % Get started with the discrete version.
-        Dc = sort(eos(Sc, Tc, Pc) - eos(s0, t0, Pc), 1, sortdir);
-        p(c) = interp1qn(d0, Dc, Pc);
-
-        % Now refine by solving the non-linear problem at each water column
-        p(c) = bisectguess(@diff_fun, P(idx+1), P(idx+K), tol, p(c), ...
-            P((idx+1:idx+K).'), S(1:K,c), T(1:K,c), s0, t0, d0);
-    end
-    idx = idx + NP;
-end
-
-if BOUSSINESQ
-    p = p / Z2P;
-end
-
-end
-
-function out = diff_fun(p, P, S, T, s0, t0, d0)
-[s,t] = interp1qn2(p, P, S, T);
-out = eos(s, t, p) - eos(s0, t0, p) - d0 ;
-end
+% Solve non-linear root finding problem in each cast
+x = delta_surf_vertsolve_mex(S, T, X, s0, t0, d0, tolx);

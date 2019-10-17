@@ -8,7 +8,7 @@ function [dup, G, bfs_dist, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb
 % of nodes in the graph is nNodes, the number of arcs in the graph is
 % length(arc_from), and there is an arc incident to node arc_from(a) and
 % node arc_to(a), for each arc index a.
-% 
+%
 % [dup, G] = cycle_analy_bfs(...)
 % also returns a sparse matrix G of size nNodes by nNodes, representing the
 % graph exclusive of its duplicate arcs. Specifically, G(m,n) = a when arc
@@ -21,12 +21,12 @@ function [dup, G, bfs_dist, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb
 % the penultimate node in this walk; otherwise, bfs_dist(n) is -1 and
 % bfs_parent_node(n) is 0. of nodes between the root note and each node is
 % given by bfs_dist. The number
-% 
+%
 % [dup, G, bfs_dist, bfs_parent_node, bfs_topo_order] = cycle_analy_bfs(...)
 % also provides a topological ordering of the nodes by sorting bfs_dist.
 % That is, for all nodes m < n, the breadth-first search discovers node
 % bfs_topo_order(m) before node bfs_topo_order(n).
-% 
+%
 % [dup, G, bfs_dist, bfs_parent_node, bfs_topo_order, bfs_missing_arc] = cycle_analy_bfs(...)
 % also returns the vector of arcs that were not traversed in the
 % breadth-first search. Each of these arcs defines a cycle in the graph,
@@ -66,28 +66,26 @@ function [dup, G, bfs_dist, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb
 % bfs - https://www.mathworks.com/matlabcentral/fileexchange/24134
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
-% 
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
-% 
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-% 
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
-% Email     : g.stanley@unsw.edu.au 
+% Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --
@@ -109,7 +107,7 @@ if nargout == 2; return; end
 
 % --- Breadth first search from the root (1) node
 [bfs_dist, ~, bfs_parent_node] = bfs(G,1);
-bfs_parent_node = bfs_parent_node(:); 
+bfs_parent_node = bfs_parent_node(:);
 if nargout < 5; return; end
 
 % --- Build a Topological Ordering of the nodes.
@@ -168,7 +166,7 @@ for c = 1 : nCyclesInBasis
         % Collect the nodes and arcs on this cycle.
         cb_nodes{c} = circshift(n1_to_n2,+1);
         cb_arcs{c} = full(G(sub2ind(size(G), cb_nodes{c}, n1_to_n2)));
-
+        
     else
         
         cb_nodes{c} = [n2; n1];

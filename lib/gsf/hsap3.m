@@ -19,42 +19,40 @@ function Y = hsap3(X, ATMP, ETAN, M, grav, varargin)
 %
 %
 % --- Input:
-% ATMP [nx, ny]: atmospheric pressure loading [dbar]
-% ETAN [nx, ny]: sea-surface height [m]
-% A [nz, nx, ny]: specific volume [m^3 kg^-1]
-% R [nz, nx, ny]: in-situ density [kg m^-3]
-% Z [nz, nx, ny] or [nz, 1]: depth [m, positive]
-% P [nz, nx, ny] or [nz, 1]: pressure [dbar]
+% ATMP [ni, nj]: atmospheric pressure loading [dbar]
+% ETAN [ni, nj]: sea-surface height [m]
+% A [nk, ni, nj]: specific volume [m^3 kg^-1]
+% R [nk, ni, nj]: in-situ density [kg m^-3]
+% Z [nk, ni, nj] or [nk, 1]: depth [m, positive]
+% P [nk, ni, nj] or [nk, 1]: pressure [dbar]
 % grav [1, 1]: gravitational acceleration [m s^-2]
 % rho_c [1, 1]: Boussinesq reference density [kg m^-3]
 %
 %
 % --- Output:
-% Y [nz, nx, ny]: acceleration potential from hydrostatic balance [m^2 s^-2]
+% Y [nk, ni, nj]: acceleration potential from hydrostatic balance [m^2 s^-2]
 
 % --- Copyright:
-% Copyright 2019 Geoff Stanley
+% This file is part of Neutral Surfaces.
+% Copyright (C) 2019  Geoff Stanley
 %
-% This file is part of Topobaric Surface.
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
 %
-% Topobaric Surface is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Lesser General Public License as published
-% by the Free Software Foundation, either version 3 of the License, or (at
-% your option) any later version.
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
 %
-% Topobaric Surface is distributed in the hope that it will be useful, but
-% WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-% General Public License for more details.
-%
-% You should have received a copy of the GNU Lesser General Public License
-% along with Topobaric Surface.  If not, see
-% <https://www.gnu.org/licenses/>.
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 2.0.0
 %
 % Modified by : --
 % Date        : --

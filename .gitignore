@@ -1,6 +1,10 @@
 **/codegen
 *.mex*
 *info.txt
-./topobaric-surface/install/PATH_ECCO2.txt
-./topobaric-surface/install/PATH_OCCA.txt
-./lib/alias/
+run*.txt
+PATH_ECCO2.txt
+PATH_OCCA.txt
+lib/alias/
+run/figs
+dev/
+

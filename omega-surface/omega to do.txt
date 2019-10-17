@@ -1,0 +1,16 @@
+omega to do:
+
+velocity version that minimizes fictitious dia-omega diffusivity: simply add u and v weights to the epsilon errors
+
+add b, in a simple test, by making an omega surf above and another below, label them, get b(x,y), then use that when computing omega surf in between the two.
+-- done.  Seems to make tiny difference.  Trevor's okay with scrapping the idea, and just have a few sentences about an attempt in the paper. But...
+- Maybe we can just use the previous iteration and the current iteration to estimate b.  Assuming b doesn't vary drastically in the vertical (compared to epsilon), this might speed up the code, relative to computing a second surface along-side the current one.
+
+test whether average pressure or non-average pressure (each way) is best in the vertical solve. 
+-- average pressure best
+
+If we use omega to get b or PV by layer thickness between two surfaces, need C1 interpolation scheme in the vertical solve.  Currently using PCHIP but very slow.  
+(a) Pre-compute coefficients before starting the loop.  
+(b) interpolating S and T simultaneously in one function call, so the bottles above and below the current surface need only be found once.
+(c) Do linear interpolation for all but the final iteration? (Trevor email 14/06/2019)
+(d) Try quadratic spline?
