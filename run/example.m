@@ -87,46 +87,19 @@ eos_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq.m'   ], [PA
 eos_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_dz.m'], [PATH_PROJECT 'lib' V 'alias' V 'eos_x.m'], grav, rho_c);
 
 % Choose vertical interpolation method
-%copyfile([PATH_PROJECT 'fex' V 'columncalculus' V 'interp1qn2.m'], [PATH_PROJECT 'lib' V 'alias' V 'interp_firstdim_twovars.m']); % linear interpolation
-copyfile([PATH_PROJECT 'fex' V 'columncalculus' V 'pchipqn2.m'], [PATH_PROJECT 'lib' V 'alias' V 'interp_firstdim_twovars.m']);  % PCHIP interpolation
-clear interp_firstdim_twovars % Make sure new file gets used
+interpfn = @ppc_linterp;
 
-%% Pre-compute in-situ density
+%% Pre-compute in-situ density and interpolants
 R = eos(S, T, Z);
+
+SppZ = interpfn(Z, S);
+TppZ = interpfn(Z, T);
 
 
 %% Select reference cast and depth
 i0 = round(ni / 2); % reference cast zonal grid index
 j0 = round(nj / 2); % reference cast meridional grid index
 ztar = 2000; % Target depth for surfaces at (i0,j0), [m]
-
-%% Compute potential density surface
-zref = ztar; % Reference depth for potential density [m]
-z_PDENS = pot_dens_surf(S, T, Z, zref, [i0, j0, ztar]);
-
-% The usual approach is to interpolate a 3D potential density field. 
-% Check the differences. 
-SIGMA = sort(eos(S, T, zref), 1); % Make potential density monotonic.
-val_PDENS = interp1(Z, SIGMA(:,i0,j0), ztar);
-z = squeeze(interp1qn(val_PDENS, SIGMA, Z));
-fig_map(g.XCvec, g.YCvec, z_PDENS - z, land); colorbar
-clear SIGMA z
-
-
-
-%% Compute specific volume anomaly surface
-[s0,t0] = interp1qn2(ztar, Z, S(:,i0,j0), T(:,i0,j0));
-z_DELTA = delta_surf(S, T, Z, s0, t0, [i0, j0, ztar]);
-
-% The usual approach is to interpolate a 3D specific volume anomaly field. 
-% Check the differences. 
-DELTA = sort(R - eos(s0, t0, Z), 1); % Make monotonic.
-val_DELTA = interp1(Z, DELTA(:,i0,j0), ztar);
-z = squeeze(interp1qn(val_DELTA, DELTA, Z));
-fig_map(g.XCvec, g.YCvec, z_DELTA - z, land); colorbar
-clear DELTA z
-
-
 
 %% Prepare options, OPTS
 OPTS.WRAP = [true, false];   % Periodic in longitude, not latitude
@@ -136,6 +109,37 @@ OPTS.X_EXPN = 500;           % expansion of domain to search for solutions in ea
 OPTS.ITER_MAX = 3;           % Not too many iterations, for quick gratification
 OPTS.ITER_START_WETTING = 1; % Start wetting right away
 OPTS.REF_IJ = [i0, j0];      % Specify reference cast
+OPTS.SppX = SppZ;            % Use pre-computed interpolant
+OPTS.TppX = TppZ;            % Use pre-computed interpolant
+
+
+%% Compute potential density surface
+zref = ztar; % Reference depth for potential density [m]
+z_PDENS = pot_dens_surf(S, T, Z, zref, [i0, j0, ztar], OPTS);
+
+% The usual approach is to interpolate a 3D potential density field. 
+% Check the differences. 
+SIGMA = sort(eos(S, T, zref), 1); % Make potential density monotonic.
+val_PDENS = interp1(Z, SIGMA(:,i0,j0), ztar);
+z = ppc_linterp(SIGMA, Z, val_PDENS);
+fig_map(g.XCvec, g.YCvec, z_PDENS - z, land); colorbar
+title('depth difference between more and less accurate potential density surface')
+clear SIGMA z
+
+
+
+%% Compute specific volume anomaly surface
+[s0,t0] = ppc_val2(Z, SppZ(:,:,i0,j0), TppZ(:,:,i0,j0), ztar);
+z_DELTA = delta_surf(S, T, Z, s0, t0, [i0, j0, ztar], OPTS);
+
+% The usual approach is to interpolate a 3D specific volume anomaly field. 
+% Check the differences. 
+DELTA = sort(R - eos(s0, t0, Z), 1); % Make monotonic.
+val_DELTA = interp1(Z, DELTA(:,i0,j0), ztar);
+z = ppc_linterp(DELTA, Z, val_DELTA);
+fig_map(g.XCvec, g.YCvec, z_DELTA - z, land); colorbar
+title('depth difference between more and less accurate in-situ density anomaly surface')
+clear DELTA z
 
 %% --- Compute the Reeb graph of the depth of a surface, without updating the surface
 
@@ -170,6 +174,7 @@ arc(RG.wet) = arc_;
 % Map the regions associated with each arc:
 fig_map(g.XCvec, g.YCvec, arc, land);
 colormap(colorcube(RG.nArcs));
+title('Map of all regions associated to arcs of the Reeb graph')
 
 %% Show the Reeb graph -- in a small region
 % (otherwise the graphics part of this will be very slow and very confusing)
@@ -248,6 +253,7 @@ end
 OPTS.REEB = false;              % Make single-valued functions
 z_ORTHO = topobaric_surface(S, T, Z, z_PDENS, OPTS);
 fig_map(g.XCvec, g.YCvec, z_ORTHO, land); colorbar;
+title('Depth of an "orthobaric" surface')
 
 % We could get more outputs from topobaric_surface, including the
 % single-valued function for in-situ density anomaly as a function of
@@ -259,11 +265,12 @@ OPTS.REEB = true;     % Make multi-valued functions. (Default)
 OPTS.GEOSTRF = false; % We won't (yet) compute a geostrophic stream function, so let it be ill-defined
 [z_TOPOB, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, OPTS);
 fig_map(g.XCvec, g.YCvec, z_TOPOB, land); colorbar;
+title('Depth of a topobaric surface')
 
 %% Scatter plot depth vs in-situ density anomaly on the surface
 % Get S and T on the surface
 lead1 = @(x) reshape(x, [1 size(x)]);
-[s,t] = interp_firstdim_twovars(lead1(z_TOPOB), Z, S, T);
+[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z_TOPOB));
 
 % Calculate in-situ density anomaly on the surface
 d = eos(s, t, z_TOPOB) - eos(s0, t0, z_TOPOB); % delta
@@ -283,6 +290,8 @@ end
 figure;
 scatter(z_, d_, 8, arc_);
 colormap(colorcube(RG.nArcs));
+xlabel('Depth [m]')
+ylabel('in-situ density anomaly [kg m^{-3}]')
 
 
 %% How well does the density function match the density?
@@ -312,6 +321,7 @@ title('Difference between $\rho$ and $\hat{\rho}(p)$ on surface', 'Interpreter',
 % initialized from the potential density surface
 z_OMEGA = omega_surface(S, T, Z, z_PDENS, OPTS);
 fig_map(g.XCvec, g.YCvec, z_TOPOB, land); colorbar;
+title('Depth of omega surface')
 
 %% Compare the neutral error between the potential density surface, topobaric surface, and omega surface
 figure('Position', [0 0 600 800]);
@@ -321,7 +331,7 @@ mv = .05; % vertical margin
 hv = (1-(npanel+1)*mv) / npanel;
 
 z = z_PDENS;
-[s,t] = interp_firstdim_twovars(lead1(z), Z, S, T);
+[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
 eps_x = ntp_epsilon_r_x(s, t, z, g.DXCvec, g.DYCsc, false, g.WRAP);
 ax = axes('Position', [.1 3*mv+2*hv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
@@ -329,7 +339,7 @@ colorbar
 title('Zonal neutral error on potential density surface [log_{10}]')
 
 z = z_TOPOB;
-[s,t] = interp_firstdim_twovars(lead1(z), Z, S, T);
+[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
 eps_x = ntp_epsilon_r_x(s, t, z, g.DXCvec, g.DYCsc, false, g.WRAP);
 ax = axes('Position', [.1 2*mv+hv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
@@ -337,7 +347,7 @@ colorbar
 title('Zonal neutral error on topobaric surface [log_{10}]')
 
 z = z_OMEGA;
-[s,t] = interp_firstdim_twovars(lead1(z), Z, S, T);
+[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
 eps_x = ntp_epsilon_r_x(s, t, z, g.DXCvec, g.DYCsc, false, g.WRAP);
 ax = axes('Position', [.1 mv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
@@ -352,7 +362,7 @@ Y = hsap3(Z, ATMP, ETAN, R, grav, rho_c); % Pre-compute hydrostatic acceleration
 
 z = z_PDENS;
 
-[s,t] = interp_firstdim_twovars(lead1(z), Z, S, T);
+[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
 [y,r] = hsap2(s, t, z, Z, R, Y, grav, rho_c);
 
 % "True" zonal geostrophic velocities, in Boussinesq mode, computed from
@@ -419,7 +429,7 @@ OPTS.GEOSTRF = true; % Add second integral constraint so that dfn will integrate
 z = z_MTOPO;
 
 % --- Compute zonal geostrophic velocity on the modified topobaric surface
-[s,t] = interp_firstdim_twovars(lead1(z), Z, S, T);
+[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
 [y,r] = hsap2(s, t, z, Z, R, Y, grav, rho_c);
 ugs = -((y - jm1(y)) + (grav / (2*rho_c)) * (-z + jm1(z)) .* (r + jm1(r))) ./ (g.DYCsc * cori_V);
 

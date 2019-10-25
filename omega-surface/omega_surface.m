@@ -12,8 +12,8 @@ function [x, s, t] = omega_surface(S, T, X, x, OPTS)
 % neutrality error. The density or specific volume (either may be used) and
 % its partial derivatives with respect to S and T are given by the
 % functions eos.m and eos_s_t.m in MATLAB's path.  Algorithmic parameters
-% are provided in OPTS (see "Input" below for further details).  For units,
-% see "Equation of State" below.
+% are provided in OPTS (see "Options" below for further details).  For
+% units, see "Equation of State" below.
 %
 % --- Input:
 %  S [nk, ni, nj]: practical / Absolute Salinity
@@ -84,9 +84,18 @@ function [x, s, t] = omega_surface(S, T, X, x, OPTS)
 %       and incrops of the surface that are adjacent to valid parts of the
 %       surface are added back into the surface if they are connected by a
 %       neutral trajectory. Default: 1.
+%   INTERPFN [function handle]: vertical interpolation function, used to
+%       evaluate SppX and TppX if those are not provided.  Default:
+%       INTERPFN = @ppc_linterp.
 %   MLX []: do not remove the mixed layer (default)
 %   MLX [struct]: calculate the mixed layer using these parameters in mixed_layer().
 %   MLX [ni, nj]: use a pre-computed mixed layer pressure [dbar] or depth [m]
+%   SppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
+%       knots are X that interpolate S as a function of X in each water 
+%       column.  E.g. SppX = ppc_linterp(X, S);
+%   TppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
+%       knots are X that interpolate T as a function of X in each water 
+%       column.  E.g. TppX = ppc_linterp(X, T);
 %   TOL_DENS [scalar]: Target error tolerance in density [kg m^-3].
 %       Iterations stop when the L1 norm of the density change of the
 %       surface is below this value. Even if eos gives specific volume,
@@ -168,12 +177,13 @@ idx_jm1 = shift_jm1(idx);     % Linear index to the pixel left (<) of the local 
 % The density or specific volume change in each water column
 phi = nan(ni,nj);
 
-% Number of bottles per cast. K(n) > 0 if and only if pixel n is ocean.
-K = squeeze(sum(isfinite(S), 1));
-
 % Pre-calculate things for Breadth First Search
 qu = zeros(nij, 1); % queue storing linear indices to pixels
 A = grid_adjacency([ni,nj], OPTS.WRAP, 4); % all grid points that are adjacent to all grid points, using 4-connectivity
+
+% Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
+BotK = squeeze(sum(uint16(isfinite(S)), 1, 'native'));
+
 
 
 %% Process OPTS
@@ -202,6 +212,17 @@ end
 % fac = 100; % Final relative tolerance will be smaller than initial by this factor  DEV
 % tol_geofac = fac^(-1/OPTS.ITER_MAX);   % geometric factor by which tol_rel decreases on each iteration.  DEV
 
+%% Just in time code generation
+mytic = tic;
+Xvec = isvector(X);
+omega_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
+bfs_conncomp_codegen(nk, ni, nj, Xvec, false, OPTS);
+if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX
+    bfs_wet_codegen(nk, ni, nj, Xvec, false, OPTS);
+end
+if OPTS.VERBOSE > 1
+    fprintf(OPTS.FILE_ID, '%.4f sec for Code Generation\n', toc(mytic));
+end
 
 %% Get MLX: the pressure or depth of the mixed layer
 if OPTS.ITER_MAX > 1
@@ -218,7 +239,9 @@ end
 
 %% Interpolate S and T casts onto surface
 mytic = tic;
-[s, t] = interp_firstdim_twovars(lead1(x), X, S, T); % virtually as fast in MATLAB as MEX.
+SppX = OPTS.INTERPFN(X, S);
+TppX = OPTS.INTERPFN(X, T);
+[s,t] = ppc_val2(X,SppX,TppX,lead1(x));
 
 if OPTS.VERBOSE > 0
     fprintf(OPTS.FILE_ID, msg1, nanmean(x(:)), nanmean(eos(s(:),t(:),x(:))));
@@ -226,20 +249,6 @@ if OPTS.VERBOSE > 0
         fprintf(OPTS.FILE_ID, '  %.4f sec to interpolate S and T \n', toc(mytic));
     end
 end
-
-
-%% Just in time code generation
-mytic = tic;
-Xvec = isvector(X);
-omega_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
-bfs_conncomp_codegen(nk, ni, nj, Xvec, false, OPTS);
-if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX
-    bfs_wet_codegen(nk, ni, nj, Xvec, false, OPTS);
-end
-if OPTS.VERBOSE > 1
-    fprintf(OPTS.FILE_ID, '%.4f sec for Code Generation\n', toc(mytic));
-end
-
 
 %% Begin iterations
 total_tic = tic;
@@ -255,7 +264,7 @@ for iter = 1 : OPTS.ITER_MAX
     % --- Wetting via Breadth First Search
     if iter >= OPTS.ITER_START_WETTING
         mytic = tic;
-        [qu, qt, s, t, x, freshly_wet] = bfs_wet_all_mex(S, T, X, s, t, x, X_TOL, A, K, [], qu);
+        [qu, qt, s, t, x, freshly_wet] = bfs_wet_all_mex(SppX, TppX, X, s, t, x, X_TOL, A, BotK, [], qu);
         wet = false(ni,nj);
         wet(qu(1:qt)) = true;
         if OPTS.VERBOSE > 1
@@ -373,7 +382,7 @@ for iter = 1 : OPTS.ITER_MAX
     
     % --- Update the surface
     mytic = tic();
-    [x, s, t] = omega_vertsolve_mex(S, T, X, K, s, t, x, X_TOL, phi);
+    [x, s, t] = omega_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, X_TOL, phi);
     if OPTS.VERBOSE > 1
         fprintf(OPTS.FILE_ID, '  %.4f sec for global vertical bisection \n', toc(mytic));
     end
@@ -404,7 +413,7 @@ for iter = 1 : OPTS.ITER_MAX
     
     % --- Check for convergence
     if phiL1 < PHI_TOL
-        %break
+        break
     end
     
     % Reduce tolerance for next iteration

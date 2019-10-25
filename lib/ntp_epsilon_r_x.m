@@ -87,11 +87,6 @@ function [ex,ey,sx,sy] = ntp_epsilon_r_x(s, t, x, dx, dy, centre, wrap, grav, S,
 % factor of r because of our definition for [ex,ey] above.
 %
 %
-% --- Requirements:
-% eos, eos_x
-% pchipdqn - https://www.mathworks.com/matlabcentral/fileexchange/69713
-%
-%
 % --- References:
 % Klocker, A., McDougall, T. J. & Jackett, D. R. A new method for forming
 % approximately neutral surfaces. Ocean Science 5, 155?172 (2009).
@@ -190,7 +185,7 @@ if centre
     if eos_is_specvol
         sigma = 1 ./ sigma;
     end
-    [~, N2rhogr] = pchipdqn(lead1(x), X, sigma);
+    [~, N2rhogr] = pchi1d1(lead1(x), X, sigma);
     if nonBOUSSINESQ
         % P is actually pressure, not depth analogue.
         % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
@@ -266,7 +261,7 @@ else
     end
     
     % Take derivative of sigma w.r.t pressure or depth (as a SPATIAL coordinate)
-    [~, N2rhogr] = pchipdqn(lead1(xa), Xa, sigma);
+    [~, N2rhogr] = pchi1d1(lead1(xa), Xa, sigma);
     if nonBOUSSINESQ
         % P is actually pressure, not depth analogue.
         % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
@@ -294,7 +289,7 @@ else
     if eos_is_specvol
         sigma = 1 ./ sigma;
     end
-    [~, N2rhogr] = pchipdqn(lead1(xa), Xa, sigma);
+    [~, N2rhogr] = pchi1d1(lead1(xa), Xa, sigma);
     if nonBOUSSINESQ
         N2rhogr = N2rhogr .* (Pa2db * grav * ra);
     end

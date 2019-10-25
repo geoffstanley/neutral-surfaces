@@ -4,19 +4,22 @@ function y = pchipqn(x,X,Y) %#codegen
 %
 % y = pchipqn(x,X,Y)
 % uses a PCHIP to interpolate each column of Y as a function of each column
-% of X, at each column of x. That is, y(l,m) interpolates Y(:,m), as a
-% function of X(:,m), at U(l,m). No extrapolation is done: when x(l,n) is
-% out of bounds of X(:,n), y(l,n) are NaN.
+% of X, at each column of x. That is, y(l,n) interpolates Y(:,n), as a
+% function of X(:,n), at x(l,n). No extrapolation is done: when x(l,n) is
+% out of bounds of X(:,n), y(l,n) is NaN.
+%
 %
 %
 % --- Input:
 % x [L x N], the interpolant evaluation sites
-% X [M x N], the data sites for the functions
-% Y [M x N], the values of the first function at the data sites
+% X [K x N], the data sites for the functions
+% Y [K x N], the values of the first function at the data sites
+%
 %
 %
 % --- Output:
 % y [L x N], the interpolant values for the first function
+%
 %
 %
 % --- Notes:
@@ -25,35 +28,26 @@ function y = pchipqn(x,X,Y) %#codegen
 % NaN's in X are treated as +Inf (and as such must come at the end of each
 % column).
 %
-% Any input can be higher-dimensional, so long as the product of its
-% dimensions excluding the first dimension is N.
-%
 % Any input can have a singleton second dimension (N = 1), in which case
 % that single value is used for each interpolation problem.
+%
+% Any dimension N can actually be higher-dimensional, so long as it has N
+% elements.
 %
 % Even if L == 1, x does need a leading singleton dimension.
 %
 % If L == 1, this dimension is squeeze()'d out of y.
-%
-%
-% --- Code generation:
-% PCHIPQN can be compiled into a MEX executible using codegen, as follows:
-% >> codegen('pchipqn', '-args', {zeros(L,N), zeros(M,N), zeros(M,N)}, '-o', 'pchipqn_mex');
-% To call the mex function rather than this, call pchipqn_mex().
-% A more flexible example, using an upper bound for certain dimensions of
-% input, is as follows:
-% >> type_x = coder.typeof(0, [L P Q], [false true true]);
-% >> type_X = coder.typeof(0, [M P Q], [false true true]);
-% >> codegen('pchipqn', '-args', {type_x, type_X, type_X}, '-o', 'pchipqn_mex');
-%
-%
+
 % Author    : Geoff Stanley
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 1.1
 % History   : 05/09/2019 - initial release
+%           : 25/10/2019 - minor speed and documentation updates
 
 szX = size(X);
 szY = size(Y);
+
+
 XN = prod(szX(2:end));
 YN = prod(szY(2:end));
 
@@ -66,11 +60,11 @@ szx = size(x);
 %     szx = size(x);
 % end
 xN = prod(szx(2:end));
-M = szX(1);
+K = szX(1);
 L = szx(1);
 
 [N,ii] = max([xN, XN, YN]);
-assert(szY(1) == M, 'X and Y must have the same number of rows.');
+assert(szY(1) == K, 'X and Y must have the same number of rows.');
 assert(xN == 1 || xN == N, 'x must have N=%d columns or 1 column', N);
 assert(XN == 1 || XN == N, 'X must have N=%d columns or 1 column', N);
 assert(YN == 1 || YN == N, 'Y must have N=%d columns or 1 column', N);
@@ -79,37 +73,41 @@ szy = {szx(2:end), szX(2:end), szY(2:end)};
 szy = [L, szy{ii}];
 y = nan(szy);
 
+if K == 1
+    % Can't really interpolate with one data point.
+    % Exit now to prevent out-of-bounds indexing later.
+    return
+end
+
 % Variables to index the 1'st or n'th column:
 x01 = double(xN > 1);
-MX = M * double(XN > 1);
-MY = M * double(YN > 1);
+KX = K * double(XN > 1);
+KY = K * double(YN > 1);
 nX = 0 ;
 nY = 0 ;
 
 % Pre-assign sizes for PCHIP variables.
 h = zeros(3,1);
 deltaY = zeros(3,1);
+
 dY = zeros(2,1);
+
 
 % Loop over columns, each of which is an interpolation problem
 for n = 0:N-1
     if isnan(Y(nY + 2)) || isnan(X(nX + 2))
-        nX = nX + MX;
-        nY = nY + MY;
+        nX = nX + KX;
+        nY = nY + KY;
         continue
     end
     for l = 1:L
         xln = x(n*L*x01 + l); % x(l,n) or x(l,1) as appropriate
         
-        if isnan(xln) || xln < X(nX + 1) || xln > X(nX + M)
-            
-            y(n*L + l) = nan;
-            
-        else
+        if ~(isnan(xln) || xln < X(nX + 1) || xln > X(nX + K))
             
             % Binary search, to find i for which X(i-1,n) < xln <= X(i,n)
             i = 2; % Result will be >= 2 always
-            k = M; % Result will be <= M always
+            k = K; % Result will be <= M always
             while (i < k)
                 j = floor((i + k) / 2);
                 if X(nX + j) < xln % [X(j,n) or X(j,1) as appropriate]  < xln
@@ -121,7 +119,7 @@ for n = 0:N-1
             
             % Check whether xln is adjacent to the start or end of this X
             at_start = (i == 2);
-            at_end = (i == M) || isnan(X(nX + i+1)) || isnan(Y(nY + i+1));
+            at_end = (i == K) || isnan(X(nX + i+1)) || isnan(Y(nY + i+1));
             
             if at_start && at_end
                 % . X(1) < x < X(2) .   Revert to Linear Interpolation
@@ -213,8 +211,8 @@ for n = 0:N-1
             end
         end
     end % for l
-    nX = nX + MX;
-    nY = nY + MY;
+    nX = nX + KX;
+    nY = nY + KY;
 end
 
 % Remove leading dimensions if L == 1, but leave row vectors as row vectors

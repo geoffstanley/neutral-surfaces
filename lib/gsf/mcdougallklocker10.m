@@ -40,10 +40,10 @@ function gsf = mcdougallklocker10(s, t, x, X, M, Y, s0, t0, x0, varargin)
 %
 %
 % --- Input:
-% s [ni, nj] or [nk, ni, nj]: the practical / Absolute salinity,
-%  on the surface, or at all data sites
-% t [ni, nj] or [nk, ni, nj]: the potential / Conservative temperature
-%  on the surface, or at all data sites
+% s [ni, nj] or [O, nk-1, ni, nj]: the practical / Absolute salinity,
+%  on the surface, or a piecewise polynomial interpolant in each water column
+% t [ni, nj] or [O, nk-1, ni, nj]: the potential / Conservative temperature
+%  on the surface, or a piecewise polynomial interpolant in each water column
 % p [ni, nj]: pressure on surface [dbar]
 % z [ni, nj]: depth on surface [m, positive]
 % P [nk, ni, nj] or [nk, 1]: pressure at all data sites [dbar]
@@ -67,11 +67,6 @@ function gsf = mcdougallklocker10(s, t, x, X, M, Y, s0, t0, x0, varargin)
 %
 % --- Output:
 % gsf [ni, nj]: geostrophic stream function [m^2 s^-2]
-%
-%
-% --- Requirements:
-% hsap2
-% interp1qn2 - https://www.mathworks.com/matlabcentral/fileexchange/69713
 %
 %
 % --- References:
@@ -107,15 +102,7 @@ function gsf = mcdougallklocker10(s, t, x, X, M, Y, s0, t0, x0, varargin)
 Thermobaricity_div_rho = 2.7e-15; % K^-1 Pa^-2 m^2 s^-2
 
 % Input checking
-narginchk(9,12);
-
-% First check for interpolation function handle as the last argument
-if nargin > 9 && isa(varargin{end}, 'function_handle')
-    interpfn = varargin{end};
-    varargin = varargin(1:end-1);
-else
-    interpfn = @interp1qn2;
-end
+narginchk(9,11);
 
 BOUSSINESQ = length(varargin) == 2; % grav and rho_c provided
 
@@ -123,7 +110,7 @@ db2Pa = 1e4;  % Conversion from [dbar] to [Pa]
 
 [ni,nj] = size(x);
 nk = size(X,1);
-is3D = @(F) ndims(F) == 3 && all(size(F) == [nk,ni,nj]);
+is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
 lead1 = @(x) reshape(x, [1 size(x)]);
 
 if BOUSSINESQ
@@ -136,8 +123,8 @@ else
     fac2 = fac^2;
 end
 
-if is3D(s) % Interpolate 3D s and t onto the surface
-    [s,t] = interpfn(lead1(x), X, s, t);
+if is4D(s) % Evaluate interpolants for S and T onto the surface
+    [s,t] = ppc_val2(X, s, t, lead1(x));
 end
 
 % If s0, t0, x0 were not provided, use the mean

@@ -1,23 +1,26 @@
-function [x, s, t] = omega_vertsolve(S, T, X, K, s, t, x, tolx, phi) %#codegen
-%OMEGA_VERTSOLVE  Update surface so  in each water column for
+function [x, s, t] = omega_vertsolve(SppX, TppX, X, BotK, s, t, x, tolx, phi) %#codegen
+%OMEGA_VERTSOLVE  Root finding of a new surface with a specified a density 
+%                 difference from the current surface
 %
 %
-% [s, t, x] = omega_vertsolve(S, T, X, K, s0, t0, x0, tolx, phi)
+% [s, t, x] = omega_vertsolve(S, T, X, BotK, s0, t0, x0, tolx, phi)
 % determines pressures x that satisfy
-% |eos(S_i(x(i)), T_i(x(i)), (x(i) + x0(i))/2) + phi(i) - eos(s0(i), t0(i), (x(i) + x0(i))/2)| < tolx
-% where S_i(x') and T_i(x') are interpolants of the data
-% (S(:,i),X(:,i)) and (T(:,i),X(:,i)).
+%   |eos(S_n(x(n)), T_n(x(n)), (x(n) + x0(n))/2) + phi(n) - eos(s0(n), t0(n), (x(n) + x0(n))/2)| < tolx
+% where S_n(x') and T_n(x') are interpolants of the data
+%   (S(:,n),X(:,n)) and (T(:,n),X(:,n)).
 % This also determines salinities s and temperatures t such that
-% s(i) = S_i(x(i)) and t(i) = T_i(x(i)).
+%   s(n) = S_n(x(n)) and t(n) = T_n(x(n)).
 % The function eos.m, found in the same directory as this function,
 % determines either the in-situ density or the specific volume.
 %
 %
 % --- Input
-% S [M, N]: practical / Absolute Salinity of the casts
-% T [M, N]: potential / Conservative Temperature of the casts
-% X [M, N]: pressure or depth of the casts
-% K [1, N]: number of valid data points on each cast
+% SppX [O, K-1, N]: coefficients for piecewise polynomial for practical 
+%                   / Absolute Salinity in terms of X
+% TppX [O, K-1, N]: coefficients for piecewise polynomial for potential 
+%                   / Conservative Temperature in terms of X
+% X [K, N]: knots for the pressure or depth of the casts
+% BotK [1, N]: number of valid data points on each cast
 % s [1, N]: practical / Absolute salinity on the initial surface
 % t [1, N]: potential / Conservative temperature on the initial surface
 % x [1, N]: pressure or depth on the initial surface
@@ -25,13 +28,22 @@ function [x, s, t] = omega_vertsolve(S, T, X, K, s, t, x, tolx, phi) %#codegen
 % phi [1,N]: the desired in-situ density or specific volume change of the
 %            surface
 %
-% Note: N is the number of water columns (possibly including land).
-%       M the maximum number of data points on any cast.
-%       Variables can actually be higher dimensional, e.g. N = [nx, ny],
-%       and s, t, and x can be any dimensional matrix, so long as they have
-%       N elements in total.
-%       X can have size [M, 1], in which case it is used for each cast.
-%       K should be given by K = squeeze(sum(isfinite(S), 1));
+% Note: O is the order of the piecewise polynomials
+%       K is the maximum number of knots in these piecewise polynomials, 
+%           i.e. the maximum number of bottles in any cast
+%       N is the number of water columns (possibly including land).
+%
+% Note: X must increase along its first dimension.
+%
+% Note: X can have size [K, 1], in which case it is used for each cast.
+%
+% Note: variables can actually be higher dimensional, e.g. N = [ni, nj],
+%       and x can be any dimensional matrix, so long as it has N elements
+%       in total.
+%
+% Note: BotK should be given by 
+%           BotK = squeeze(sum(uint16(isfinite(S)), 1, 'native'));
+%
 %
 % --- Output
 % x [same as input x]: pressure or depth of the updated surface
@@ -40,11 +52,8 @@ function [x, s, t] = omega_vertsolve(S, T, X, K, s, t, x, tolx, phi) %#codegen
 %
 %
 % --- Units
-% The units of s, t, x, S, T, X, s0, t0, p0, tolx, and phi are determined
-% by the function eos.m.
-%
-% --- Requirements:
-% bisectguess.m, interp_firstdim_twovars.m, eos.m
+% The units of s, t, x, S, T, X, tolx, and phi are determined by the
+% function eos.m.
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -75,57 +84,64 @@ function [x, s, t] = omega_vertsolve(S, T, X, K, s, t, x, tolx, phi) %#codegen
 
 % Inputs s0, t0, and p0 are named s, t, x so operations are done in-place.
 
-[M,N] = size(S);
-[~,Xj] = size(X);
-MX = M * double(Xj > 1); % Used to handle when X is actually a vector
+N = numel(x);
+[K,XN] = size(X);
+KX = K * double(XN > 1);
 
 % Loop over each water column
-idx = 0;
-for i = 1:N
-    d = phi(i);
-    k = K(i);
+nX = 0;
+for n = 1:N
+    d = phi(n);
+    k = BotK(n);
     if ~isnan(d) && k > 0
-        % The following attempts to limit the search direction based on the
-        % sign of phi, but in practice this does not seem to work well.
+        
+        % Select this water column
+        SppXn = SppX(:,1:k-1,n);
+        TppXn = TppX(:,1:k-1,n);
+        Xn = X((nX+1:nX+k).');
+        
+        % DEV: The following attempts to limit the search direction based
+        % on phi's sign, but in practice this doesn't seem to work well.
         %{
         if phiI > 0  %, only search in one direction by setting lower bound (upper bound?)
             % Target specific volume is larger than current specific volume: move up, to lower pressures
-            x(i) = bisectguess(@diff_fun, X(idx+1), x(i), tolx, x(i), ...
-                S(1:k,i), T(1:k,i), X((idx+1:idx+k).'), s(i), t(i), x(i), err);
+            x(n) = bisectguess(@diff_fun, X(nX+1), x(n), tolx, x(n), ...
+                SppXn, TppXn, Xn, s(n), t(n), x(n), err);
         else
             % Target specific volume is smaller than current specific volume: move down, to higher pressures
-            x(i) = bisectguess(@diff_fun, x(i), X(idx+k), tolx, x(i), ...
-                S(1:k,i), T(1:k,i), X((idx+1:idx+k).'), s(i), t(i), x(i), err);
+            x(n) = bisectguess(@diff_fun, x(n), X(nX+k), tolx, x(n), ...
+                SppXn, TppXn, Xn, s(n), t(n), x(n), err);
         end
         %}
         
-        % Bisect through the whole water column to find a solution to
-        % eos_diff(x(i), S(:,i), T(:,i), X(:,i), s(i), t(i), x(i), d) == 0
-        x(i) = bisectguess(@eos_diff, X(idx+1), X(idx+k), tolx, x(i), ...
-            S(1:k,i), T(1:k,i), X((idx+1:idx+k).'), s(i), t(i), x(i), d);
+        % Bisect through the whole water column to find a solution to the
+        % nonlinear root finding problem
+        x(n) = bisectguess(@eos_diff, Xn(1), Xn(k), tolx, x(n), ...
+            SppXn, TppXn, Xn, s(n), t(n), x(n), d);
+        
+        % Interpolate S and T onto the updated surface
+        [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+        
     end
-    idx = idx + MX;
+    nX = nX + KX;
 end
-
-% Interpolate S and T onto the updated surface
-[s, t] = interp_firstdim_twovars(reshape(x, [1 size(x)]), X, S, T);
 
 end
 
 
-function out = eos_diff(x, S, T, X, s0, t0, x0, phi)
+function out = eos_diff(x, SppX, TppX, X, s0, t0, x0, d)
 % Evaluate difference between (a) eos at location on the cast (S, T, X)
-% where the pressure or depth is x, and (b) phi + eos of the bottle (s0,
-% t0, x0); here, eos is always evaluated at the average pressure or depth,
-% (x + x0)/2.
+% where the pressure or depth is x, and (b) d + eos of the bottle (s0, t0,
+% x0); here, eos is always evaluated at the average pressure or depth, (x +
+% x0)/2.
 
 % Interpolate S and T to the current pressure or depth
-[s,t] = interp_firstdim_twovars(x, X, S, T);
+[s,t] = ppc_val2(X, SppX, TppX, x);
 
 % Average the current pressure or depth and the original pressure or depth
 x_avg = (x + x0) / 2;
 
-% Calculate the specific volume error
-out =  eos(s, t, x_avg) + phi - eos(s0, t0, x_avg) ;
+% Calculate the density or specific volume difference
+out =  eos(s, t, x_avg) + d - eos(s0, t0, x_avg) ;
 
 end

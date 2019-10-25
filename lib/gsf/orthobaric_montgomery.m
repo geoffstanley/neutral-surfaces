@@ -64,10 +64,10 @@ function gsf = orthobaric_montgomery(s, t, x, X, M, Y, s0, t0, OPTS, varargin)
 %
 %
 % --- Input:
-% s [ni, nj] or [nk, ni, nj]: the practical / Absolute salinity,
-%  on the surface, or at all data sites
-% t [ni, nj] or [nk, ni, nj]: the potential / Conservative temperature
-%  on the surface, or at all data sites
+% s [ni, nj] or [O, nk-1, ni, nj]: the practical / Absolute salinity,
+%  on the surface, or a piecewise polynomial interpolant in each water column
+% t [ni, nj] or [O, nk-1, ni, nj]: the potential / Conservative temperature
+%  on the surface, or a piecewise polynomial interpolant in each water column
 % p [ni, nj]: pressure on surface [dbar]
 % z [ni, nj]: depth on surface [m, positive]
 % P [nk, ni, nj] or [nk, 1]: pressure at all data sites [dbar]
@@ -93,11 +93,6 @@ function gsf = orthobaric_montgomery(s, t, x, X, M, Y, s0, t0, OPTS, varargin)
 %
 % --- Output:
 % gsf [ni, nj]: geostrophic stream function [m^2 s^-2]
-%
-%
-% --- Requirements:
-% hsap2
-% splinefit, ppint - https://www.mathworks.com/matlabcentral/fileexchange/13812
 %
 %
 % --- References:
@@ -135,14 +130,6 @@ db2Pa = 1e4;  % Conversion from [dbar] to [Pa]
 % Input checking
 narginchk(9,11);
 
-% First check for interpolation function handle as the last argument
-if nargin > 9 && isa(varargin{end}, 'function_handle')
-    interpfn = varargin{end};
-    varargin = varargin(1:end-1);
-else
-    interpfn = @interp1qn2;
-end
-
 BOUSSINESQ = length(varargin) == 2; % grav and rho_c provided
 
 [ni,nj] = size(x);
@@ -150,9 +137,10 @@ nk = size(X,1);
 is1D = @(F) ismatrix(F) && all(size(F) == [nk,1]);
 is2D = @(F) ismatrix(F) && all(size(F) == [ni,nj]);
 is3D = @(F) ndims(F) == 3 && all(size(F) == [nk,ni,nj]);
+is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
 lead1 = @(x) reshape(x, [1 size(x)]);
 
-assert((is2D(s) || is3D(s)), 'S must be [ni,nj] or [nk,ni,nj]');
+assert((is2D(s) || is4D(s)), 'S must be [ni,nj] or [O,nk-1,ni,nj]');
 assert(all(size(s) == size(t)), 'S and T must be the same size');
 assert(is1D(X) || is3D(X), 'X must be [nk,1] or [nk,ni,nj]');
 assert(is2D(x), 'x must be [ni,nj]');
@@ -178,8 +166,8 @@ else
     fac = db2Pa;
 end
 
-if is3D(s) % Interpolate 3D s and t onto the surface
-    [s,t] = interpfn(lead1(x), X, s, t);
+if is4D(s) % Evaluate interpolants for S and T onto the surface
+    [s,t] = ppc_val2(X, s, t, lead1(x));
 end
 
 % Find the connected regions

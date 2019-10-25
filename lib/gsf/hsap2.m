@@ -30,17 +30,13 @@ function [y,m] = hsap2(s, t, x, varargin)
 % respectively; these are used to compute the specific volume on the
 % surface itself a = eos(s, t, p), which is used in the final term in the
 % summation that trapezoidally integrates between the surface itself and
-% the data site just shallower than the surface. If s and t have an extra
-% (vertical) dimension relative to p, they are interpolated onto the
-% surface.
+% the data site just shallower than the surface. If s and t have 2 more
+% dimensions than p, they are interpreted as cofficients of piecewise
+% polynomials for the 3D S and T as functions of P in each water column,
+% and they are evaluated onto the surface.
 %
 % [y, a] = hsap2(...)
 % also returns a = eos(s, t, p), the specific volume on the surface.
-%
-% ... = hsap2(..., interpfn)
-% uses the function specified by the function handle interpfn to
-% interpolate s and t to the surface when they have an extra (vertical)
-% dimension relative to p.
 %
 %
 % For a Boussinesq ocean, instead use the following forms. Note that z > 0
@@ -73,24 +69,23 @@ function [y,m] = hsap2(s, t, x, varargin)
 % used to compute the in-situ density on the surface itself r = eos(s, t,
 % z), which is used in the final term in the summation that trapezoidally
 % integrates between the surface itself and the data site just shallower
-% than the surface. If s and t are the same size as R and Y, they are
-% interpolated onto the surface.
+% than the surface. If s and t have 2 more dimensions than p, they are
+% interpreted as cofficients of piecewise polynomials for the 3D S and T as
+% functions of P in each water column, and they are evaluated onto the
+% surface.
 %
 % [y, r] = hsap2(..., grav, rho_c)
 % also returns r = eos(s, t, z), the in-situ density
 % on the surface.
 %
-% ... = hsap2(..., interpfn)
-% uses the function specified by the function handle interpfn to
-% interpolate s and t to the surface when they have an extra (vertical)
-% dimension relative to z.
-%
 %
 % --- Input:
-% s [1, 1] or [ni, nj] or [nk, ni, nj]: the practical / Absolute salinity,
-%  as a reference value, the values on the surface, or at all data sites
-% t [1, 1] or [ni, nj] or [nk, ni, nj]: the potential / Conservative temperature
-%  as a reference value, the values on the surface, or at all data sites
+% s [1, 1] or [ni, nj] or [O, nk-1, ni, nj]: the practical / Absolute
+%   salinity, as a reference value, the values on the surface, or a
+%   piecewise polynomial interpolant in each water column
+% t [1, 1] or [ni, nj] or [O, nk-1, ni, nj]: the potential / Conservative
+%   temperature as a reference value, the values on the surface, or a
+%   piecewise polynomial interpolant in each water column
 % p [ni, nj]: pressure on surface [dbar]
 % z [ni, nj]: depth on surface [m, positive]
 % p0 [1, 1]: reference pressure [dbar]
@@ -102,8 +97,6 @@ function [y,m] = hsap2(s, t, x, varargin)
 % Y [nk, ni, nj]: the acceleration potential from hydrostatic balance [m^2 s^-2]
 % grav [1, 1]: the gravitational acceleration [m s^-2]
 % rho_c [1, 1]: the Boussinesq reference density [kg m^-3]
-% interpfn [function handle]: the vertical interpolation function.
-%                             [Default: @interp1qn2]
 %
 % Note: nk is the maximum number of data points per water column,
 %       ni is the number of data points in longitude,
@@ -122,12 +115,6 @@ function [y,m] = hsap2(s, t, x, varargin)
 % y [ni, nj]: acceleration potential from hydrostatic balance [m^2 s^-2]
 % a [ni, nj]: specific volume on the surface [m^3 kg^-1]
 % r [ni, nj]: in-situ density on the surface [kg m^-3]
-%
-%
-% --- Requirements:
-% eos
-% binsrchrightn
-% interp1qn2 - https://www.mathworks.com/matlabcentral/fileexchange/69713
 %
 %
 % --- References:
@@ -173,15 +160,7 @@ function [y,m] = hsap2(s, t, x, varargin)
 % Date        : --
 % Changes     : --
 
-narginchk(3,9);
-
-% First check for interpolation function handle as the last argument
-if nargin > 3 && isa(varargin{end}, 'function_handle')
-    interpfn = varargin{end};
-    varargin = varargin(1:end-1);
-else
-    interpfn = @interp1qn2;
-end
+narginchk(3,8);
 
 lead1 = @(x) reshape(x, [1 size(x)]);
 
@@ -226,10 +205,11 @@ else
     nk = size(X,1);
     is1D = @(F) ismatrix(F) && all(size(F) == [nk,1]);
     is3D = @(F) ndims(F) == 3 && all(size(F) == [nk,ni,nj]);
+    is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
     assert(is1D(X) || is3D(X), 'Fourth input must be [nk,1] or [nk,ni,nj]');
     
-    if is3D(s) % Interpolate 3D s and t onto the surface
-        [s,t] = interpfn(lead1(x), X, s, t);
+    if is4D(s) % Evaluate interpolants for S and T onto the surface
+        [s,t] = ppc_val2(X, s, t, lead1(x));
     end
     
     if isscalar(varargin{1})

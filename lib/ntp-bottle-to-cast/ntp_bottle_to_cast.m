@@ -1,12 +1,13 @@
-function [x, s, t, success] = ntp_bottle_to_cast(S, T, X, sB, tB, xB, tolx) %#codegen
+function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx) %#codegen
 %NTP_BOTTLE_TO_CAST  Find a bottle's level of neutral buoyancy in a water
 %                    column, using the Neutral Tangent Plane relationship.
 %
-% [x, s, t] = ntp_bottle_to_cast(S, T, X, sB, tB, xB, tolx)
+% [x, s, t] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx)
 % finds (s, t, x), with precision in x of tolx, that is at the level of
 % neutral buoyancy for a fluid bottle of (sB, tB, xB) in a water column of
-% (S, T, X).  Specifically, s and t are given by
-%   [s,t] = interp_firstdim_twovars(x, X, S, T)
+% with piecewise polynomial interpolants for S and T given by SppX and TppX 
+% with knots at X.  Specifically, s and t are given by
+%   [s,t] = ppc_val(X, SppX, TppX, x)
 % and x satisfies
 %      eos(s, t, x') = eos(sB, tB, x')
 % where eos is the equation of state given by eos.m in MATLAB's path,
@@ -23,16 +24,18 @@ function [x, s, t, success] = ntp_bottle_to_cast(S, T, X, sB, tB, xB, tolx) %#co
 %
 %
 % --- Input:
-% S [nk, 1]: practical / Absolute salinity in water column
-% T [nk, 1]: potential / Conservative temperature in water column
-% X [nk, 1]: pressure or depth in water column
+% SppX [O, K-1]: coefficients for piecewise polynomial for practical 
+%                   / Absolute Salinity in terms of X
+% TppX [O, K-1]: coefficients for piecewise polynomial for potential 
+%                   / Conservative Temperature in terms of X
+% X [K, 1]: pressure or depth in water column
 % sB [1 , 1]: practical / Absolute salinity of current bottle
 % tB [1 , 1]: potential / Conservative temperature of current bottle
 % xB [1 , 1]: pressure or depth of current bottle
 % tolx [1, 1]: tolerance for solving the level of neutral buoyancy (same
 %             units as X and xB)
 %
-% Note: physical units for S, T, X, sB, tB, xB, x, s, t  are
+% Note: physical units for SppX, TppX, X, sB, tB, xB, x, s, t  are
 % determined by eos.m.
 %
 % Note: X must increase monotonically along its first dimension.
@@ -43,15 +46,6 @@ function [x, s, t, success] = ntp_bottle_to_cast(S, T, X, sB, tB, xB, tolx) %#co
 % s [1, 1]: practical / Absolute salinity in water column at level of neutral buoyancy
 % t [1, 1]: potential / Conservative temperature in water column at level of neutral buoyancy
 % success [1,1]: true if a valid solution was found, false otherwise.
-%
-%
-% --- Requirements:
-% eos, interp_firstdim_twovars
-% bisectguess - https://www.mathworks.com/matlabcentral/fileexchange/69710
-%
-%
-% --- Code generation:
-% See ntp_bottle_to_cast_codegen.m
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -79,24 +73,34 @@ function [x, s, t, success] = ntp_bottle_to_cast(S, T, X, sB, tB, xB, tolx) %#co
 % Date        : --
 % Changes     : --
 
-x = bisectguess(@diff_fun, X(1), X(end), tolx, xB, S, T, X, sB, tB, xB);
-
-if isnan(x)
+if size(SppX,2) > 0
+    % The water column has at least two data points, and a valid interpolant. 
+    % Search for a solution to the nonlinear root-finding problem
+    x = bisectguess(@diff_fun, X(1), X(end), tolx, xB, SppX, TppX, X, sB, tB, xB);
+    
+    if isnan(x)
+        s = nan;
+        t = nan;
+        success = false;
+    else
+        [s,t] = ppc_val2(X, SppX, TppX, reshape(x, [1, size(x)]));
+        success = true;
+    end
+    
+else
+    x = nan;
     s = nan;
     t = nan;
     success = false;
-else
-    [s,t] = interp_firstdim_twovars(x, X, S, T);
-    success = true;
 end
 end
 
-function out = diff_fun(x, S, T, X, sB, tB, xB)
-% Evaluate difference between (a) eos at location on the cast
-% (S, T, X) where the pressure is p, and (b) eos of the bottle
-% (sB, tB, xB); here, density volume is always evaluated at the average
-% pressure, (x + x0)/2.
-[s,t] = interp_firstdim_twovars(x, X, S, T);
+function out = diff_fun(x, SppX, TppX, X, sB, tB, xB)
+% Evaluate difference between (a) eos at location on the cast (S, T, X)
+% where the pressure or depth is x, and (b) eos of the bottle (sB, tB, xB);
+% here, eos is always evaluated at the average pressure or depth, (x +
+% x0)/2.
+[s,t] = ppc_val2(X, SppX, TppX, x);
 x_avg = (xB + x) / 2;
 out = eos(sB, tB, x_avg) - eos(s, t, x_avg);
 end

@@ -35,12 +35,6 @@ function [x, varargout] = calc_reeb_graph(x, OPTS)
 % nNodes, wet, n_casts.
 %
 %
-% --- Requirements:
-% bfs_conncomp, grid_adjacency
-% ReCon, including modifications to call pack() and run() - ../recon/
-% latlon2vertsfaces, perturb_until_unique, simplify_reeb_graph
-%
-%
 % --- References:
 % Doraiswamy, H. & Natarajan, V. Computing Reeb Graphs as a Union of
 % Contour Trees. IEEE Transactions on Visualization and Computer Graphics

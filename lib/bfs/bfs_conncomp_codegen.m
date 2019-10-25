@@ -76,7 +76,7 @@ try
     build_text = sprintf('%s_k%d_i%d_j%d_%dD', name_mex, nk, ni, nj, (1-Xvec)*2+1);
     fileName_build_text = [file_mat.folder V name '_info.txt'];
     fileID_build_text = fopen(fileName_build_text, 'rt');
-    
+
     
     if isempty(file_mex) ... % No mex file yet
             || file_mex.datenum < file_mat.datenum ... % MEX is too old
@@ -87,10 +87,15 @@ try
             mytic = tic;
             fprintf(FILE_ID, 'Compiling MEX for %s\n', name);
         end
-        t_G    = coder.typeof(true, [ni, nj], [false, false]);
+        
+        % Note: resulting MEX is actually faster with variable size arrays
+        % (using vs = true, below)
+        vs = true;
+        t_G    = coder.typeof(true, [ni, nj], [vs, vs]);
         nij = ni * nj;
-        t_A    = coder.typeof(0, [nij, 4], [false, false]);
-        t_q    = coder.typeof(0, [nij, 1], [false, false]);
+        t_A    = coder.typeof(0, [nij, 8], [vs, true]);
+        t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
+        
         if r
             args = {t_G, t_A, 0, t_q};
         else

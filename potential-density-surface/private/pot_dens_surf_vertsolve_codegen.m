@@ -71,27 +71,19 @@ try
     
     % Get info about which eos.m file is on the path
     which_eos    = which('eos');
-    which_interp = which('interp_firstdim_twovars');
     file_eos     = dir(which_eos);
-    file_interp  = dir(which_interp);
     
     % Test values for eos and eosdp
     s = 34.5;
     t = 3;
-    p = 1000; % or z
-    m = eos(s, t, p);
-    
-    % Test values for interp_firstdim_twovars
-    x = 2;
-    X = [0; 1; 3; 6];
-    Y = [0; 1; 2; 3];
-    y = interp_firstdim_twovars(x,X,Y,Y);
+    x = 1000;
+    m = eos(s, t, x);
     
     % Create identifier for this build of the MEX function.
-    build_text = sprintf('%s_k%d_i%d_j%d_%dD_m=%.59e_y=%.59e', name, nk, ni, nj, (1-Xvec)*2+1, m, y);
+    build_text = sprintf('%s_k%d_i%d_j%d_%dD_m=%.59e', name, nk, ni, nj, (1-Xvec)*2+1, m);
     
     BUILD = isempty(file_mex) ... % No mex file yet
-        || file_mex.datenum < max([file_mat.datenum, file_eos.datenum, file_interp.datenum]) ... % MEX is too old
+        || file_mex.datenum < max([file_mat.datenum, file_eos.datenum]) ... % MEX is too old
         || (fileID_build_text < 0) ... % No text file specification
         || (fileID_build_text >= 0 && ~strcmp(fgetl(fileID_build_text), build_text)); % Requested parameters do not match those recorded in text file
     
@@ -105,23 +97,27 @@ try
             fprintf(FILE_ID, 'Compiling MEX for %s, with\n', name);
             fprintf(FILE_ID, ' %s in %s\n', read_function_name(which_eos), file_eos.folder);
             fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, x, m);
-            fprintf(FILE_ID, ' %s in %s\n', read_function_name(which_interp), file_interp.folder);
-            fprintf(FILE_ID, ' interp_firstdim_twovars(%g,%s,%s) = %g\n', x, mat2str(X), mat2str(Y), y);
-        end
-        t_S    = coder.typeof(0, [nk, ni, nj], [false, false, false]);
-        if Xvec
-            t_X = coder.typeof(0, [nk, 1], [false, false]);
-        else
-            t_X = t_S;
         end
         
-        args = {t_S, t_S, t_X, 0, 0, 0};
+        % Note: resulting MEX is actually faster with variable size arrays
+        % (using vs = true, below)
+        vs = true;
+        t_SppX  = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
+        if Xvec
+            t_X = coder.typeof(0, [nk, 1], [vs, vs]);
+        else
+            t_X = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
+        end
+        t_x     = coder.typeof(0, [ni, nj], [vs, vs]);
+        t_BotK  = coder.typeof(uint16(0), [ni, nj], [vs, vs]);
+        
+        args = {t_SppX, t_SppX, t_X, t_BotK, t_x, 0, 0, 0};
         
         % Configure MEX for speed.
         mexconfig = coder.config('mex');
-        mexconfig.ExtrinsicCalls = false;
-        mexconfig.ResponsivenessChecks = false;
-        mexconfig.IntegrityChecks = false;
+%         mexconfig.ExtrinsicCalls = false;
+%         mexconfig.ResponsivenessChecks = false;
+%         mexconfig.IntegrityChecks = false;
         
         % Compile the MEX function
         cd(file_mat.folder);

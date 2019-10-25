@@ -46,10 +46,6 @@ function [F, F2] = int_graph_fun(f, arc_from, arc_to, node_fn, graph, bfs_parent
 %
 % Note, above A is the number of arcs, N the number of nodes, and C the
 % number of cycles in the cycle basis of the graph.
-%
-%
-% --- Requirements:
-% cycle_analy_bfs, pvaln, pintn
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.

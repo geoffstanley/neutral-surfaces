@@ -1,31 +1,29 @@
-function [x,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, tolx, OPTS)
+function [x,s,t,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, OPTS)
 %DELTASURF Specific volume anomaly surface by nonlinear solution in each water column.
 %
 %
-% x = delta_surf(S, T, X, s0, t0, d0, tolx)
-% finds pressure or depth x (with precision tolx) of the isosurface d0 of
-% delta = eos(S,T,X) - eos(s0,t0,X) with reference practical / Absolute
-% salinity s0 and reference potential / Conservative temperature t0, in an
-% ocean with practical / Absolute salinity S and potential / Conservative
-% temperature T at data sites where the pressure or depth is X.  The
-% equation of state is given by eos.m in MATLAB's path, which accepts S, T,
-% and X as its 3 inputs.  For a non-Boussinesq ocean, x and X are pressure
-% [dbar] and eos gives the specific volume.  For a Boussinesq ocean, x and
-% X are depth [m] positive and increasing down, and eos gives the in-situ
-% density.
+% x = delta_surf(S, T, X, s0, t0, d0)
+% finds pressure or depth x of the isosurface d0 of delta = eos(S,T,X) -
+% eos(s0,t0,X) with reference practical / Absolute salinity s0 and
+% reference potential / Conservative temperature t0, in an ocean with
+% practical / Absolute salinity S and potential / Conservative temperature
+% T at data sites where the pressure or depth is X.  The equation of state
+% is given by eos.m in MATLAB's path, which accepts S, T, and X as its 3
+% inputs.  For a non-Boussinesq ocean, x and X are pressure [dbar] and eos
+% gives the specific volume.  For a Boussinesq ocean, x and X are depth [m]
+% positive and increasing down, and eos gives the in-situ density.
 %
-% [x, d0] = delta_surf(S, T, X, s0, t0, [i0, j0, x0], tolx)
+% [x, d0] = delta_surf(S, T, X, s0, t0, [i0, j0, x0])
 % as above but finds the delta isosurface, delta = d0, that intersects the
 % reference cast at grid indices (i0,j0) at pressure or depth x0.
 %
-% [x, d0, s0, t0] = delta_surf(S, T, X, [], [], [i0, j0, x0], tolx)
+% [x, d0, s0, t0] = delta_surf(S, T, X, [], [], [i0, j0, x0])
 % as above but also finds the reference practical / Absolute salinity s0
 % and reference potential / Conservative temperature t0 by interpolating S
 % and T at the reference cast (i0,j0) to pressure or depth x0.
 %
 % ... = delta_surf(..., OPTS)
-% passes the OPTS struct to the code generation.  See
-% delta_surf_vertsolve_codegen.m for details.
+% sets algorithmic parameters (see "Options" below for further details).
 %
 %
 % --- Input:
@@ -35,8 +33,7 @@ function [x,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, tolx, OPTS)
 % s0 [1, 1] or []: reference S
 % t0 [1, 1] or []: reference T
 % var [1, 1] or [1, 3]: isovalue of delta, or location to intersect
-% tolx [1, 1]: precision of the pressure [dbar] or depth [m] of the surface
-% OPTS [struct]: code generation options
+% OPTS [struct]: options (see below)
 %
 % Note: nk is the maximum number of data points per water column,
 %       ni is the number of data points in longitude,
@@ -48,16 +45,31 @@ function [x,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, tolx, OPTS)
 %
 %
 % --- Output:
-% x [ni, nj]: pressure [dbar] or depth [m] of the delta surface
+% x [ni, nj]: pressure [dbar] or depth [m] of the surface
+% s [ni, nj]: practical / Absolute salinity on the surface
+% t [ni, nj]: potential / Conservative temperature the surface
 % d0 [1, 1]: isovalue of the delta surface
-% s0 [1, 1]: reference S
-% t0 [1, 1]: reference T
+% s0 [1, 1]: reference S that defines delta
+% t0 [1, 1]: reference T that defines delta
 %
 %
-% --- Requirements:
-% eos, interp_firstdim_twovars
-% bisectguess - https://www.mathworks.com/matlabcentral/fileexchange/69710
-% interp1qn - https://www.mathworks.com/matlabcentral/fileexchange/69713
+% --- Options:
+% OPTS is a struct containing the following fields.
+%   FILE_ID [1, 1]: 1 to write any output to MATLAB terminal, or a file
+%       identifier as returned by fopen() to write to a file. Default: 1.
+%   INTERPFN [function handle]: vertical interpolation function, used to
+%       evaluate SppX and TppX if those are not provided.  E.g. INTERPFN =
+%       @ppc_linterp.
+%   SppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
+%       knots are X that interpolate S as a function of X in each water 
+%       column.  E.g. SppX = ppc_linterp(X, S);
+%   TppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
+%       knots are X that interpolate T as a function of X in each water 
+%       column.  E.g. TppX = ppc_linterp(X, T);
+%   VERBOSE [scalar]: 0 for no output; 1 for summary of each iteration;
+%                     2 for detailed information on each iteration.
+%   X_TOL [1, 1]: error tolerance, in the same units as X [dbar] or [m], 
+%      when root-finding to update the surface.
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -86,23 +98,45 @@ function [x,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, tolx, OPTS)
 % Changes     : --
 
 [nk, ni, nj] = size(S);
-[~,xj] = size(X);
-NX = nk * double(xj > 1);
+[~,XN] = size(X);
+KX = nk * double(XN > 1);
 
+% Set up default options:
+DEFS = struct();
+DEFS.X_TOL = 1e-4;  % error tolerance in the vertical dimension
+DEFS.INTERPFN = @ppc_linterp;  % linear interpolation in the vertical
+DEFS.FILE_ID = 1;  % standard output to MATLAB terminal
+DEFS.VERBOSE = 1;  % show a moderate level of information
 
-if nargin < 7 || isempty(tolx)
-    tolx = 1e-4;
-end
-if nargin < 8 || isempty(OPTS)
-    OPTS = struct(); % Let the code generation function decide
-end
+% Override any options with user-specified OPTS
+OPTS = catstruct(DEFS, OPTS); 
 
 % Run codegen to create MEX function handling the main computation
 delta_surf_vertsolve_codegen(nk, ni, nj, isvector(X), OPTS);
 
+% Interpolate S and T as functions of X, or use pre-computed interpolants in OPTS.
+if isfield(OPTS, 'SppX') && isfield(OPTS, 'TppX')
+    [~, kIS, iIS, jIS] = size(OPTS.SppX);
+    [~, kIT, iIT, jIT] = size(OPTS.TppX);
+end
+if exist('kIS', 'var') && ...
+        nk-1 == kIS && kIS == kIT && ...
+        ni   == iIS && iIS == iIT && ...
+        nj   == jIS && jIS == jIT
+    SppX = OPTS.SppX;
+    TppX = OPTS.TppX;
+else
+    SppX = OPTS.INTERPFN(X, S);
+    TppX = OPTS.INTERPFN(X, T);
+end
 
+% Count number of valid bottles per cast
+BotK = squeeze(sum(uint16(isfinite(S)), 1, 'native'));
+
+% Decide on the isosurface value
 if isscalar(var)
     % s0 and t0 should be provided
+    assert(isscalar(s0) && isscalar(t0), 's0 and t0 must be provided as scalars if d0 is provided.');
     d0 = var(1);
     
 else
@@ -113,26 +147,36 @@ else
     
     % Get linear index to reference cast
     ij0 = sub2ind([ni,nj], i0, j0);
-    idx = (ij0-1) * NX;
-    
-    % Number of valid bottles in reference cast
-    K = sum(isfinite(S(:,ij0)),1);
+    n = (ij0-1) * KX;
     
     % Select the reference cast
-    Xc = X((idx+1:idx+K).');
-    Sc = S(1:K,ij0);
-    Tc = T(1:K,ij0);
+    X0 = X((n+1:n+nk).');
+    S0 = S(1:nk,ij0);
+    T0 = T(1:nk,ij0);
+    SppX0 = SppX(:,:,ij0);
+    TppX0 = TppX(:,:,ij0);
     
-    if nargin < 6 || isempty(s0) && isempty(t0)
-        % Get reference salinity and temperature at the chosen location
-        [s0, t0] = interp_firstdim_twovars(x0, Xc, Sc, Tc);
+    % Get reference salinity and temperature at the chosen location
+    if isempty(s0) || isempty(t0)
+        [s0,t0] = ppc_val2(X0, SppX0, TppX0, x0);
     end
     
-    % Choose iso-value that will intersect (i0,j0,p0).
-    Dc = eos(Sc, Tc, Xc) - eos(s0, t0, Xc);
-    d0 = interp_firstdim_twovars(x0, Xc, Dc, Dc);
-    
+    % Choose iso-value that will intersect (i0,j0,x0).
+    D0 = eos(S0, T0, X0) - eos(s0, t0, X0);
+    d0 = ppc_linterp(X0, D0, x0);
+
 end
 
+% Calculate 3D field for vertical interpolation
+if eos(34.5,3,1000) > 1
+    sortdir = 'ascend'; % eos is in-situ density, increasing with 3rd argument
+else
+    sortdir = 'descend'; % eos is specific volume, decreasing with 3rd argument
+end
+D = sort(eos(S, T, X) - eos(s0, t0, X), 1, sortdir);
+
+% Get started with the discrete version (and linear interpolation)
+x = interp1qn(d0, D, X);
+
 % Solve non-linear root finding problem in each cast
-x = delta_surf_vertsolve_mex(S, T, X, s0, t0, d0, tolx);
+[x, s, t] = delta_surf_vertsolve_mex(SppX, TppX, X, BotK, x, s0, t0, d0, OPTS.X_TOL);

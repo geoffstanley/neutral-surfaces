@@ -1,6 +1,11 @@
-function [x,d0,s0,t0] = delta_surf_vertsolve(S, T, X, s0, t0, d0, tolx) %#codegen
+function [x,s,t] = delta_surf_vertsolve(SppX, TppX, X, BotK, x, s0, t0, d0, tolx) %#codegen
 %DELTA_SURF_VERTSOLVE  Helper function for delta_surf, solving non-linear
 %                      root finding problem in each water column.
+%
+%
+% Note: to ensure the generated MEX function gives the same output as
+% running this in native MATLAB, the MEX function must be generated with K
+% specified as an integer class, not double: we use uint16.
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -28,46 +33,38 @@ function [x,d0,s0,t0] = delta_surf_vertsolve(S, T, X, s0, t0, d0, tolx) %#codege
 % Date        : --
 % Changes     : --
 
-[nz, nx, ny] = size(S);
-[~,Xj] = size(X);
-MX = nz * double(Xj > 1);
+N = numel(x);
+[K,XN] = size(X);
+KX = K * double(XN > 1);
 
-if eos(34.5, 3, 1000) > 1
-    sortdir = 'ascend'; % eosis in-situ density, increasing in 3rd dim
-else
-    sortdir = 'descend'; % eos is specific volume, decreasing in 3rd dim
-end
-
-% Count number of valid bottles per cast
-BotK = squeeze(sum(isfinite(S),1));
-
+s = nan(size(x));
+t = nan(size(x));
 
 % Loop over each cast
-idx = 0;
-x = nan(nx,ny);
-for c = 1:nx*ny
-    K = BotK(c);
-    if K >= 2
+nX = 0;
+for n = 1:N
+    k = BotK(n);
+    if k > 1
         
-        % Select cast
-        Xc = X((idx+1:idx+K).');
-        Sc = S(1:K,c);
-        Tc = T(1:K,c);
+        % Select this water column
+        SppXn = SppX(:,1:k-1,n);
+        TppXn = TppX(:,1:k-1,n);
+        Xn = X((nX+1:nX+k).');
         
-        % Get started with the discrete version (and linear interpolation)
-        Dc = sort(eos(Sc, Tc, Xc) - eos(s0, t0, Xc), 1, sortdir);
-        x(c) = interp1qn(d0, Dc, Xc);
+        % Solve non-linear problem at each water column
+        x(n) = bisectguess(@diff_fun, Xn(1), Xn(k), tolx, x(n), ...
+            SppXn, TppXn, Xn, s0, t0, d0);
         
-        % Now refine by solving the non-linear problem at each water column
-        x(c) = bisectguess(@diff_fun, X(idx+1), X(idx+K), tolx, x(c), ...
-            X((idx+1:idx+K).'), S(1:K,c), T(1:K,c), s0, t0, d0);
+        % Interpolate S and T onto the updated surface
+        [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+        
     end
-    idx = idx + MX;
+    nX = nX + KX;
 end
 
 end
 
-function out = diff_fun(x, X, S, T, s0, t0, d0)
-[s,t] = interp_firstdim_twovars(x, X, S, T);
+function out = diff_fun(x, SppX, TppX, X, s0, t0, d0)
+[s,t] = ppc_val2(X, SppX, TppX, x);
 out = eos(s, t, x) - eos(s0, t0, x) - d0 ;
 end

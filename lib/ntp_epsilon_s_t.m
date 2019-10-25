@@ -74,11 +74,6 @@ function [ex,ey] = ntp_epsilon_s_t(s, t, x, dx, dy, centre, wrap)
 % factor of r because of our definition for [ex,ey] above.
 %
 %
-% --- Requirements:
-% eos, eos_s_t
-% pchipdqn - https://www.mathworks.com/matlabcentral/fileexchange/69713
-%
-%
 % --- References:
 % Klocker, A., McDougall, T. J. & Jackett, D. R. A new method for forming
 % approximately neutral surfaces. Ocean Science 5, 155?172 (2009).

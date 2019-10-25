@@ -51,8 +51,9 @@ function [y,yx] = pchipdqn(x,X,Y) %#codegen
 %
 % Author    : Geoff Stanley
 % Email     : geoffstanley@gmail.com
-% Version   : 1.0
+% Version   : 1.1
 % History   : 05/09/2019 - initial release
+%           : 25/10/2019 - minor speed and documentation updates
 
 szX = size(X);
 szY = size(Y);

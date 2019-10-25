@@ -39,10 +39,6 @@ function                  [arc_from, arc_to, arc_segment, node_prev, node_next, 
 % nodes with 2 up arcs and no down arcs, or vice versa. (Carr et al. 2010)
 %
 %
-% --- Requirements:
-% PriorityQueue - https://www.mathworks.com/matlabcentral/fileexchange/69142
-%
-%
 % --- References:
 % Carr, H., Snoeyink, J. & van de Panne, M. Flexible isosurfaces:
 % Simplifying and displaying scalar topology using the contour tree.

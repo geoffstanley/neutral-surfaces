@@ -52,8 +52,6 @@ for i = 1 : length(FEX_DIR)
     end
 end
 
-addpath([PATH_PROJECT 'run']);
-
 addpath([PATH_PROJECT 'potential-density-surface']);
 addpath([PATH_PROJECT 'specific-volume-anomaly-surface']);
 

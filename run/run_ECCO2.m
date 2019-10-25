@@ -43,11 +43,11 @@ warning('off', 'MATLAB:nargchk:deprecated')
 set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 V = filesep(); % /  or  \  depending on OS.
 
-OMEGA_FRESH = true;  % Use this to compute omega surfaces from scratch
+OMEGA_FRESH = true;  % Use  this to compute omega surfaces from scratch
 %OMEGA_FRESH = false; % Use this to load pre-computed omega surfaces
 
-PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-%PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/'; % Manually set path to this file.
+%PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
+PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/'; % Manually set path to this file.
 
 % Get path to one directory up, containing all of Topobaric Surface
 PATH_PROJECT = PATH_LOCAL(1 : find(PATH_LOCAL(1:end-1) == V, 1, 'last'));
@@ -67,8 +67,8 @@ PATH_ECCO2 = textscan(file_id, '%s');
 PATH_ECCO2 = PATH_ECCO2{1}{1};
 fclose(file_id);
 
-%fileID = 1; % For standard output to the screen
-fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
+fileID = 1; % For standard output to the screen
+%fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
 
 db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion
@@ -98,9 +98,7 @@ eos_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq.m'   ], [PA
 eos_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_dz.m'], [PATH_PROJECT 'lib' V 'alias' V 'eos_x.m'], grav, rho_c);
 
 % Choose vertical interpolation method
-copyfile([PATH_PROJECT 'fex' V 'columncalculus' V 'interp1qn2.m'], [PATH_PROJECT 'lib' V 'alias' V 'interp_firstdim_twovars.m']); % linear interpolation
-%copyfile([PATH_PROJECT 'fex' V 'columncalculus' V 'pchipqn2.m'], [PATH_PROJECT 'lib' V 'alias' V 'interp_firstdim_twovars.m']);  % PCHIP interpolation
-clear interp_firstdim_twovars % Make sure new file gets used
+interpfn = @ppc_linterp;
 
 %% C-grid functions for 2D data (longitude = i = rows, latitude = j = columns)
 im1 = @(F) circshift(F, [+1 0]);
@@ -128,6 +126,9 @@ GAMMA = load_ECCO2(PATH_ECCO2, 'gamma', TIMESTEP);
 S = permute(S, [3 1 2]); % [nz,nx,ny]. depth  by  long  by  lat
 T = permute(T, [3 1 2]);
 GAMMA = permute(GAMMA, [3 1 2]);
+
+SppX = interpfn(Z, S);
+TppX = interpfn(Z, T);
 
 % Compute in-situ density
 R = eos(S, T, Z);
@@ -178,6 +179,9 @@ OPTS.ITER_START_WETTING = 1; % Start wetting on first iteration
 OPTS.VERBOSE = 1;      % Some output while executing topobaric_surface()
 OPTS.FILE_ID = fileID; % Write output to this file
 OPTS.FIGS_SHOW = false; % Don't show figures (for omega surface)
+OPTS.INTERPFN = interpfn; % set interpolation function to match this script
+OPTS.SppX = SppX;      % Use pre-computed piecewise polynomial for S in terms of X=Z
+OPTS.TppX = TppX;      % Use pre-computed piecewise polynomial for T in terms of X=Z
 
 %% Figure setup:
 land = squeeze(isnan(S(1,:,:)));
@@ -207,15 +211,14 @@ for iZ = 1 : nZ
     if OMEGA_FRESH
         
         % Compute a potential density surface to initialize omega_surface
-        [z_sigma, val] = pot_dens_surf(S, T, Z, zref, [i0, j0, zref], tolx, OPTS);
+        [z_sigma, ~, ~, val] = pot_dens_surf(S, T, Z, zref, [i0, j0, zref], OPTS);
         fprintf(fileID, '(%d,%d,%.4fm): SIGMA = %.4f, z_ref = %.4f\n', ...
             i0, j0, zref, val, zref);
 
         % Calculate omega surface
         mytic = tic;
         zs(:,:,iSURF('OMEGA'),iZ) = omega_surface(S, T, Z, z_sigma, OPTS);
-        fprintf(fileID, '(%d,%d,%.4fm): OMEGA done in time %.2f\n', ...
-            i0, j0, z_i0j0(iZ), toc(mytic));
+        
         
         clear z_sigma
     else
@@ -225,8 +228,13 @@ for iZ = 1 : nZ
     % Select reference depth. All surfaces shall intersect this point:
     z_i0j0(iZ) = zs(i0,j0,iSURF('OMEGA'),iZ);
     
+    if OMEGA_FRESH
+        fprintf(fileID, '(%d,%d,%.4fm): OMEGA done in time %.2f\n', ...
+            i0, j0, z_i0j0(iZ), toc(mytic));
+    end
+    
     %% Potential density Surface
-    [zs(:,:,iSURF('SIGMA'),iZ), val] = pot_dens_surf(S, T, Z, zref, [i0, j0, z_i0j0(iZ)], tolx, OPTS);
+    [zs(:,:,iSURF('SIGMA'),iZ), ~, ~, val] = pot_dens_surf(S, T, Z, zref, [i0, j0, z_i0j0(iZ)], OPTS);
     fprintf(fileID, '(%d,%d,%.4fm): SIGMA = %.4f, z_ref = %.4f\n', ...
         i0, j0, z_i0j0(iZ), val, zref);
     
@@ -257,20 +265,21 @@ for iZ = 1 : nZ
     %% Density anomaly surface
     
     % Get reference S and T as Southern Ocean average:
-    [s,t] = interp_firstdim_twovars(lead1(zs(:,:,iSURF('OMEGA'),iZ)), Z, S, T);
+    [s,t] = ppc_val2(Z, SppX, TppX, lead1(zs(:,:,iSURF('OMEGA'),iZ)));
+    
     jj = y_to_j(-55) : y_to_j(-50);
     S_delta = nanmean(reshape(s(:,jj), [], 1));
     T_delta = nanmean(reshape(t(:,jj), [], 1));
     clear s t
     
-    [zs(:,:,iSURF('DELTA'),iZ),val] = delta_surf(S, T, Z, S_delta, T_delta, [i0, j0, z_i0j0(iZ)], tolx, OPTS);
+    [zs(:,:,iSURF('DELTA'),iZ), ~, ~, val] = delta_surf(S, T, Z, S_delta, T_delta, [i0, j0, z_i0j0(iZ)], OPTS);
     fprintf(fileID, '(%d,%d,%.4fm): DELTA = %.4e, S_delta = %.4f, T_delta = %.4f\n', ...
         i0, j0, z_i0j0(iZ), val, S_delta, T_delta);
     
     
     %% Neutral Density surface
-    val = interp1qn(z_i0j0(iZ), Z, squeeze(GAMMA(:,i0,j0)));
-    zs(:,:,iSURF('GAMMA'),iZ) = interp1qn(val, GAMMA, Z);
+    val = ppc_linterp(Z, GAMMA(:,i0,j0), z_i0j0(iZ));
+    zs(:,:,iSURF('GAMMA'),iZ) = ppc_linterp(GAMMA, Z, val);
     
     fprintf(fileID, '(%d,%d,%.4fm): GAMMA = %.4f\n', ...
         i0, j0, z_i0j0(iZ), val);
@@ -412,14 +421,13 @@ for iZ = 1:nZ
         z = zs(:,:,iS,iZ);
         z(~good_mask(:,:,1,iZ)) = nan;
         
-        if strcmp(surfname, 'GAMMA') || (strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH)
+        if strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH
             % OMEGA-surface was pre-computed using linear interpolation
-            % GAMMA-surface was linearly interpolated in this script
-            interpfn = @interp1qn2;
+            s = ppc_linterp(Z, S, lead1(z));
+            t = ppc_linterp(Z, T, lead1(z));
         else
-            interpfn = @interp_firstdim_twovars;
+            [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
         end
-        [s, t] = interpfn(lead1(z), Z, S, T);
         
         % Get neutrality errors on the U,V grid
         [eps.mapx(:,:,iS,iZ), eps.mapy(:,:,iS,iZ)] = ntp_epsilon_r_x(s,t,z,g.DXCvec,g.DYCsc,false,g.WRAP);
@@ -771,33 +779,38 @@ for iZ = 1 : nZ
         surfname = SURFsubset{iS};
         z = zs(:,:,iSURF(surfname),iZ);
         
-        if strcmp(surfname, 'GAMMA') || (strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH)
+        if strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH
             % OMEGA-surface was pre-computed using linear interpolation
-            % GAMMA-surface was linearly interpolated in this script
-            interpfn = @interp1qn2;
+            s = ppc_linterp(Z, S, lead1(z));
+            t = ppc_linterp(Z, T, lead1(z));
         else
-            interpfn = @interp_firstdim_twovars;
+            [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
         end
-        [s, t] = interpfn(lead1(z), Z, S, T);
         
+        %[s1,t1] = interp1qn2(lead1(z), Z, S, T);
+        %[y1,r1] = hsap2_orig(s1, t1, z, Z, R, Y, grav, rho_c);
         [y,r] = hsap2(s, t, z, Z, R, Y, grav, rho_c);
         
         % Geostrophic velocities from in-surface gradients. Boussinesq. (-) on z undoes that we've been z>0 people!
         ugs = -((y - jm1(y)) + (grav / (2*rho_c)) * (-z + jm1(z)) .* (r + jm1(r))) ./ (g.DYCsc * cori_V);
+        %ugs1 = -((y1 - jm1(y1)) + (grav / (2*rho_c)) * (-z + jm1(z)) .* (r1 + jm1(r1))) ./ (g.DYCsc * cori_V);
         vgs =  ((y - im1(y)) + (grav / (2*rho_c)) * (-z + im1(z)) .* (r + im1(r))) ./ (g.DXCvec .* cori_U);
         
         % Zonal velocities:
         z_avg = (z + jm1(z)) / 2; % on V grid
-        u = interp1qn(lead1(z_avg), Z, UVEL); % Full velocity, interpolated onto the surface
-        y     =     hsap2(S, T,     z_avg , Z, R, Y, grav, rho_c, interpfn) ;
-        y_adj = jm1(hsap2(S, T, jp1(z_avg), Z, R, Y, grav, rho_c, interpfn));
+        u = ppc_linterp(Z, UVEL, lead1(z_avg)); % Full velocity, interpolated onto the surface
+        y     =     hsap2(SppX, TppX,     z_avg , Z, R, Y, grav, rho_c) ;
+        y_adj = jm1(hsap2(SppX, TppX, jp1(z_avg), Z, R, Y, grav, rho_c));
         ugz = -(y - y_adj) ./ (g.DYCsc * cori_V); % Geostrophic velocity from z level gradient
+        %y1     =     hsap2_orig(S, T,     z_avg , Z, R, Y, grav, rho_c, @interp1qn2) ;
+        %y_adj1 = jm1(hsap2_orig(S, T, jp1(z_avg), Z, R, Y, grav, rho_c, @interp1qn2));
+        %ugz1 = -(y1 - y_adj1) ./ (g.DYCsc * cori_V); % Geostrophic velocity from z level gradient
         
         % Meridional velocities:
         z_avg = (z + im1(z)) / 2; % on U grid
-        v = interp1qn(lead1(z_avg), Z, VVEL); % Full velocity, interpolated onto the surface
-        y     =     hsap2(S, T,     z_avg , Z, R, Y, grav, rho_c, interpfn) ;
-        y_adj = im1(hsap2(S, T, ip1(z_avg), Z, R, Y, grav, rho_c, interpfn));
+        v = ppc_linterp(Z, VVEL, lead1(z_avg)); % Full velocity, interpolated onto the surface
+        y     =     hsap2(SppX, TppX,     z_avg , Z, R, Y, grav, rho_c) ;
+        y_adj = im1(hsap2(SppX, TppX, ip1(z_avg), Z, R, Y, grav, rho_c));
         vgz =  (y - y_adj) ./ (g.DXCvec .* cori_U); % Geostrophic velocity from z level gradient
         
         % Geostrophic streamfunctions:
@@ -865,7 +878,7 @@ for iZ = 1 : nZ
         
     end %iS
 end % iZ
-clear ZH CU MK TB OM ugs ugz u vgs vgz v z_avg y y_adj r s t
+%clear ZH CU MK TB OM ugs ugz u vgs vgz v z_avg y y_adj r s t
 fprintf(fileID, 'Streamfunctions calculated in time %.2f\n', toc(mytic));
 
 %% Build a common mask all errors, for each surface
@@ -1164,14 +1177,13 @@ for iS = 1:nSs
         % --- Scatter plot of delta vs z, only in the main region
         % (connected to OPTS.REF_IJ)
         z = zs(:,:,iSURF(surfname),iZ);
-        if strcmp(surfname, 'GAMMA') || (strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH)
+        if strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH
             % OMEGA-surface was pre-computed using linear interpolation
-            % GAMMA-surface was linearly interpolated in this script
-            interpfn = @interp1qn2;
+            s = ppc_linterp(Z, S, lead1(z));
+            t = ppc_linterp(Z, T, lead1(z));
         else
-            interpfn = @interp_firstdim_twovars;
+            [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
         end
-        [s, t] = interpfn(lead1(z), Z, S, T);
         
         [~,~,~,ROI] = bfs_conncomp(isfinite(z), neigh, I0);
         s_ = s(ROI); clear s
@@ -1240,14 +1252,13 @@ fprintf(fileID, '--- Geostrophic velocity errors when streamfunction is ill-defi
 iZ = 2;
 surfname = 'OMEGA';
 z = zs(:,:,iSURF(surfname),iZ);
-if strcmp(surfname, 'GAMMA') || (strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH)
+if strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH
     % OMEGA-surface was pre-computed using linear interpolation
-    % GAMMA-surface was linearly interpolated in this script
-    interpfn = @interp1qn2;
+    s = ppc_linterp(Z, S, lead1(z));
+    t = ppc_linterp(Z, T, lead1(z));
 else
-    interpfn = @interp_firstdim_twovars;
+    [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
 end
-[s, t] = interpfn(lead1(z), Z, S, T);
 s0 = s(i0,j0);
 t0 = t(i0,j0);
 
@@ -1289,20 +1300,19 @@ fprintf(fileID, '  and of these points, the L1 error is %.4e, and the L2 error i
 % potential.
 fprintf(fileID, '--- Orthobaric geostrophic streamfunction vs orthobaric Montgomery potential ---\n');
 surfname = 'OMEGA';
-if strcmp(surfname, 'GAMMA') || (strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH)
-    % OMEGA-surface was pre-computed using linear interpolation
-    % GAMMA-surface was linearly interpolated in this script
-    interpfn = @interp1qn2;
-else
-    interpfn = @interp_firstdim_twovars;
-end
 iS = find(cellfun(@(c) strcmp(c, 'OMEGA'), SURFsubset));
 assert(~isempty(iS), 'Failed to select OMEGA surface.');
 for iZ = 1 : nZ
     
     % --- Prepare properties on the surface
     z = zs(:,:,iSURF(surfname),iZ);
-    [s,t] = interpfn(lead1(z), Z, S, T);
+    if strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH
+        % OMEGA-surface was pre-computed using linear interpolation
+        s = ppc_linterp(Z, S, lead1(z));
+        t = ppc_linterp(Z, T, lead1(z));
+    else
+        [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
+    end
     [y,r] = hsap2(s, t, z, Z, R, Y, grav, rho_c);
     
     % Geostrophic velocities from in-surface gradients. Boussinesq. (-) on z undoes that we've been z>0 people!
@@ -1461,6 +1471,10 @@ A = eos(S, T, P);
 % Pre-compute hydrostatic acceleration potential
 Y = hsap3(P, ATMP, ETAN, A, grav);
 
+% Interpolate S and T as functions of P
+SppX = interpfn(P, S);
+TppX = interpfn(P, T);
+
 % Get a potential density surface to work on
 pref = 2000; % [dbar]
 SIGMA = sort(-eos(S, T, pref), 1); % (-) so that increasing with depth. sort to ensure monotonic
@@ -1469,7 +1483,7 @@ p = interp1qn(isoval, SIGMA, P);
 clear SIGMA
 
 % Properties on the surface
-[s,t] = interp1qn2(lead1(p), P, S, T);
+[s,t] = ppc_val2(P, SppX, TppX, lead1(p));
 [y,a] = hsap2(s, t, p, P, A, Y);
 
 % Geostrophic velocities from in-surface gradients. Non-Boussinesq.
@@ -1478,16 +1492,16 @@ vgs =  ( (db2Pa/2) * (a + im1(a)) .* (p - im1(p)) + (y - im1(y)) ) ./ (g.DXCvec 
 
 % Zonal velocities:
 p_avg = (p + jm1(p)) / 2; % on V grid
-u = interp1qn(lead1(p_avg), P, UVEL); % Full velocity, interpolated onto the surface
-y     =     hsap2(S, T,     p_avg , P, A, Y) ;
-y_adj = jm1(hsap2(S, T, jp1(p_avg), P, A, Y));
+u = ppc_linterp(P, UVEL, lead1(p_avg)); % Full velocity, interpolated onto the surface
+y     =     hsap2(SppX, TppX,     p_avg , P, A, Y) ;
+y_adj = jm1(hsap2(SppX, TppX, jp1(p_avg), P, A, Y));
 ugz = -(y - y_adj) ./ (g.DYCsc * cori_V); % Geostrophic velocity from z level gradient
 
 % Meridional velocities:
 p_avg = (p + im1(p)) / 2; % on U grid
-v = interp1qn(lead1(p_avg), P, VVEL); % Full velocity, interpolated onto the surface
-y     =     hsap2(S, T,     p_avg , P, A, Y) ;
-y_adj = im1(hsap2(S, T, ip1(p_avg), P, A, Y));
+v = ppc_linterp(P, VVEL, lead1(p_avg)); % Full velocity, interpolated onto the surface
+y     =     hsap2(SppX, TppX,     p_avg , P, A, Y) ;
+y_adj = im1(hsap2(SppX, TppX, ip1(p_avg), P, A, Y));
 vgz =  (y - y_adj) ./ (g.DXCvec .* cori_U); % Geostrophic velocity from z level gradient
 
 % Geostrophic streamfunctions:

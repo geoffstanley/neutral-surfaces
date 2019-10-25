@@ -68,27 +68,21 @@ try
     assert(~isempty(file_mat), ['Cannot locate ' name '.m']);
     which_eos   = which('eos');
     file_eos    = dir(which_eos);
-    which_interp = which('interp_firstdim_twovars');
-    file_interp = dir(which_interp);
     
     % Test values
-    x = 2;
-    X = [0; 1; 3; 6];
-    Y = [0; 1; 2; 3];
-    y = interp_firstdim_twovars(x,X,Y,Y);
     s = 34.5;
     t = 3;
-    p = 1000; % or z
-    m = eos(s, t, p);
+    x = 1000;
+    m = eos(s, t, x);
     
     % Create textual identifier for this build of the MEX function.
-    build_text = sprintf('%s_k%d_m=%.59e_y=%.59e', name, nk, m, y);
+    build_text = sprintf('%s_k%d_m=%.59e', name, nk, m);
     fileName_build_text = [file_mat.folder V name '_info.txt'];
     fileID_build_text = fopen(fileName_build_text, 'rt');
     
     
     if isempty(file_mex) ... % No mex file yet
-            || file_mex.datenum < max([file_mat.datenum, file_eos.datenum, file_interp.datenum]) ... % MEX is too old
+            || file_mex.datenum < max([file_mat.datenum, file_eos.datenum]) ... % MEX is too old
             || (fileID_build_text < 0) ... % No text file specification
             || (fileID_build_text >= 0 && ~strcmp(fgetl(fileID_build_text), build_text) && ~fclose(fileID_build_text)) % Requested parameters do not match those recorded in text file. Also close the text file.
         
@@ -96,12 +90,13 @@ try
             mytic = tic;
             fprintf(FILE_ID, 'Compiling MEX for %s, with\n', name);
             fprintf(FILE_ID, ' %s in %s\n', read_function_name(which_eos), which_eos);
-            fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, p, m);
-            fprintf(FILE_ID, ' %s in %s\n', read_function_name(which_interp), which_interp);
-            fprintf(FILE_ID, ' interp_firstdim_twovars(%g,%s,%s) = %g\n', x, mat2str(X), mat2str(Y), y);
+            fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, x, m);
         end
-        t_S    = coder.typeof(0, [nk, 1], [true, false]);
-        args = {t_S, t_S, t_S, 0, 0, 0, 0};
+
+        t_SppX = coder.typeof(0, [8, nk-1], [true, true]);
+        t_X    = coder.typeof(0, [nk  , 1], [true, false]);
+        
+        args = {t_SppX, t_SppX, t_X, 0, 0, 0, 0};
         
         % Configure MEX for speed.
         mexconfig = coder.config('mex');

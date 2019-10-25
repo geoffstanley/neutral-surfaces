@@ -41,10 +41,6 @@ function [eps_i, eps_j, beps_i, beps_j] = ntp_error_s_t_withb(s, t, x, WRAP, b)
 % from the function eos.m.  Note, eps_i and eps_j incorporate finite
 % differences of s and t, not finite difference approximations of the
 % gradients of s and t.
-%
-%
-% --- Requirements:
-% eos.m, eos_s_t.m
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.

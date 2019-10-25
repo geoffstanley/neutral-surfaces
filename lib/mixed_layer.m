@@ -27,6 +27,7 @@ function MLX = mixed_layer(S, T, X, OPTS)
 %    determines the mixed layer [kg m^-3]
 %   OPTS.BOTTLE_NUM [1, 1]: the bottle number on each cast where the "near
 %    surface" potential density is calculated [integer]
+%   OPTS.INTERPFN [function handle]: the vertical interpolation function
 %
 % Note: nk is the maximum number of data points per water column,
 %       ni is the number of data points in longitude,
@@ -37,11 +38,6 @@ function MLX = mixed_layer(S, T, X, OPTS)
 %
 % --- Output:
 % MLX [ni, nj]: the pressure [dbar] or depth [m, positive] of the mixed layer
-%
-%
-% --- Requirements:
-% eos
-% interp1qn - https://www.mathworks.com/matlabcentral/fileexchange/69713
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -73,7 +69,8 @@ function MLX = mixed_layer(S, T, X, OPTS)
 % Set defaults:
 POT_DENS_DIFF = 0.03;   % [kg m^-3]
 POT_DENS_REF = 100;     % [dbar] or [m], depending on eos()
-BOTTLE_NUM = 2;
+BOTTLE_NUM = 2;         % reference to the second bottle in the vertical
+INTERPFN = @ppc_linterp;   % use linear interpolation
 
 if nargin == 4 && isstruct(OPTS)
     % Load parameters from struct
@@ -85,6 +82,9 @@ if nargin == 4 && isstruct(OPTS)
     end
     if isfield(OPTS, 'BOTTLE_NUM')
         BOTTLE_NUM = OPTS.BOTTLE_NUM;
+    end
+    if isfield(OPTS, 'INTERPFN')
+        INTERPFN = OPTS.INTERPFN;
     end
 end
 
@@ -104,5 +104,5 @@ end
 
 % Find the pressure or depth at which the potential density difference
 % exceeds the threshold POT_DENS_DIFF
-MLX = interp1qn(POT_DENS_DIFF, DD, X);
+MLX = INTERPFN(DD, X, POT_DENS_DIFF);
 

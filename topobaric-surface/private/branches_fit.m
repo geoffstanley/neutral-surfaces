@@ -32,7 +32,7 @@ function yfnx = branches_fit(x, y, arc_from, arc_to, arc_segment, node_fn, cb_ar
 % GEOSTRF [1, 1]: true if the second integral should also be constrained to
 %   integrate to zero around each cycle.
 %
-% 
+%
 % --- Output:
 % yfnx [4, A]: the multivalued function. Each column defines a
 %   single-valued branch as an affine linear function that may be evaluated
@@ -41,10 +41,6 @@ function yfnx = branches_fit(x, y, arc_from, arc_to, arc_segment, node_fn, cb_ar
 % Note, above A is the number of arcs, N the number of nodes, and C the
 % number of cycles in the cycle basis of the graph. D the number of data
 % points in the simplical mesh that arc_segment indexes.
-%
-%
-% --- Requirements:
-% lsqlin (Optimization Toolbox)
 %
 %
 % --- References
@@ -56,17 +52,17 @@ function yfnx = branches_fit(x, y, arc_from, arc_to, arc_segment, node_fn, cb_ar
 % --- Copyright:
 % This file is part of Neutral Surfaces.
 % Copyright (C) 2019  Geoff Stanley
-% 
+%
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
+%
 % This program is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
-% 
+%
 % You should have received a copy of the GNU General Public License
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 %
@@ -127,7 +123,7 @@ if nCycles > 0
     if GEOSTRF
         % Make modified topobaric surfaces, which have a well-defined exact geostrophic stream function.
         % There are two constraints per cycle in the cycle basis:
-        % One to make the modified topobaric surface unique-depth, 
+        % One to make the modified topobaric surface unique-depth,
         % and one to make its stream function well-defined.
         nCON = 2 * nCycles;       % number of constraint equations
         nnzCON = 4 * length(cba); % number of non-zero entries in constraint matrix
@@ -180,8 +176,8 @@ if nCycles > 0
             i = i + n;
         end
     else
-        % There is one constraint per cycle in the cycle basis, 
-        % to make the topobaric surface unique-depth, 
+        % There is one constraint per cycle in the cycle basis,
+        % to make the topobaric surface unique-depth,
         % or to make the topobaric geostrophic stream function well-defined
         nCON = nCycles;           % number of constraint equations
         nnzCON = 2 * length(cba); % number of non-zero entries in constraint matrix

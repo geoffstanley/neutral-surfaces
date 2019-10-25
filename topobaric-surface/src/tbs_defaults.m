@@ -74,6 +74,9 @@ OPTS.DECOMP = 'diagonal';
 OPTS.FILL_IJ = []; % No filling
 OPTS.FILL_PIX = 0; % No filling
 
+% Use linear interpolation in the vertical dimension.
+OPTS.INTERPFN = @ppc_linterp;
+
 % Post-processing of Reeb Graph -- graph simplification parameters:
 OPTS.SIMPLIFY_WEIGHT_PERSIST = 0.5; % Equal weighting between area and persistence
 OPTS.SIMPLIFY_ARC_REMAIN = Inf;     % No leaf pruning simplification
@@ -82,11 +85,14 @@ OPTS.SIMPLIFY_ARC_REMAIN = Inf;     % No leaf pruning simplification
 % X [dbar] or [m].
 OPTS.X_TOL = 1e-4;
 
-
 % Solutions to the root-finding problem in each water column are sought in
 % the domain of the local branch of the multivalued function expanded
 % outwards by this amount, in the same units as X [dbar] or [m].
 OPTS.X_EXPN = 500;
+
+% Pre-computed interpolation functions.  None given here.
+OPTS.SppX = [];
+OPTS.TppX = [];
 
 % Conditions to terminate iterations:
 OPTS.ITER_MAX = 6;  % maximum number of iterations
@@ -103,7 +109,7 @@ OPTS.ITER_START_WETTING = 1; % Start wetting immediately
 OPTS.GEOSTRF = false;
 
 % Verbosity level
-OPTS.VERBOSE = 0;
+OPTS.VERBOSE = 1;
 
 % File ID to write output
 OPTS.FILE_ID = 1; % standard output to MATLAB terminal

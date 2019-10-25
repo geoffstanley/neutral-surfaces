@@ -97,9 +97,7 @@ copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_dp.m'], [PATH_PROJECT 'l
 clear eos eos_x % Make sure the copied file gets used
 
 % Choose vertical interpolation method
-copyfile([PATH_PROJECT 'fex' V 'columncalculus' V 'interp1qn2.m'], [PATH_PROJECT 'lib' V 'alias' V 'interp_firstdim_twovars.m']); % linear interpolation
-%copyfile([PATH_PROJECT 'fex' V 'columncalculus' V 'pchipqn2.m'], [PATH_PROJECT 'lib' V 'alias' V 'interp_firstdim_twovars.m']);  % PCHIP interpolation
-clear interp_firstdim_twovars % Make sure new file gets used
+interpfn = @ppc_linterp;
 
 %% Selecting surfaces and depths
 xref = 180; yref = 0;
@@ -163,7 +161,8 @@ p(~wet) = nan;
 
 % Interpolate water properties on the surface
 lead1 = @(x) reshape(x, [1 size(x)]);
-[s, t] = interp1qn2(lead1(p), P, S, T);
+s = interpfn(P, S, lead1(p));
+t = interpfn(P, T, lead1(p));
 
 % Get in-situ density on the surface
 r = eos(s, t, p);
@@ -475,7 +474,7 @@ for e = 1:RG.nArcs
         if per && abs(diff(xx)) > 180 % longitude wrapping in this panel
             [xx,idx] = sort(xx);
             pp = pp(idx);
-            pmid = interp1qn(xsh, [xx(2)-360; xx(1)], pp([2 1]));
+            pmid = interp1([xx(2)-360; xx(1)], pp([2 1]), xsh);
             plot(axRG(i), [xx(1)     xsh], [pp(1) pmid], '-', 'Color', col, 'LineWidth', lw);
             plot(axRG(i), [xx(2) 360+xsh], [pp(2) pmid], '-', 'Color', col, 'LineWidth', lw);
         else % no wrap

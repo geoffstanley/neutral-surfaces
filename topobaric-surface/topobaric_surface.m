@@ -14,7 +14,6 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 % with respect to pressure. Only one connected component of the surface is
 % processed.  Algorithmic options are given by OPTS (see below).  For
 % physical units, see "Equation of State" below.
-
 %
 % [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(...)
 % also returns the Reeb Graph RG, the reference practical / Absolute
@@ -24,7 +23,9 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 % which is given by eos.m.  The actual delta on the surface will closely
 % match the delta values evaluated by d_fn on the surface, as follows.
 % >> lead1 = @(x) reshape(x, [1, size(x)]);              % add leading singleton dimension
-% >> [s,t] = interp_firstdim_twovars(lead1(x), X, S, T); % get S and T on the surface
+% >> SppX = ppc_linterp(X, S);                           % Interpolant for S in terms of X
+% >> TppX = ppc_linterp(X, T);                           % Interpolant for T in terms of X
+% >> [s,t] = ppc_val2(X, SppX, TppX, lead1(x));          % get S and T on the surface
 % >> d = eos(s, t, x) - eos(s0, t0, x);                  % get delta on the surface
 % >> x_ = x(RG.wet);                                     % get x just on the valid surface
 % >> d_fn_at_x = nan(size(x));                           % prepare to build a 2D map of evaluations of the delta function
@@ -32,9 +33,8 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 % >>     I = RG.arc_segment{e};                          % get linear indices to all pixels in the region associated with arc e
 % >>     d_fn_at_x(I) = pvallin(d_fn(:,e), x_(I);        % evaluate local branch of the multivalued function for delta in terms of x
 % >> end
-% The smaller OPTS.X_TOL, the
-% smaller OPTS.ITER_L2_CHANGE, and the larger OPTS.ITER_MAX, the closer
-% (d_fn_at_x - d) will be to zero.
+% The smaller OPTS.X_TOL, the smaller OPTS.ITER_L2_CHANGE, and the larger 
+% OPTS.ITER_MAX, the closer (d_fn_at_x - d) will be to zero.
 %
 % [x, s, t, RG, s0, t0, d_fn1] = topobaric_surface(S, T, X, x, OPTS)
 % with OPTS.REEB == false instead calculates an "orthobaric" surface, in
@@ -44,10 +44,23 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 % and delta on the surface will (less-so, relative to with OPTS.REEB == true) closely
 % match the delta values evaluated by d_fn1 on the surface, as follows:
 % >> lead1 = @(x) reshape(x, [1, size(x)]);              % add leading singleton dimension
-% >> [s,t] = interp_firstdim_twovars(lead1(x), X, S, T); % get S and T on the surface
+% >> SppX = ppc_linterp(X, S);                           % Interpolant for S in terms of X
+% >> TppX = ppc_linterp(X, T);                           % Interpolant for T in terms of X
+% >> [s,t] = ppc_val2(X, SppX, TppX, lead1(x));          % get S and T on the surface
 % >> d = eos(s, t, x) - eos(s0, t0, x);                  % get delta on the surface
 % >> x_ = x(RG.wet);                                     % get x just on the valid surface
 % >> d_fn_at_x = ppval(d_fn1, x);                        % evaluate the function for delta in terms of x
+%
+%
+% --- Sizes:  below,
+% nk is the maximum number of data points per water column,
+% ni is the number of data points in longitude,
+% nj is the number of data points in latitude,
+% nc is the number of water columns intersecting the surface,
+% A is the number of arcs in the Reeb graph,
+% N is the number of nodes in the Reeb graph,
+% C is the number of cycles in the cycle basis of the Reeb graph.
+% O is the order of piecewise polynomials for S and T in terms of X.
 %
 %
 % --- Input:
@@ -59,15 +72,6 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 % OPTS [struct]: options (see "Options" below)
 %
 % Note: X must increase monotonically along the first dimension.
-%
-% Sizes: nk is the maximum number of data points per water column,
-%        ni is the number of data points in longitude,
-%        nj is the number of data points in latitude,
-%        nc is the number of water columns intersecting the surface,
-%        A is the number of arcs in the Reeb graph,
-%        N is the number of nodes in the Reeb graph,
-%        C is the number of cycles in the cycle basis of the Reeb graph,
-%        * is a wildcard.
 %
 %
 % --- Output:
@@ -90,13 +94,26 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 % --- Options:
 % OPTS is a struct containing the following fields. Those marked * are
 % required. See ./private/tbs_defaults.m for default values.
+%   INTERPFN [function handle]: vertical interpolation function, used to
+%       evaluate SppX and TppX if those are not provided.  Default:
+%       INTERPFN = @ppc_linterp.
+%   SppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
+%       knots are X that interpolate S as a function of X in each water 
+%       column.  E.g. SppX = ppc_linterp(X, S);
+%   TppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
+%       knots are X that interpolate T as a function of X in each water 
+%       column.  E.g. TppX = ppc_linterp(X, T);
 %   REEB [1, 1]: true to compute topobaric surfaces, false to compute
 %     "orthobaric" surfaces.
-%   SPLINE_BREAKS [vector]: knots of the single-valued function for delta in
-%     terms of x [units the same as x], when OPTS.REEB is false.
+%   GEOSTRF [1, 1]: true to create a modified topobaric surface (when
+%       OPTS.REEB is true), which applies extra constraints to the
+%       empirical delta function to ensure the exact geostrophic
+%       streamfunction on the surface is well-defined.
+%   SPLINE_BREAKS [vector]: knots of the single-valued function for delta 
+%     in terms of x [units the same as x], when OPTS.REEB is false.
 %   SPLINE_ORDER [1, 1]: order of the spline of the single-valued function
 %     for delta in terms of x when OPTS.REEB is false. [E: 4 for cubic splines.]
-%   MLX []: do not remove the mixed layer (default)
+%   MLX []: do not remove the mixed layer
 %   MLX [struct]: calculate the mixed layer using these parameters in mixed_layer().
 %   MLX [ni, nj]: use a pre-computed mixed layer pressure [dbar] or depth [m]
 %   REF_IJ [1, 2]: pixel indices for reference water column.
@@ -116,21 +133,18 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 %       persistence (the difference between pressure values associated with
 %       nodes) as opposed to area (number of pixels in each assocaited region)
 %       during graph simplification.
-%   X_TOL [1, 1]: error tolerance, in the same units as X [dbar] or [m], when
-%      root-finding to update the surface.
+%   X_TOL [1, 1]: error tolerance, in the same units as X [dbar] or [m], 
+%      when root-finding to update the surface.
 %   X_EXPN [1, 1]: solutions to the root-finding problem in each water
 %       column are sought in the domain of the local branch of the
 %       multivalued function expanded outwards by this amount, in the same
 %       units as X [dbar] or [m].
 %   ITER_MAX [1, 1]: maximum number of iterations
 %   ITER_L2_CHANGE [1, 1]: quit when the change in the root-mean-square of
-%       the surface pressure [dbar] or depth [m] exceeds this value. Set to 0
-%       to deactivate.
+%       the surface pressure [dbar] or depth [m] exceeds this value. Set to
+%       0 to deactivate.
 %   ITER_START_WETTING [1, 1]: Iteration number at which to start wetting
 %                              (use inf to disable wetting entirely).
-%   GEOSTRF [1, 1]: true to create a modified topobaric surface, which
-%       applies extra constraints to the empirical delta function to ensure the
-%       exact geostrophic streamfunction on the surface is well-defined.
 %   VERBOSE [1, 1]: 0 for no output, 1 for basic information
 %   FILE_ID [1, 1]: 1 to write any output to MATLAB terminal, or a file
 %       identifier as returned by fopen() to write to that file.
@@ -249,10 +263,6 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 % automatic expansion now handles this).
 %
 %
-% --- Requirements (beyond the Topobaric Surface package):
-% See ../README.md
-%
-%
 % --- References:
 % Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling 138,
 % 88–106. https://doi.org/10.1016/j.ocemod.2019.01.008
@@ -325,9 +335,12 @@ nanrms = @(x) sqrt(nanmean(x(:) .* conj(x(:)))); % root mean square, ignoring na
 RG = struct();
 d_fn = [];
 
-%% Interpolate S and T casts onto surface
-[s, t] = interp_firstdim_twovars(lead1(x), X, S, T);
+% Pre-calculate things for Breadth First Search
+qu = zeros(nij, 1); % queue storing linear indices to pixels
+A = grid_adjacency([ni,nj], OPTS.WRAP, 4); % all grid points that are adjacent to all grid points, using 4-connectivity
 
+% Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
+BotK = squeeze(sum(uint16(isfinite(S)), 1, 'native'));
 
 %% Process OPTS
 
@@ -339,7 +352,18 @@ ALL_VERTS = OPTS.DECOMP(1) == 'd' && OPTS.FILL_PIX == 0 && isempty(OPTS.FILL_IJ)
 assert(ALL_VERTS || OPTS.ITER_MAX < 1, ...
     'To empirically fit the multivalued function, must use ''diagonal'' simplical decomposition and fill no holes during pre-processing');
 
-% Get MLX: the pressure or depth of the mixed layer
+%% Just In Time code generation
+if OPTS.REEB
+    tbs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
+else
+    obs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
+end
+bfs_conncomp_codegen(nk, ni, nj, Xvec, true, OPTS);
+if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX
+    bfs_wet_codegen(nk, ni, nj, Xvec, true, OPTS);
+end
+
+%% Get MLX: the pressure or depth of the mixed layer
 if OPTS.ITER_MAX > 1
     if isempty(OPTS.MLX)
         % Do not remove the mixed layer
@@ -352,6 +376,10 @@ if OPTS.ITER_MAX > 1
     end
 end
 
+%% Interpolate S and T casts onto surface
+SppX = OPTS.INTERPFN(X, S);
+TppX = OPTS.INTERPFN(X, T);
+[s,t] = ppc_val2(X,SppX,TppX,lead1(x));
 
 %% Process the reference cast:
 % Get linear index to reference cast
@@ -382,26 +410,6 @@ end
 % at the reference x. If reference S and T are not provided, this is 0.
 d0 = d0 - eos(s0,t0,x0);
 
-
-%% Pre-calculate things for Breadth First Search
-qu = zeros(nij, 1); % queue storing linear indices to pixels
-A = grid_adjacency([ni,nj], OPTS.WRAP, 4); % all grid points that are adjacent to all grid points, using 4-connectivity
-
-% Get number of valid data points per cast.  Used in tbs_vertsolve / obs_vertsolve and wetting.
-K = squeeze(sum(isfinite(S), 1));
-
-
-%% Just In Time code generation
-if OPTS.REEB
-    tbs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
-else
-    obs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
-end
-bfs_conncomp_codegen(nk, ni, nj, Xvec, true, OPTS);
-if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX
-    bfs_wet_codegen(nk, ni, nj, Xvec, true, OPTS);
-end
-
 %% Begin iterations
 for iter = 1 : OPTS.ITER_MAX
     itertic = tic();
@@ -415,7 +423,7 @@ for iter = 1 : OPTS.ITER_MAX
     
     % --- Breadth First Search, to find connected region, and possibly wet
     if iter >= OPTS.ITER_START_WETTING
-        [qu, qt, s, t, x, freshly_wet] = bfs_wet_one_mex(S, T, X, s, t, x, OPTS.X_TOL, A, K, I0, qu);
+        [qu, qt, s, t, x, freshly_wet] = bfs_wet_one_mex(SppX, TppX, X, s, t, x, OPTS.X_TOL, A, BotK, I0, qu);
     else
         [qu, qts] = bfs_conncomp_one_mex(isfinite(x), A, I0, qu);
         qt = qts(2)-1;
@@ -510,9 +518,9 @@ for iter = 1 : OPTS.ITER_MAX
     
     % --- Solve for new pressures at which specific volume is that of the multivalued function
     if OPTS.REEB
-        [xnew, s, t] = tbs_vertsolve_mex(S, T, X, K, x, arc, d_fn, s0, t0, OPTS.X_TOL, OPTS.X_EXPN);
+        [xnew, s, t] = tbs_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, arc, d_fn, s0, t0, OPTS.X_TOL, OPTS.X_EXPN);
     else
-        [xnew, s, t] = obs_vertsolve_mex(S, T, X, K, x, d_fn.breaks, d_fn.coefs, s0, t0, OPTS.X_TOL);
+        [xnew, s, t] = obs_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, d_fn.breaks, d_fn.coefs, s0, t0, OPTS.X_TOL);
     end
     
     % --- Get ready for next iteration

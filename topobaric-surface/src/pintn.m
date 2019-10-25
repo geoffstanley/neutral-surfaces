@@ -51,10 +51,6 @@ function F = pintn(f,a,b)
 %
 % --- Output (c):
 % F [M, L]: F(m,l) is the definite integral of f(:,l) from a(m,l) to b(m,l)
-%
-%
-% --- Requirements:
-% pvaln
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.

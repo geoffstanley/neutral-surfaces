@@ -1,9 +1,9 @@
-function [qu, qt, s, t, x, freshly_wet] = bfs_wet(S, T, X, s, t, x, X_TOL, A, K, r, qu) %#codegen
+function [qu, qt, s, t, x, freshly_wet] = bfs_wet(SppX, TppX, X, s, t, x, X_TOL, A, BotK, r, qu) %#codegen
 %BFS_WET  Test neutral tangent plane connections from the edges of a
 %         surface, using breadth first search
 %
 %
-% [qu, qt, s, t, x] = bfs_wet(S, T, X, K, s, t, x, X_TOL, r, qu)
+% [qu, qt, s, t, x] = bfs_wet(S, T, X, BotK, s, t, x, X_TOL, r, qu)
 % performs a breadth first search (BFS), as in bfs_conncomp, on the valid
 % parts of a surface, except steps are also made from a point on the
 % (current) perimeter of the surface to a point in an adjacent water column
@@ -14,7 +14,7 @@ function [qu, qt, s, t, x, freshly_wet] = bfs_wet(S, T, X, s, t, x, X_TOL, A, K,
 % where two points have the same potential density referenced to their
 % average pressure.  This connection is numerically tested with an error
 % tolerance, in pressure or depth, of X_TOL. The number of valid data
-% points in each water column is K, which should be K = sum(isfinite(S),1).
+% points in each water column is BotK, which should be BotK = sum(isfinite(S),1).
 % Inputs A, r, and qu are as in bfs_conncomp.  The outputs are: the search
 % queue for the BFS, qu; the tail index of qu for the BFS, qt; the S, T,
 % and X values on the updated wet surface, (s, t, x); the number of water
@@ -31,7 +31,7 @@ function [qu, qt, s, t, x, freshly_wet] = bfs_wet(S, T, X, s, t, x, X_TOL, A, K,
 % x [ni,nj]: pressure [dbar] or depth [m] of the surface
 % X_TOL [1,1]: tolerance in x for finding neutral connections
 % A [ni*nj, D]: adjacency, where D is the most neighbours possible
-% K [ni,nj]: number of valid data points on each cast
+% BotK [ni,nj]: number of valid bottles on each cast
 % r [1,1]: perform one BFS from this root node (optional)
 % qu [N,1]: vector to work in-place (optional)
 %
@@ -92,7 +92,7 @@ D = size(A,2); % maximal degree
 
 G = isfinite(x); % good pixels
 
-test = (K > 1) & ~G; % Try wetting only these locations: ocean and not currently in the surface
+test = (BotK > 1) & ~G; % Try wetting only these locations: ocean and not currently in the surface
 
 qt = 0; % Queue Tail
 qh = 0; % Queue Head
@@ -122,10 +122,10 @@ if nargin < 10 || isempty(r)
                             qu(qt) = n;
                             G(n) = false; % mark n as discovered
                         elseif test(n)
-                            k = K(n);
+                            k = BotK(n);
                             % n is off the surface but in the ocean. Check for neutral connection
                             nX = (n-1) * Xmat + 1; % = n if Xmat, 1 if not Xmat
-                            [x(n), s(n), t(n), success] = ntp_bottle_to_cast(S(1:k,n), T(1:k,n), X(1:k,nX), s(m), t(m), x(m), X_TOL);
+                            [x(n), s(n), t(n), success] = ntp_bottle_to_cast(SppX(:,1:k-1,n), TppX(:,1:k-1,n), X(1:k,nX), s(m), t(m), x(m), X_TOL);
                             if success
                                 qt = qt + 1;     % Add n to queue
                                 qu(qt) = n;
@@ -161,10 +161,10 @@ else
                     qu(qt) = n;
                     G(n) = false; % mark n as discovered
                 elseif test(n)
-                    k = K(n);
+                    k = BotK(n);
                     % n is off the surface but in the ocean. Check for neutral connection
                     nX = (n-1) * Xmat + 1; % = n if Xmat, 1 if not Xmat
-                    [x(n), s(n), t(n), success] = ntp_bottle_to_cast(S(1:k,n), T(1:k,n), X(1:k,nX), s(m), t(m), x(m), X_TOL);
+                    [x(n), s(n), t(n), success] = ntp_bottle_to_cast(SppX(:,1:k-1,n), TppX(:,1:k-1,n), X(1:k,nX), s(m), t(m), x(m), X_TOL);
                     if success
                         qt = qt + 1;     % Add n to queue
                         qu(qt) = n;

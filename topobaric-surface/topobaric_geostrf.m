@@ -14,14 +14,15 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, x, X, M, Y, s0, t0, OPTS, vara
 % temperature at the data sites of P. The hydrostatic acceleration
 % potential should be calculated as Y = hsap3(P, ATMP, ETAN, A, grav),
 % where ATMP is the atmospheric pressure, ETAN is the sea-surface height,
-% and grav the gravitational acceleration. Inputs s and t may instead be S
-% and T, in which case s and t is determined by linear interpolation of S
-% and T through P onto p. Algorithmic parameters are determined by OPTS.
-% Providing OPTS.RG and OPTS.dfn defines a multivalued function for the
+% and grav the gravitational acceleration. Inputs s and t may instead be
+% piecewise polynomial interpolants for S and T in terms of P in each water
+% column, in which case s and t are determined by evaluating these
+% interpolants onto p. Algorithmic parameters are determined by OPTS.
+% Providing OPTS.RG and OPTS.d_fn defines a multivalued function for the
 % specific volume anomaly (the specific volume minus that using s0 and t0)
 % on the surface in terms of the pressure on the surface; in this case,
-% OPTS.RG, s0, t0, and OPTS.dfn should be the final four outputs of
-% topobaric_surface.m called with OPTS.REEB true. If OPTS.RG and OPTS.dfn
+% OPTS.RG, s0, t0, and OPTS.d_fn should be the final four outputs of
+% topobaric_surface.m called with OPTS.REEB true. If OPTS.RG and OPTS.d_fn
 % are not provided, the Reeb graph is internally calculated and the
 % specific volume anomaly on the surface is empirically fit as a
 % multivalued function of pressure on the surface. The surface is treated
@@ -35,7 +36,7 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, x, X, M, Y, s0, t0, OPTS, vara
 % Reeb graph that define cycles in the cycle basis (i.e. those arcs that
 % are not traversed in a breadth-first search) have their corresponding
 % branches of the multivalued function integrated in the opposite direction
-% to how gsf integrated them. If OPTS.RG, s0, t0, and OPTS.dfn are provided
+% to how gsf integrated them. If OPTS.RG, s0, t0, and OPTS.d_fn are provided
 % using output from topobaric_surface.m that was called with OPTS.GEOSTRF =
 % true, or if OPTS.GEOSTRF here is true, then the topobaric geostrophic
 % stream function is well-defined, meaning gsfdiff is zero (up to a
@@ -43,11 +44,11 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, x, X, M, Y, s0, t0, OPTS, vara
 %
 % gsf = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, OPTS) with OPTS.REEB false
 % computes the orthobaric geostrophic stream function gsf, with s, t, p, P,
-% A, Y, s0, t0, and eos.m as above. Providing OPTS.RG and OPTS.dfn defines
+% A, Y, s0, t0, and eos.m as above. Providing OPTS.RG and OPTS.d_fn defines
 % a single-valued function for the specific volume anomaly (as above) on
 % the surface in terms of the pressure on the surface; in this case,
-% OPTS.RG, s0, t0, and OPTS.dfn should be the final four outputs of
-% topobaric_surface.m called with OPTS.REEB false. If OPTS.RG and OPTS.dfn
+% OPTS.RG, s0, t0, and OPTS.d_fn should be the final four outputs of
+% topobaric_surface.m called with OPTS.REEB false. If OPTS.RG and OPTS.d_fn
 % are not provided, the specific volume anomaly is empirically fit as a
 % single-valued function of pressure on the surface, namely as a spline of
 % order OPTS.SPLINE_ORDER having breaks at pressures given by
@@ -67,10 +68,10 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, x, X, M, Y, s0, t0, OPTS, vara
 %
 %
 % --- Input:
-% s [ni, nj] or [nk, ni, nj]: the practical / Absolute salinity,
-%  on the surface, or at all data sites
-% t [ni, nj] or [nk, ni, nj]: the potential / Conservative temperature
-%  on the surface, or at all data sites
+% s [ni, nj] or [O, nk-1, ni, nj]: the practical / Absolute salinity,
+%  on the surface, or a piecewise polynomial interpolant in each water column
+% t [ni, nj] or [O, nk-1, ni, nj]: the potential / Conservative temperature
+%  on the surface, or a piecewise polynomial interpolant in each water column
 % p [ni, nj]: pressure on surface [dbar]
 % z [ni, nj]: depth on surface [m, positive]
 % P [nk, ni, nj] or [nk, 1]: pressure at all data sites [dbar]
@@ -88,14 +89,14 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, x, X, M, Y, s0, t0, OPTS, vara
 %     function
 %   GEOSTRF [1, 1]: false to allow the geostrophic stream function
 %     to be ill-defined; has no effect when called with OPTS.RG and
-%     OPTS.dfn
+%     OPTS.d_fn
 %   RG [struct]: the Reeb Graph or ReGion, as output from
 %     topobaric_surface.m
-%   dfn [5, na]: each branch of the multivalued function for specific
+%   d_fn [5, na]: each branch of the multivalued function for specific
 %     volume anomaly or in-situ density anomaly, as output from
 %     topobaric_surface.m
-%   dfn [struct]: a piecewise polynomial for the single-valued specific
-%     volume anbomaly or in-situ density anomaly, as may be evaluated by
+%   d_fn [struct]: a piecewise polynomial for the single-valued specific
+%     volume anomaly or in-situ density anomaly, as may be evaluated by
 %     ppval.m
 %   SPLINE_BREAKS [vector]: break points of the single-valued function for
 %     specific volume anomaly or in-situ density anomaly as a function of
@@ -119,11 +120,6 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, x, X, M, Y, s0, t0, OPTS, vara
 % gsf [ni, nj]: geostrophic stream function [m^2 s^-2]
 % gsfdiff [ni, nj]: difference between gsf and the alternate geostrophic
 %                   stream function [m^2 s^-2]
-%
-%
-% --- Requirements:
-% topobaric_surface, pvaln, hsap2
-% splinefit, ppint - https://www.mathworks.com/matlabcentral/fileexchange/13812
 %
 %
 % --- References:
@@ -167,7 +163,7 @@ assert(isfield(OPTS, 'WRAP') && numel(OPTS.WRAP) == 2, 'OPTS.WRAP must be a vect
 
 [ni,nj] = size(x);
 nk = size(X,1);
-is3D = @(F) ndims(F) == 3 && all(size(F) == [nk,ni,nj]);
+is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
 lead1 = @(x) reshape(x, [1 size(x)]);
 
 % Set defaults:
@@ -193,14 +189,14 @@ if OPTS.REEB
     assert(isscalar(OPTS.SPLINE_ORDER), 'OPTS.SPLINE_ORDER must be a scalar');
 end
 
-if is3D(s) % Interpolate 3D s and t onto the surface
-    [s,t] = interp_firstdim_twovars(lead1(x), X, s, t);
+if is4D(s) % Evaluate interpolants for S and T onto the surface
+    [s,t] = ppc_val2(X, s, t, lead1(x));
 end
 
 
-if isfield(OPTS, 'dfn') && isfield(OPTS, 'RG')
+if isfield(OPTS, 'd_fn') && isfield(OPTS, 'RG')
     
-    dfn = OPTS.dfn;
+    d_fn = OPTS.d_fn;
     RG = OPTS.RG;
     wet = RG.wet;
     if OPTS.REEB
@@ -218,10 +214,10 @@ if isfield(OPTS, 'dfn') && isfield(OPTS, 'RG')
     end
 else
     
-    % The function (dfn) was not given.  Prepare for its later
+    % The function (d_fn) was not given.  Prepare for its later
     % computation, by computing the Reeb graph of p, and the specific
     % volume anomaly on the surface
-    dfn = [];
+    d_fn = [];
     
     % Find the connected component containing the reference cast I0, using 4-connectivity
     [~,~,~,wet] = bfs_conncomp(isfinite(x), grid_adjacency([ni,nj], OPTS.WRAP), I0, 4);
@@ -241,7 +237,7 @@ end
 [y0, m0] = hsap2(s0, t0, x, varargin{:});
 gsf = y - y0;
 
-if isempty(dfn)
+if isempty(d_fn)
     % Calculate the specific volume anomaly or the in-situ density anomaly
     d = m - m0;
     d_ = d(wet).';
@@ -253,29 +249,29 @@ n_casts = length(x_);
 % (depth) in a non-Boussinesq (Boussinesq) ocean.
 if OPTS.REEB
     
-    if isempty(dfn)
+    if isempty(d_fn)
         % --- Fit specific volume as a multivalued function of pressure,
         
         if ~OPTS.GEOSTRF
             % Requested to make the stream function ill-defined. Overwrite
             % cycle information so that all branches will be fit
             % independently, with no cycle constraints. Note, this does
-            % nothing if dfn was provided. But if OPTS.GEOSTRF was false
-            % when calling topobaric_surface(), then dfn produced by
+            % nothing if d_fn was provided. But if OPTS.GEOSTRF was false
+            % when calling topobaric_surface(), then d_fn produced by
             % topobaric will similarly yield an ill-defined stream
             % function.
             cb_nodes = {};
             cb_arcs = {};
         end
         
-        dfn = branches_fit(x_, d_, arc_from, arc_to, arc_segment, node_fn, cb_arcs, cb_nodes, false);
+        d_fn = branches_fit(x_, d_, arc_from, arc_to, arc_segment, node_fn, cb_arcs, cb_nodes, false);
     end
     
     % Integrate the multivalued function
     if nargout < 2
-        intfn          = int_graph_fun(dfn, arc_from, arc_to, node_fn, graph, bfs_parent_node, bfs_topo_order, bfs_missing_arc);
+        intfn          = int_graph_fun(d_fn, arc_from, arc_to, node_fn, graph, bfs_parent_node, bfs_topo_order, bfs_missing_arc);
     else
-        [intfn,intfn2] = int_graph_fun(dfn, arc_from, arc_to, node_fn, graph, bfs_parent_node, bfs_topo_order, bfs_missing_arc);
+        [intfn,intfn2] = int_graph_fun(d_fn, arc_from, arc_to, node_fn, graph, bfs_parent_node, bfs_topo_order, bfs_missing_arc);
     end
     
     % Evaluate the integral everywhere, using the local branch
@@ -287,18 +283,18 @@ if OPTS.REEB
     
 else
     
-    if isempty(dfn)
+    if isempty(d_fn)
         
         % --- Fit specific volume as a single-valued function of pressure
         breaks = OPTS.SPLINE_BREAKS;
         breaks = min(breaks, max(x_));
         breaks = max(breaks, min(x_));
         breaks = unique(breaks);
-        dfn = splinefit(x_, d_, breaks, OPTS.SPLINE_ORDER);
+        d_fn = splinefit(x_, d_, breaks, OPTS.SPLINE_ORDER);
     end
     
     % Integrate the single-valued function
-    intval_ = ppint(dfn, x_(1), x_);
+    intval_ = ppint(d_fn, x_(1), x_);
     intval_ = intval_(:);
     
 end

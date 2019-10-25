@@ -72,10 +72,6 @@ function [v, f, Qmap, nV] = latlon2vertsfaces(Q, WRAP, X, Y, method, select)
 % the code, run the function, then run the following:
 % figure; patch('Faces',faces, 'Vertices', [v(:,1:2), zeros(size(v,1),1)], ...
 %     'edgecolor', 'k', 'facecolor', 'interp', 'FaceVertexCData', v(:,3));
-%
-%
-% --- Requirements:
-% scomponents - https://www.mathworks.com/matlabcentral/fileexchange/24134
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.

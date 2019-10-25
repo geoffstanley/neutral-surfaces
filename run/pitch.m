@@ -68,10 +68,7 @@ copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_dp.m'], [PATH_PROJECT 'l
 clear eos eos_x % Make sure the copied file gets used
 
 % Choose vertical interpolation method
-copyfile([PATH_PROJECT 'fex' V 'columncalculus' V 'interp1qn2.m'], [PATH_PROJECT 'lib' V 'alias' V 'interp_firstdim_twovars.m']); % linear interpolation
-%copyfile([PATH_PROJECT 'fex' V 'columncalculus' V 'pchipqn2.m'], [PATH_PROJECT 'lib' V 'alias' V 'interp_firstdim_twovars.m']);  % PCHIP interpolation
-clear interp_firstdim_twovars % Make sure new file gets used
-
+interpfn = @ppc_linterp;
 
 %% Load ECCO
 TIMESTEP = '20021223';
@@ -89,14 +86,18 @@ S = permute(S, [3 1 2]); % [nz,nx,ny]. depth  by  long  by  lat
 T = permute(T, [3 1 2]);
 
 tol = 1e-6; % Tolerance on depth [m] when solving neutral trajectories
-K = squeeze(sum(isfinite(S),1)); % vertical index for deepest ocean grid point
-K(K == 0) = 1; % Just for finite indexing
+BotK = squeeze(sum(isfinite(S),1)); % vertical index for deepest ocean grid point
+BotK(BotK == 0) = 1; % Just for finite indexing
 
 y_to_j = @(y) floor((y - g.YGvec(1)) * g.resy) + 1;
 x_to_i = @(x) mod(floor((x - g.XGvec(1)) * g.resx), ni) + 1;
 
+%% Build interpolants for S and T in terms of Z
+SppZ = interpfn(Z, S);
+TppZ = interpfn(Z, T);
+
 %% Run codegen on ntp_bottle_to_cast
-ntp_bottle_to_cast_codegen(nk, struct('VERBOSE',1));
+ntp_bottle_to_cast_codegen(nk);
 
 %% Select Islands and depths to study
 island_data = { ...
@@ -135,7 +136,7 @@ for h = 1 : H
     k0 = find(Z > z0, 1, 'first');
     
     % Don't use ground = g.Depth < z0, which can differ wildly from
-    % Z(botK)... because ECCO2 lat-lon data is actually interpolations of
+    % Z(BotK)... because ECCO2 lat-lon data is actually interpolations of
     % cube-sphere data
     ground = isnan(squeeze(S(k0,:,:)));
     
@@ -159,8 +160,8 @@ for h = 1 : H
     ij(1,:) = [i0, j0];
     
     i1 = ij(1,1); j1 = ij(1,2);
-    k = K(i1,j1);
-    [s,t] = interp_firstdim_twovars(z, Z(1:k), S(1:k,i1,j1), T(1:k,i1,j1));
+    k = BotK(i1,j1);
+    [s,t] = ppc_val2(Z(1:k), SppZ(:,1:k-1,i1,j1), TppZ(:,1:k-1,i1,j1), z);
     
     dir = [0 +1; +1 0; 0 -1; -1 0]; % N E S W
     d = 3; % first step will try to move west
@@ -174,14 +175,14 @@ for h = 1 : H
             d = mod(d,4) + 1;
             i2 = i1 + dir(d,1);
             j2 = j1 + dir(d,2);
-            k = K(i2,j2);
+            k = BotK(i2,j2);
             if k < 2
                 % Only 1 grid point in this water column. Don't even bother
                 continue
             end
             
             % Test a neutral trajectory from current location to neighbouring location
-            [z2, s2, t2, success] = ntp_bottle_to_cast_mex(S(1:k,i2,j2), T(1:k,i2,j2), Z(1:k), s, t, z, tol);
+            [z2, s2, t2, success] = ntp_bottle_to_cast_mex(SppZ(:,1:k-1,i2,j2), TppZ(:,1:k-1,i2,j2), Z(1:k), s, t, z, tol);
             
             if success
                 % A successful step! We did not ground. This direction worked -- we grounded.
@@ -226,21 +227,21 @@ for h = 1 : H
     j1 = ij(1,2);
     %for i1 = find(botK(:,j1) >= 2).'
     for i1 = 1 : ni
-        if K(i1,j1) >= 2 && i1 ~= ij(1,1)
-            % Only check helix if starting column has >= 2 grid points, and
-            % it's not the helix around the island already checked.
-            k = K(i1,j1);
+        k = BotK(i1,j1);
+        % Only check helix if starting column has >= 2 grid points, and
+        % it's not the helix around the island already checked.
+        if k >= 2 && i1 ~= ij(1,1)
             
             z = z0;
-            [s,t] = interp_firstdim_twovars(z, Z(1:k), S(1:k,i1,j1), T(1:k,i1,j1));
+            [s,t] = ppc_val2(Z(1:k), SppZ(:,1:k-1,i1,j1), TppZ(:,1:k-1,i1,j1), z);
             
             for l = 2 : STEPS
                 
                 i2 = mod(ij(l,1) - i0 + i1 - 1, ni) + 1;
                 j2 = ij(l,2);
-                k = K(i2,j2);
+                k = BotK(i2,j2);
                 
-                [z, s, t, success] = ntp_bottle_to_cast_mex(S(1:k,i2,j2), T(1:k,i2,j2), Z(1:k), s, t, z, tol);
+                [z, s, t, success] = ntp_bottle_to_cast_mex(SppZ(:,1:k-1,i2,j2), TppZ(:,1:k-1,i2,j2), Z(1:k), s, t, z, tol);
                 
                 if ~success
                     break

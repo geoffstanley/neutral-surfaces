@@ -59,11 +59,6 @@ function [dup, G, bfs_dist, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb
 %
 % Note, above A is the number of arcs, N the number of nodes, and C the
 % number of cycles in the cycle basis of the graph.
-%
-%
-% --- Requirements:
-% path_from_pred
-% bfs - https://www.mathworks.com/matlabcentral/fileexchange/24134
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
