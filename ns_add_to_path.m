@@ -23,7 +23,7 @@ function ns_add_to_path()
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
+% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --
@@ -38,7 +38,6 @@ PATH_PROJECT = [fileparts(mfilename('fullpath')) V];
 addpath(PATH_PROJECT);
 
 addpath([PATH_PROJECT 'lib']);
-addpath([PATH_PROJECT 'lib' V 'alias']);
 addpath([PATH_PROJECT 'lib' V 'bfs']);
 addpath([PATH_PROJECT 'lib' V 'dat']);
 addpath([PATH_PROJECT 'lib' V 'file-ops']);
