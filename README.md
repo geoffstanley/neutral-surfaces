@@ -39,24 +39,24 @@ McDougall (1989) proved that an exact GSF does exist, at least locally, on a tru
 
 
 ## Contents:
-- ./fex/            					- software from the MATLAB file exchange
-- ./lib/            					- libraries (e.g. surface analysis, equations of state, geostrophic streamfunctions)
-- ./run/            					- example scripts
-- ./omega-surface/ 					    - create omega surfaces
-- ./potential-density-surface/ 			- create potential density surfaces
-- ./specific-volume-anomaly-surface/	- create specific volume anomaly surfaces
-- ./topobaric-surface/ 					- create topobaric surfaces, modified topobaric surfaces, and orthobaric surfaces
-- ./LICENSE         					- GNU general public license
-- ./ns_add_to_path.m 					- function to add relevant subfolders to MATLAB's path
-- ./ns_install.m 						- function to install this package
-- ./README.md       					- this file
+- `./fex/                             `- software from the MATLAB file exchange
+- `./lib/                             `- libraries (e.g. surface analysis, equations of state, geostrophic streamfunctions)
+- `./run/                             `- example scripts
+- `./omega-surface/                   `- create omega surfaces
+- `./potential-density-surface/       `- create potential density surfaces
+- `./specific-volume-anomaly-surface/ `- create specific volume anomaly surfaces
+- `./topobaric-surface/               `- create topobaric surfaces, modified topobaric surfaces, and orthobaric surfaces
+- `./LICENSE                          `- GNU general public license
+- `./ns_add_to_path.m                 `- function to add relevant subfolders to MATLAB's path
+- `./ns_install.m                     `- function to install this package
+- `./README.md                        `- this file
 
 In addition, the following functions calculate geostrophic streamfunctions:
-- ./topobaric-surface/topobaric_geostrf.m   - create topobaric GSF (Stanley 2019b)
-- ./lib/gsf/zhanghogg92.m           		- create Zhang and Hogg (1992) GSF
-- ./lib/gsf/cunningham00.m          		- create Cunningham (2000) GSF
-- ./lib/gsf/mcdougallklocker10.m    		- create McDougall and Klocker (2010) GSF
-- ./lib/gsf/orthobaric_montgomery.m 		- create orthobaric Montgomery potential (Stanley 2019b)
+- `./topobaric-surface/topobaric_geostrf.m `- create topobaric GSF (Stanley 2019b)
+- `./lib/gsf/zhanghogg92.m           		   `- create Zhang and Hogg (1992) GSF
+- `./lib/gsf/cunningham00.m         		   `- create Cunningham (2000) GSF
+- `./lib/gsf/mcdougallklocker10.m    		   `- create McDougall and Klocker (2010) GSF
+- `./lib/gsf/orthobaric_montgomery.m 	     `- create orthobaric Montgomery potential (Stanley 2019b)
 
 
 ## Requirements:
@@ -64,9 +64,7 @@ MATLAB 2016b or higher (tested on 2017b and 2018b) with the Optimization Toolbox
 
 
 ## Installation:
-Run the following command in MATLAB, replacing 
-  ~/work/neutral-surfaces/
-with the path to this README.md file:
+Run the following command in MATLAB, replacing `~/work/neutral-surfaces/` with the path to this README.md file:
 ```
 >> run('~/work/neutral-surfaces/ns_install.m')
 ```
@@ -74,13 +72,13 @@ If this does not work, see manual_install.md.
 
 
 ## Usage:
-./run/examples.m gives examples to create the approximately neutral surfaces and geostrophic streamfunctions provided in this toolbox
+`./run/examples.m` gives examples to create the approximately neutral surfaces and geostrophic streamfunctions provided in this toolbox
 
-./run/run_ECCO2.m generates most figures in “Neutral surface topology” and “The exact geostrophic streamfunction for neutral surfaces”.
+`./run/run_ECCO2.m` generates most figures in “Neutral surface topology” and “The exact geostrophic streamfunction for neutral surfaces”.
 
-./run/run_OCCA.m generates Figure 3 in “Neutral surface topology”.
+`./run/run_OCCA.m `generates Figure 3 in “Neutral surface topology”.
 
-./run/pitch.m generates Figure B.7 in “Neutral surface topology”.
+`./run/pitch.m` generates Figure B.7 in “Neutral surface topology”.
 
 Note, to reproduce the figures of Stanley (2019a,b) exactly, use the v1.0 Topobaric-Surface code available at https://github.com/geoffstanley/Topobaric-Surface
 
@@ -140,4 +138,4 @@ Email     : g.stanley@unsw.edu.au
 
 Email     : geoffstanley@gmail.com
 
-Version   : 2.0.0
+Version   : 2.1.0
