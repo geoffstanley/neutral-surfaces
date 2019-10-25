@@ -22,7 +22,7 @@
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --
@@ -83,8 +83,9 @@ jm1 = @(F) subsasgn(circshift(F, [0 +1]), struct('type','()', 'subs', {{':',   1
 
 %% Set alias functions
 % Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_x.m
-eos_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq.m'   ], [PATH_PROJECT 'lib' V 'alias' V 'eos.m'  ], grav, rho_c);
-eos_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_dz.m'], [PATH_PROJECT 'lib' V 'alias' V 'eos_x.m'], grav, rho_c);
+eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq.m'   ] , [PATH_PROJECT 'eos.m'  ], grav, rho_c);
+eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_dz.m'] , [PATH_PROJECT 'eos_x.m'], grav, rho_c);
+eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_s_t.m'], [PATH_PROJECT 'eos_s_t.m'], grav, rho_c);
 
 % Choose vertical interpolation method
 interpfn = @ppc_linterp;

@@ -64,7 +64,7 @@ function                  [arc_from, arc_to, arc_segment, node_prev, node_next, 
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

@@ -1,8 +1,8 @@
-function eos_set_bsq_param(eos_in, eos_out, grav, rhob)
-%EOS_SET_BSQ_PARAM  Copy a .m file but modify 'grav =' and 'rhob =' lines.
+function eoscg_set_bsq_param(eos_in, eos_out, grav, rhob)
+%EOSCG_SET_BSQ_PARAM  Copy a .m file but modify 'grav =' and 'rhob =' lines.
 %
 %
-% eos_set_bsq_param(eos_in, eos_out, grav, rhob)
+% eoscg_set_bsq_param(eos_in, eos_out, grav, rhob)
 % creates a new file whose full path is given by eos_out that is identical
 % to the file whose full path is eos_in, except that lines that start with
 % 'grav =' or 'rhob =' are modified to assign the input values grav and
@@ -32,14 +32,22 @@ function eos_set_bsq_param(eos_in, eos_out, grav, rhob)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --
 % Changes     : --
 
+% Ensure the input file exists
+assert(exist(eos_in, 'file') > 0, ['Cannot locate ' eos_in]);
 
-[~, fcn_name] = fileparts(which(eos_in)); % Get the name of the file without path or extension
+[~, fcn_name] = fileparts(eos_in); % Get the name of the file without path or extension
+folder_out = fileparts(eos_out);   % Get the path to the output file 
+
+if ~exist(folder_out, 'dir')
+    mkdir(folder_out);     % Make directory for the output file, if necessary
+end
+
 fi = fopen(eos_in, 'rt');  % Open input file for textual reading
 fo = fopen(eos_out, 'wt'); % Open output file for textual writing
 textline = fgetl(fi); % Read first line

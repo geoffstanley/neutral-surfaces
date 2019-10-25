@@ -117,7 +117,7 @@ function [ex,ey,sx,sy] = ntp_epsilon_r_x(s, t, x, dx, dy, centre, wrap, grav, S,
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

@@ -93,7 +93,7 @@ function gsf = mcdougallklocker10(s, t, x, X, M, Y, s0, t0, x0, varargin)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

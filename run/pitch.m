@@ -22,7 +22,7 @@
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --
@@ -63,9 +63,10 @@ Pa2db = 1e-4; % Pa to dbar conversion
 
 %% Set alias functions
 % Ensure the equation of state is for the densjmd95 in-situ density:
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95.m'   ], [PATH_PROJECT 'lib' V 'alias' V 'eos.m'  ]);
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_dp.m'], [PATH_PROJECT 'lib' V 'alias' V 'eos_x.m']);
-clear eos eos_x % Make sure the copied file gets used
+copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95.m'   ] , [PATH_PROJECT 'eos.m'  ]);
+copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_dp.m'] , [PATH_PROJECT 'eos_x.m']);
+copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_s_t.m'], [PATH_PROJECT 'eos_s_t.m']);
+clear eos eos_x eos_s_t % Make sure the copied files get used
 
 % Choose vertical interpolation method
 interpfn = @ppc_linterp;

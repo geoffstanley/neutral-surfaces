@@ -4,7 +4,9 @@
 run*.txt
 PATH_ECCO2.txt
 PATH_OCCA.txt
-lib/alias/
+eos.m
+eos_x.m
+eos_s_t.m
 run/figs
 dev/
 

@@ -27,7 +27,7 @@ function [x,s,t] = pot_dens_surf_vertsolve(SppX, TppX, X, BotK, x, xref, val, to
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

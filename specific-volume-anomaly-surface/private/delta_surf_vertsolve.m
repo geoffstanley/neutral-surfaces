@@ -27,7 +27,7 @@ function [x,s,t] = delta_surf_vertsolve(SppX, TppX, X, BotK, x, s0, t0, d0, tolx
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

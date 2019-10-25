@@ -31,7 +31,7 @@
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --
@@ -43,11 +43,11 @@ warning('off', 'MATLAB:nargchk:deprecated')
 set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 V = filesep(); % /  or  \  depending on OS.
 
-OMEGA_FRESH = true;  % Use  this to compute omega surfaces from scratch
+OMEGA_FRESH = true;   % Use this to compute omega surfaces from scratch
 %OMEGA_FRESH = false; % Use this to load pre-computed omega surfaces
 
-%PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/'; % Manually set path to this file.
+PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
+%PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/'; % Manually set path to this file.
 
 % Get path to one directory up, containing all of Topobaric Surface
 PATH_PROJECT = PATH_LOCAL(1 : find(PATH_LOCAL(1:end-1) == V, 1, 'last'));
@@ -67,8 +67,8 @@ PATH_ECCO2 = textscan(file_id, '%s');
 PATH_ECCO2 = PATH_ECCO2{1}{1};
 fclose(file_id);
 
-fileID = 1; % For standard output to the screen
-%fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
+%fileID = 1; % For standard output to the screen
+fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
 
 db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion
@@ -94,8 +94,9 @@ neigh = grid_adjacency([ni,nj], g.WRAP);
 
 %% Set alias functions
 % Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_x.m
-eos_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq.m'   ], [PATH_PROJECT 'lib' V 'alias' V 'eos.m'  ], grav, rho_c);
-eos_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_dz.m'], [PATH_PROJECT 'lib' V 'alias' V 'eos_x.m'], grav, rho_c);
+eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq.m'   ] , [PATH_PROJECT 'eos.m'  ], grav, rho_c);
+eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_dz.m'] , [PATH_PROJECT 'eos_x.m'], grav, rho_c);
+eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_s_t.m'], [PATH_PROJECT 'eos_s_t.m'], grav, rho_c);
 
 % Choose vertical interpolation method
 interpfn = @ppc_linterp;
@@ -1458,9 +1459,10 @@ close(hf)
 
 %% --- Quick test of non-Boussinesq form for geostrophic streamfunctions
 % Switch equation of state to the jmd95 specific volume
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_specvoljmd95.m'   ], [PATH_PROJECT 'lib' V 'alias' V 'eos.m'  ]);
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_specvoljmd95_dp.m'], [PATH_PROJECT 'lib' V 'alias' V 'eos_x.m']);
-clear eos eos_x % Make sure the copied file gets used
+copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_specvoljmd95.m'   ] , [PATH_PROJECT 'eos.m'  ]);
+copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_specvoljmd95_dp.m'] , [PATH_PROJECT 'eos_x.m']);
+copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_specvoljmd95_s_t.m'], [PATH_PROJECT 'eos_s_t.m']);
+clear eos eos_x eos_s_t % Make sure the copied files get used
 
 %% Get the hydrostatic pressure (and pretend it's the actual pressure)
 P = Y * (rho_c * Pa2db);

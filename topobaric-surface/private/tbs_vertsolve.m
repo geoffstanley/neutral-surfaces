@@ -95,7 +95,7 @@ function [x, s, t] = tbs_vertsolve(SppX, TppX, X, BotK, s, t, x, branchmap, d_fn
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

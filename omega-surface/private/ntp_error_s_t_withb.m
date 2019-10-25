@@ -62,7 +62,7 @@ function [eps_i, eps_j, beps_i, beps_j] = ntp_error_s_t_withb(s, t, x, WRAP, b)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

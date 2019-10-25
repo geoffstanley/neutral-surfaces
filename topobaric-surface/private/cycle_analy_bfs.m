@@ -80,7 +80,7 @@ function [dup, G, bfs_dist, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.0.0
+% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --
