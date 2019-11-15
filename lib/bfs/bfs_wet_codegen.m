@@ -102,7 +102,7 @@ if isempty(file_mex) ... % No mex file yet
     if Xvec
         t_X = coder.typeof(0, [nk, 1], [vs, vs]);
     else
-        t_X = t_S;
+        t_X = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
     end
     nij = ni * nj;
     t_x    = coder.typeof(0, [ni, nj], [vs, vs]);
