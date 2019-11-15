@@ -98,7 +98,7 @@ if isempty(file_mex) ... % No mex file yet
     % Note: resulting MEX is actually faster with variable size arrays
     % (using vs = true, below)
     vs = true;
-    t_SppX   = coder.typeof(0, [2, nk-1, ni, nj], [false, vs, vs, vs]);
+    t_SppX   = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
     if Xvec
         t_X = coder.typeof(0, [nk, 1], [vs, vs]);
     else

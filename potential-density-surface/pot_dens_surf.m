@@ -22,7 +22,7 @@ function [x,s,t,d0] = pot_dens_surf(S, T, X, xref, var, OPTS)
 %
 %
 % --- Input:
-% S [nk, ni, nj]: % S [nk, ni, nj]: practical / Absolute salinity
+% S [nk, ni, nj]: practical / Absolute salinity
 % T [nk, ni, nj]: potential / Conservative temperature
 % X [nk, ni, nj] or [nk, 1]: pressure [dbar] or depth [m, positive]
 % xref [1, 1]: reference pressure [dbar] or depth [m]

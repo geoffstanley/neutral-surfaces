@@ -377,8 +377,16 @@ if OPTS.ITER_MAX > 1
 end
 
 %% Interpolate S and T casts onto surface
-SppX = OPTS.INTERPFN(X, S);
-TppX = OPTS.INTERPFN(X, T);
+if isfield(OPTS, 'SppX')
+    SppX = OPTS.SppX;
+else
+    SppX = OPTS.INTERPFN(X, S);
+end
+if isfield(OPTS, 'TppX')
+    TppX = OPTS.TppX;
+else
+    TppX = OPTS.INTERPFN(X, T);
+end
 [s,t] = ppc_val2(X,SppX,TppX,lead1(x));
 
 %% Process the reference cast:

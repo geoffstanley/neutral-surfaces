@@ -115,9 +115,9 @@ try
         
         % Configure MEX for speed.
         mexconfig = coder.config('mex');
-%         mexconfig.ExtrinsicCalls = false;
-%         mexconfig.ResponsivenessChecks = false;
-%         mexconfig.IntegrityChecks = false;
+        mexconfig.ExtrinsicCalls = false;
+        mexconfig.ResponsivenessChecks = false;
+        mexconfig.IntegrityChecks = false;
         
         % Compile the MEX function
         cd(file_mat.folder);

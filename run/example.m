@@ -30,7 +30,7 @@
 
 %% --- BEGIN SETUP --------------------------------------------------------
 warning('off', 'MATLAB:nargchk:deprecated')
-set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
+set(0, 'defaultfigurecolor', [1 1 1]); % wite figure background
 V = filesep(); % /  or  \  depending on OS.
 
 PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
