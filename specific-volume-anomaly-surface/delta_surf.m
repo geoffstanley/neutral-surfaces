@@ -91,7 +91,7 @@ function [x,s,t,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
+% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --
@@ -131,7 +131,7 @@ else
 end
 
 % Count number of valid bottles per cast
-BotK = squeeze(sum(uint16(isfinite(S)), 1, 'native'));
+BotK = squeeze(sum(isfinite(S), 1));
 
 % Decide on the isosurface value
 if isscalar(var)

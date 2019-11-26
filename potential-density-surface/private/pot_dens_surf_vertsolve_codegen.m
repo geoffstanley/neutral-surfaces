@@ -35,7 +35,7 @@ function pot_dens_surf_vertsolve_codegen(nk, ni, nj, Xvec, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
+% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --
@@ -109,7 +109,7 @@ try
             t_X = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
         end
         t_x     = coder.typeof(0, [ni, nj], [vs, vs]);
-        t_BotK  = coder.typeof(uint16(0), [ni, nj], [vs, vs]);
+        t_BotK  = coder.typeof(0, [ni, nj], [vs, vs]);
         
         args = {t_SppX, t_SppX, t_X, t_BotK, t_x, 0, 0, 0};
         

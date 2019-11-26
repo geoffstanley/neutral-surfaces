@@ -35,7 +35,7 @@ function tbs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
+% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --
@@ -102,7 +102,7 @@ try
         else
             t_X  = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
         end
-        t_BotK   = coder.typeof(uint16(0), [ni, nj], [vs, vs]);
+        t_BotK   = coder.typeof(0, [ni, nj], [vs, vs]);
         t_x      = coder.typeof(0, [ni, nj], [vs, vs]);
         t_branch = coder.typeof(0, [ni, nj], [vs, vs]);
         t_dfn    = coder.typeof(0, [5, ni*nj], [true, true]);

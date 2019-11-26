@@ -136,7 +136,7 @@ function [x, s, t] = omega_surface(S, T, X, x, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
+% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --
@@ -182,7 +182,7 @@ qu = zeros(nij, 1); % queue storing linear indices to pixels
 A = grid_adjacency([ni,nj], OPTS.WRAP, 4); % all grid points that are adjacent to all grid points, using 4-connectivity
 
 % Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
-BotK = squeeze(sum(uint16(isfinite(S)), 1, 'native'));
+BotK = squeeze(sum(isfinite(S), 1));
 
 
 

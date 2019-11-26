@@ -36,7 +36,7 @@ function bfs_wet_codegen(nk, ni, nj, Xvec, r, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
+% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --
@@ -107,7 +107,7 @@ if isempty(file_mex) ... % No mex file yet
     nij = ni * nj;
     t_x    = coder.typeof(0, [ni, nj], [vs, vs]);
     t_A    = coder.typeof(0, [nij, 4], [vs, false]);
-    t_BotK = coder.typeof(uint16(0), [ni, nj], [vs, vs]);
+    t_BotK = coder.typeof(0, [ni, nj], [vs, vs]);
     t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
     
     if r        %(SppX,   TppX,   X,   s,   t,  x,X_TOL, A,   BotK, r,  qu)
