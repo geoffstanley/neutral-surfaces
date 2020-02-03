@@ -19,7 +19,14 @@ function [qu, qt, s, t, x, freshly_wet] = bfs_wet(SppX, TppX, X, s, t, x, X_TOL,
 % queue for the BFS, qu; the tail index of qu for the BFS, qt; the S, T,
 % and X values on the updated wet surface, (s, t, x); the number of water
 % columns added to the surface, freshly_wet.  Note, the points where the
-% updated surface exists are given by linear indices qu(1:qt).
+% updated surface exists are given by linear indices qu(1:qt).  Note, this
+% function changes the connected components of the surface, and hence the
+% tail indices of the BFS search queue are not given as output here; that
+% is, only qt is provided, the total number of valid points discovered or
+% wet, rather than qts as provided by bfs_conncomp.  To obtain indices for
+% the different connected components, run bfs_conncomp on the output
+% surface, i.e. ``wet = false(size(x)); wet(qu(1:qt)) = true; [qu, qts, ncc]
+% = bfs_conncomp(wet, A);``.  
 %
 %
 % --- Input:
