@@ -185,7 +185,7 @@ if centre
     if eos_is_specvol
         sigma = 1 ./ sigma;
     end
-    [~, N2rhogr] = pchi1d1(lead1(x), X, sigma);
+    [~, N2rhogr] = pchipdqn(lead1(x), X, sigma);
     if nonBOUSSINESQ
         % P is actually pressure, not depth analogue.
         % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
@@ -261,7 +261,7 @@ else
     end
     
     % Take derivative of sigma w.r.t pressure or depth (as a SPATIAL coordinate)
-    [~, N2rhogr] = pchi1d1(lead1(xa), Xa, sigma);
+    [~, N2rhogr] = pchipdqn(lead1(xa), Xa, sigma);
     if nonBOUSSINESQ
         % P is actually pressure, not depth analogue.
         % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
@@ -289,7 +289,7 @@ else
     if eos_is_specvol
         sigma = 1 ./ sigma;
     end
-    [~, N2rhogr] = pchi1d1(lead1(xa), Xa, sigma);
+    [~, N2rhogr] = pchipdqn(lead1(xa), Xa, sigma);
     if nonBOUSSINESQ
         N2rhogr = N2rhogr .* (Pa2db * grav * ra);
     end
