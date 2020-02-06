@@ -93,7 +93,7 @@ nX = 0;
 for n = 1:N
     d = phi(n);
     k = BotK(n);
-    if ~isnan(d) && k > 0
+    if ~isnan(d) && k > 1
         
         % Select this water column
         SppXn = SppX(:,1:k-1,n);
@@ -102,17 +102,15 @@ for n = 1:N
         
         % DEV: The following attempts to limit the search direction based
         % on phi's sign, but in practice this doesn't seem to work well.
-        %{
-        if phiI > 0  %, only search in one direction by setting lower bound (upper bound?)
-            % Target specific volume is larger than current specific volume: move up, to lower pressures
-            x(n) = bisectguess(@diff_fun, X(nX+1), x(n), tolx, x(n), ...
-                SppXn, TppXn, Xn, s(n), t(n), x(n), err);
-        else
-            % Target specific volume is smaller than current specific volume: move down, to higher pressures
-            x(n) = bisectguess(@diff_fun, x(n), X(nX+k), tolx, x(n), ...
-                SppXn, TppXn, Xn, s(n), t(n), x(n), err);
-        end
-        %}
+        %if phiI > 0  %, only search in one direction by setting lower bound (upper bound?)
+        %    % Target specific volume is larger than current specific volume: move up, to lower pressures
+        %    x(n) = bisectguess(@diff_fun, X(nX+1), x(n), tolx, x(n), ...
+        %        SppXn, TppXn, Xn, s(n), t(n), x(n), err);
+        %else
+        %    % Target specific volume is smaller than current specific volume: move down, to higher pressures
+        %    x(n) = bisectguess(@diff_fun, x(n), X(nX+k), tolx, x(n), ...
+        %        SppXn, TppXn, Xn, s(n), t(n), x(n), err);
+        %end
         
         % Bisect through the whole water column to find a solution to the
         % nonlinear root finding problem

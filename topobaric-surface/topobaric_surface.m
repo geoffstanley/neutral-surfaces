@@ -1,4 +1,4 @@
-function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
+function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS)
 %TOPOBARIC_SURFACE  Create a topobaric surface.
 %
 %
@@ -229,10 +229,15 @@ function [x, s, t, RG, s0, t0, d_fn] = topobaric_surface(S, T, X, x, OPTS)
 %
 %
 % --- Equation of State:
-% The MATLAB path must contain two functions, eos.m and eos_x.m. Both
+% The MATLAB path* must contain two functions, eos.m and eos_x.m. Both
 % accept 3 inputs: S, T, and X. eos(S, T, X) is the equation of state and
 % eos_x(S, T, X) is the partial derivative of the equation of state with
 % respect to X (holding S and T constant).
+% *Note: It is not sufficient to simply have these eos functions in the
+% current working directory, because the compiled MEX functions will not be
+% able to find them there.  They must be in the MATLAB path.  If they are
+% in the current working directory, use `addpath(pwd)` to add the current
+% working directory to the top of MATLAB's path.
 %
 % For a non-Boussinesq ocean, x and X are pressure [dbar], and if
 % topobaric_geostrf will be called then the equation of state must return
@@ -352,6 +357,16 @@ ALL_VERTS = OPTS.DECOMP(1) == 'd' && OPTS.FILL_PIX == 0 && isempty(OPTS.FILL_IJ)
 assert(ALL_VERTS || OPTS.ITER_MAX < 1, ...
     'To empirically fit the multivalued function, must use ''diagonal'' simplical decomposition and fill no holes during pre-processing');
 
+
+CALC_ERRORS = (OPTS.VERBOSE > 0) || (nargout >= 8);
+
+diags = struct();
+diags.clocktime = nan(OPTS.ITER_MAX,1);
+diags.epsL1 = nan(OPTS.ITER_MAX,1);
+diags.epsL2 = nan(OPTS.ITER_MAX,1);
+diags.xdiffL2 = nan(OPTS.ITER_MAX,1);
+diags.freshly_wet = nan(OPTS.ITER_MAX,1);
+
 %% Just In Time code generation
 if OPTS.REEB
     tbs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
@@ -418,9 +433,10 @@ end
 % at the reference x. If reference S and T are not provided, this is 0.
 d0 = d0 - eos(s0,t0,x0);
 
+
 %% Begin iterations
 for iter = 1 : OPTS.ITER_MAX
-    itertic = tic();
+    iter_tic = tic();
     
     % --- Remove the Mixed Layer
     % But keep it for the first iteration, which may be initialized from a
@@ -442,6 +458,19 @@ for iter = 1 : OPTS.ITER_MAX
     wet(qu(1:qt)) = true;
     x(~wet) = nan;
     
+    if CALC_ERRORS
+        diags_time = tic();
+        % Get neutrality errors on the U,V grid.  
+        [epsx, epsy] = ntp_epsilon_r_x(s, t, x, 1, 1, false, OPTS.WRAP);
+        
+        % Compute the L1 and L2 norms of the neutrality (epsilon) errors
+        data = [epsx(isfinite(epsx)); epsy(isfinite(epsy))];
+        diags.epsL1(iter) = sum(abs(data)) / numel(data);
+        diags.epsL2(iter) = sqrt(sum(data.^2) / numel(data));
+        diags.freshly_wet(iter) = freshly_wet;
+        
+        diags_time = toc(diags_time);
+    end
     
     if OPTS.REEB
         % --- Calculate the Reeb graph:
@@ -533,17 +562,24 @@ for iter = 1 : OPTS.ITER_MAX
     
     % --- Get ready for next iteration
     xdiff = xnew - x;
-    L2_xdiff = nanrms(xdiff(:));
+    xdiffL2 = nanrms(xdiff(:));
     x = xnew;
     
     % --- Closing remarks
-    if OPTS.VERBOSE >= 1
-        fprintf(OPTS.FILE_ID, 'Iter %02d (%.2fsec):  %d casts wet; %d casts in/outcropped; x change has: Mean %0.5g, L_2 %0.5g, L_inf %0.5g\n',...
-            iter, toc(itertic), freshly_wet, sum(isnan(xnew(wet))), nanmean(xdiff(:)), L2_xdiff, max(abs(xdiff(:))));
+    if CALC_ERRORS
+        
+        diags.xdiffL2(iter) = xdiffL2;
+        clocktime = toc(iter_tic) - diags_time;
+        if OPTS.VERBOSE >= 1
+            fprintf(OPTS.FILE_ID, 'Iter %02d (%.2fsec):  %d casts wet; %d casts in/outcropped; x change has: Mean %0.5g, L_2 %0.5g, L_inf %0.5g\n',...
+                iter, toc(iter_tic), freshly_wet, sum(isnan(xnew(wet))), nanmean(xdiff(:)), xdiffL2, max(abs(xdiff(:))));
+        end
+        diags.clocktime(iter) = clocktime;
+        
     end
     
     % --- Check for convergence or maximum iterations
-    if (iter >= OPTS.ITER_MAX) || (L2_xdiff < OPTS.ITER_L2_CHANGE)
+    if (iter >= OPTS.ITER_MAX) || (xdiffL2 < OPTS.ITER_L2_CHANGE)
         break
     end
     

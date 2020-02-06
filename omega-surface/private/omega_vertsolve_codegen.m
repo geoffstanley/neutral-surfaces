@@ -69,6 +69,19 @@ try
     which_eos   = which('eos');
     file_eos    = dir(which_eos);
     
+    if strcmpi(file_eos.folder, pwd())
+        % If eos() is found in the current working directory, make sure
+        % that it is also on the top of MATLAB's path. This is to ensure
+        % that eos() used in the MEX function compiled with MATLAB's code
+        % generation (codegen) is the intended one, in the current working
+        % directory. Interpreted MATLAB uses the current working directory
+        % at the top of its search path, but MEX functions that are
+        % compiled in a separate directory do not know about this current
+        % working directory, so they could inadvertantly call the wrong
+        % functions.
+        addpath(pwd)
+    end
+    
     % Test values
     s = 34.5;
     t = 3;
@@ -109,13 +122,13 @@ try
         
         % Configure MEX for speed.
         mexconfig = coder.config('mex');
-        mexconfig.ExtrinsicCalls = false;
-        mexconfig.ResponsivenessChecks = false;
-        mexconfig.IntegrityChecks = false;
+        %mexconfig.ExtrinsicCalls = false;
+        %mexconfig.ResponsivenessChecks = false;
+        %mexconfig.IntegrityChecks = false;
         
         % Compile the MEX function
         cd(file_mat.folder);
-        codegen(name, '-args', args, '-config', mexconfig, '-o', [file_mat.folder V name_mex], '-d', [file_mat.folder V 'codegen' V 'mex' V name]);
+        codegen(name, '-report', '-args', args, '-config', mexconfig, '-o', [file_mat.folder V name_mex], '-d', [file_mat.folder V 'codegen' V 'mex' V name]);
         clear(name_mex)  % Ensure new mex file gets used
         
         % Save textual identifier for this MEX function

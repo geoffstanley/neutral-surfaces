@@ -1,4 +1,4 @@
-function [x, s, t] = omega_surface(S, T, X, x, OPTS)
+function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 % OMEGA_SURFACE  Create an omega surface, minimizing error from the neutral tangent plane.
 %
 %
@@ -27,16 +27,23 @@ function [x, s, t] = omega_surface(S, T, X, x, OPTS)
 %  x [ni, nj]: pressure or depth on omega surface
 %  s [ni, nj]: practical / Absolute salinity on omega surface
 %  t [ni, nj]: potential / Conservative temperature on omega surface
+%  diags [struct]: diagnostics such as clock time and norms of neutrality
+%                  errors.  See code for info. Programmable as needed.
 %
 % Note: physical units of S, T, X, and x are determined by eos.m.
 %
 %
 % --- Equation of State:
-% The MATLAB path must contain two functions, eos.m and eos_s_t.m. Both
+% The MATLAB path* must contain two functions, eos.m and eos_s_t.m. Both
 % accept 3 inputs: S, T, and X. eos(S, T, X) returns the specific volume
 % [m^3 kg^-1] or the in-situ density [kg m^-3]. eos_s_t(S, T, X) returns,
 % as its two outputs, the partial derivatives of eos with respect to S and
 % T.
+% *Note: It is not sufficient to simply have these eos functions in the
+% current working directory, because the compiled MEX functions will not be
+% able to find them there.  They must be in the MATLAB path.  If they are
+% in the current working directory, use `addpath(pwd)` to add the current
+% working directory to the top of MATLAB's path.
 %
 % For a non-Boussinesq ocean, x and X are pressure [dbar].
 %
@@ -185,7 +192,6 @@ A = grid_adjacency([ni,nj], OPTS.WRAP, 4); % all grid points that are adjacent t
 BotK = squeeze(sum(isfinite(S), 1));
 
 
-
 %% Process OPTS
 
 % Load default options, then override with any user-specified OPTS.
@@ -200,12 +206,25 @@ eos0 = eos(34.5, 3, 1000);
 if eos0 > 1
     PHI_TOL = OPTS.TOL_DENS;          % Density tolerance [kg m^-3]
     msg1 = 'Initial surface has ................................................ mean(x) = %.4f, mean(dens) = %.2f\n';
-    msg2 = 'Iter %02d had |eps|_2 = %.6e to start; done by %.2f sec with mean(x) = %.2f, mean(dens) = %.4f, |phi''|_1 = %.6e in %d regions, %d casts freshly wet\n';
+    msg2 = 'Iter %02d (%.2f sec) had |eps|_2 = %.6e to start; mean(x) = %.2f, mean(dens) = %.4f, |phi''|_1 = %.6e in %d regions, %d casts freshly wet\n';
 else
     PHI_TOL = OPTS.TOL_DENS * eos0^2; % Specific volume tolerance [m^3 kg^-1]
     msg1 = 'Initial surface has ................................................   mean(x) %.4f; mean(specvol) %.6e\n';
-    msg2 = 'Iter %02d had |eps|_2 = %.6e to start; done by %.2f sec with mean(x) = %.2f, mean(specvol) = %.6e, |phi''|_1 = %.6e in %d regions, %d casts freshly wet\n';
+    msg2 = 'Iter %02d (%.2f sec) had |eps|_2 = %.6e to start; mean(x) = %.2f, mean(specvol) = %.6e, |phi''|_1 = %.6e in %d regions, %d casts freshly wet\n';
 end
+
+CALC_ERRORS = (OPTS.VERBOSE > 0) || (nargout > 3);
+
+diags = struct();
+diags.epsL1 = nan(OPTS.ITER_MAX,1);
+diags.epsL2 = nan(OPTS.ITER_MAX,1);
+diags.phiL1 = nan(OPTS.ITER_MAX,1);
+diags.xdiffL2 = nan(OPTS.ITER_MAX,1);
+diags.mean_x = nan(OPTS.ITER_MAX,1);
+diags.mean_eos = nan(OPTS.ITER_MAX,1);
+diags.num_regions = nan(OPTS.ITER_MAX,1);
+diags.freshly_wet = nan(OPTS.ITER_MAX,1);
+diags.clocktime = nan(OPTS.ITER_MAX,1);
 
 % Experimenting with decreasing tolerance:
 % tol_rel = 1e-4; % Initial relative tolerance  DEV
@@ -251,8 +270,8 @@ if OPTS.VERBOSE > 0
 end
 
 %% Begin iterations
-total_tic = tic;
 for iter = 1 : OPTS.ITER_MAX
+    iter_tic = tic;
     
     % --- Remove the Mixed Layer
     % But keep it for the first iteration, which may be initialized from a
@@ -301,6 +320,7 @@ for iter = 1 : OPTS.ITER_MAX
     idx(:) = 0;    % Overwrite with linear indices to regions
     phiL1 = 0;     % For accumulating the L1 norm of phi
     nwc_total = 0; % For accumulating the L1 norm of phi
+    epsL1 = 0;     % For accumulating the L1 norm of the epsilon error
     epsL2 = 0;     % For accumulating the L2 norm of the epsilon error
     neq_total = 0; % For accumulating the L2 norm of the epsilon error
     for icc = 1 : ncc % icc = index of region
@@ -340,13 +360,15 @@ for iter = 1 : OPTS.ITER_MAX
         % Build the sparse matrix, with neq+1 rows and nwc columns
         mat = sparse( ii, jj, vv, neq+1, nwc );
         
-        % Accumulate sum of squares for L2 norm
-        if OPTS.VERBOSE > 0
+        % Accumulate errors from this region
+        if CALC_ERRORS
             if USE_INTEGRATING_FACTOR
-                B_no_b = [no_b_eps_i(I); no_b_eps_j(I)];
-                B_no_b(isnan(B_no_b)) = 0;
-                epsL2 = epsL2 + sum(B_no_b .* B_no_b);
+                rhs_no_b = [no_b_eps_i(I); no_b_eps_j(I)];
+                rhs_no_b(isnan(rhs_no_b)) = 0;
+                epsL1 = epsL1 + sum(abs(rhs_no_b));
+                epsL2 = epsL2 + sum(rhs_no_b .* rhs_no_b);
             else
+                epsL1 = epsL1 + sum(abs(rhs));
                 epsL2 = epsL2 + sum(rhs .* rhs);
             end
             neq_total = neq_total + neq;
@@ -382,7 +404,9 @@ for iter = 1 : OPTS.ITER_MAX
     
     % --- Update the surface
     mytic = tic();
+    xold = x;      % Record old surface for diagnostic purposes. 
     [x, s, t] = omega_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, X_TOL, phi);
+    
     if OPTS.VERBOSE > 1
         fprintf(OPTS.FILE_ID, '  %.4f sec for global vertical bisection \n', toc(mytic));
     end
@@ -406,9 +430,25 @@ for iter = 1 : OPTS.ITER_MAX
     end
     
     % --- Closing Remarks
-    if OPTS.VERBOSE > 0
+    if CALC_ERRORS
+        xdiff = x - xold;
+        xdiffL2 = nanrms(xdiff(:));
+        epsL1 = epsL1 / neq_total;
         epsL2 = sqrt(epsL2 / neq_total);
-        fprintf(OPTS.FILE_ID, msg2, iter, epsL2, toc(total_tic), nanmean(x(:)), nanmean(eos(s(:),t(:),x(:))), phiL1, ncc, freshly_wet);
+        mean_x = nanmean(x(:));
+        mean_eos = nanmean(eos(s(:),t(:),x(:)));
+        diags.epsL1(iter) = epsL1;
+        diags.epsL2(iter) = epsL2;
+        diags.phiL1(iter) = phiL1;
+        diags.xdiffL2(iter) = xdiffL2;
+        diags.mean_x(iter) = mean_x;
+        diags.mean_eos(iter) = mean_eos;
+        diags.num_regions(iter) = ncc;
+        diags.freshly_wet(iter) = freshly_wet;
+        diags.clocktime(iter) = toc(iter_tic);
+        if OPTS.VERBOSE > 0
+            fprintf(OPTS.FILE_ID, msg2, iter, toc(iter_tic), epsL2, mean_x, mean_eos, phiL1, ncc, freshly_wet);
+        end
     end
     
     % --- Check for convergence

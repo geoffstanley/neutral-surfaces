@@ -68,6 +68,19 @@ try
     which_eos   = which('eos');
     file_eos    = dir(which_eos);
     
+    if strcmpi(file_eos.folder, pwd())
+        % If eos() is found in the current working directory, make sure
+        % that it is also on the top of MATLAB's path. This is to ensure
+        % that eos() used in the MEX function compiled with MATLAB's code
+        % generation (codegen) is the intended one, in the current working
+        % directory. Interpreted MATLAB uses the current working directory
+        % at the top of its search path, but MEX functions that are
+        % compiled in a separate directory do not know about this current
+        % working directory, so they could inadvertantly call the wrong
+        % functions.
+        addpath(pwd)
+    end
+    
     % Test values
     s = 34.5;
     t = 3;

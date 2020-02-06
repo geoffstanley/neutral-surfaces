@@ -70,6 +70,18 @@ function [x,s,t,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, OPTS)
 %                     2 for detailed information on each iteration.
 %   X_TOL [1, 1]: error tolerance, in the same units as X [dbar] or [m], 
 %      when root-finding to update the surface.
+%
+%
+% --- Equation of State:
+% The MATLAB path* must contain the function eos.m. This must accept 3
+% inputs: S, T, and X. eos(S, T, X) returns the specific volume [m^3 kg^-1]
+% or the in-situ density [kg m^-3].
+% *Note: It is not sufficient to simply have these eos functions in the
+% current working directory, because the compiled MEX functions will not be
+% able to find them there.  They must be in the MATLAB path.  If they are
+% in the current working directory, use `addpath(pwd)` to add the current
+% working directory to the top of MATLAB's path.
+
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
