@@ -66,3 +66,5 @@ OPTS.FINAL_ROW_VALUES = 1e-2; % chosen empirically from tests on 1x1deg OCCA dat
 OPTS.INTEGRATING_FACTOR = [];  % No integrating factor
 
 OPTS.FILE_ID = 1; % standard output to MATLAB terminal
+
+OPTS.REF_IJ = []; % No reference water column at which the surface is pinned.  Instead, maintain the mean density. 

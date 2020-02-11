@@ -199,6 +199,12 @@ OPTS = catstruct(omega_defaults(), OPTS);
 
 USE_INTEGRATING_FACTOR = ~isempty(OPTS.INTEGRATING_FACTOR);
 
+PIN_IJ = ~isempty(OPTS.REF_IJ);
+if PIN_IJ
+    i0 = OPTS.REF_IJ(1);
+    j0 = OPTS.REF_IJ(2);
+end
+
 % Hard-coded parameters:
 drdp = 4e-03; % Approximate derivative of in-situ density w.r.t. pressure [kg m^-3 dbar^-1]
 X_TOL = OPTS.TOL_DENS / (drdp * 2); % tolerance in pressure [dbar] during vertical solve.  Factor of 2 for good measure
@@ -395,17 +401,36 @@ for iter = 1 : OPTS.ITER_MAX
         fprintf(OPTS.FILE_ID, '  %.4f sec to build and solve matrices \n', toc(mytic));
     end
     
-    % Force mean(phi) = 0 exactly. The LSQR solution only tries to keep
-    % mean(phi) near zero in a least-squares sense, while also trying to
-    % make the neutrality errors zero. When FINAL_ROW_VALUES is badly
-    % chosen, |phi|_1 can wobble as iterations proceed, but forcing
-    % mean(phi) = 0 seems to help |phi|_1 to decrease monotonically.
-    phi = phi - nanmean(phi(:));
+    
+    if PIN_IJ && ~isnan(phi(i0,j0))
+        % Force phi(i0,j0) = 0 exactly.  This keeps the surface pinned at
+        % its initial depth in water column (i0,j0).  Note, there could be
+        % multiple connected components, and the reference column exists in
+        % only one of them.  The other connected components are heaved up
+        % or down by this density (phi) amount.
+        phi = phi - phi(i0,j0);
+    else
+        % Force mean(phi) = 0 exactly. The LSQR solution only tries to keep
+        % mean(phi) near zero in a least-squares sense, while also trying to
+        % make the neutrality errors zero. When FINAL_ROW_VALUES is badly
+        % chosen, |phi|_1 can wobble as iterations proceed, but forcing
+        % mean(phi) = 0 seems to help |phi|_1 to decrease monotonically.
+        phi = phi - nanmean(phi(:));
+    end
+    
+    
     
     % --- Update the surface
     mytic = tic();
     xold = x;      % Record old surface for diagnostic purposes. 
     [x, s, t] = omega_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, X_TOL, phi);
+    
+    if PIN_IJ && ~isnan(phi(i0,j0))
+        % Force x(i0,j0) to stay constant at the reference column,
+        % identically. This avoids any intolerance from the bisection
+        % method.
+        x(i0,j0) = xold(i0,j0);
+    end
     
     if OPTS.VERBOSE > 1
         fprintf(OPTS.FILE_ID, '  %.4f sec for global vertical bisection \n', toc(mytic));
