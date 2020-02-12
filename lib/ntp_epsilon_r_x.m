@@ -1,5 +1,5 @@
 function [ex,ey,sx,sy] = ntp_epsilon_r_x(s, t, x, dx, dy, centre, wrap, grav, S, T, X)
-%NTP_EPSILON_R_X  The epsilon neutrality error and slope error from the 
+%NTP_EPSILON_R_X  The epsilon neutrality error and slope error from the
 %                 neutral tangent plane using density and pressure (or depth)
 %
 %
@@ -117,7 +117,7 @@ function [ex,ey,sx,sy] = ntp_epsilon_r_x(s, t, x, dx, dy, centre, wrap, grav, S,
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
+% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --
@@ -140,163 +140,95 @@ lead1 = @(x) reshape(x, [1 size(x)]);
 
 
 if centre
-    % Get errors by centred differences
-    r = eos(s, t, x);
-    if eos_is_specvol
-        r = 1 ./ r;     % now r is density [kg m^3]
-    end
-    
-    % Begin calculations for errors in x direction
-    sa = (im1_2d(s) + ip1_2d(s)) / 2;
-    ta = (im1_2d(t) + ip1_2d(t)) / 2;
-    xa = (im1_2d(x) + ip1_2d(x)) / 2;
-    rxa = eos_x(sa, ta, xa);
-    if eos_is_specvol
-        ra = eos(sa, ta, xa);  % specific volume
-        rxa = -rxa ./ ra.^2;   % convert to in-situ density derivative w.r.t. x
-    end
-    ex = ((ip1_2d(r) - im1_2d(r)) - rxa .* (ip1_2d(x) - im1_2d(x))) ./ (2*dx);
-    % Note, ex above is virtually identical (third order accuracy) to exst below:
-    % >> [rs,rt] = eos_s_t(sa,ta,xa);
-    % >> ex = (rs .* (ip1_2d(s) - im1_2d(s)) + rt .* (ip1_2d(t) - im1_2d(t))) ./ (2*dx);
-    % But the above two forms of ex are NOT identical to the below form:
-    % >> rx = eos_x(s, t, x);
-    % >> ex = ((ip1_2d(r) - im1_2d(r)) - rx .* (ip1_2d(x) - im1_2d(x))) ./ (2*dx);
-    % Lesson: tempting though it is to use s,t and x in the local water
-    % column to calculate rx, the partial derivative of density w.r.t x,
-    % it's wrong!
-    if nargout < 2; return; end
-    
-    % Begin calculations for errors in y direction
-    sa = (jm1_2d(s) + jp1_2d(s)) / 2;
-    ta = (jm1_2d(t) + jp1_2d(t)) / 2;
-    xa = (jm1_2d(x) + jp1_2d(x)) / 2;
-    rxa = eos_x(sa, ta, xa);
-    if eos_is_specvol
-        ra = eos(sa, ta, xa);  % specific volume
-        rxa = -rxa ./ ra.^2;   % convert to in-situ density derivative w.r.t. x
-    end
-    ey = ((jp1_2d(r) - jm1_2d(r)) - rxa .* (jp1_2d(x) - jm1_2d(x))) ./ (2*dy);
-    if nargout < 3; return; end
-    
-    % Calculate stratification using locally referenced potential density (sigma)
-    % N2rhogr is rho N^2 / g
-    sigma = eos(S, T, permute(x, [3 1 2]));
-    if eos_is_specvol
-        sigma = 1 ./ sigma;
-    end
-    [~, N2rhogr] = pchipdqn(lead1(x), X, sigma);
-    if nonBOUSSINESQ
-        % P is actually pressure, not depth analogue.
-        % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
-        N2rhogr = N2rhogr .* (Pa2db * grav * r);
-    end
-    % Now N2rhogr is d(sigma)/d|z| whether P is pressure or inverted depth
-    % N.B. don't multiply by -1, because P increases downwards even if it is depth.
-    
-    % Apply threshold:
-    N2rhogr(N2rhogr < N2rhogr_min) = N2rhogr_min;
-    
-    % Slope error
-    sx = ex ./ N2rhogr;
-    if nargout < 4; return; end
-    
-    sy = ey ./ N2rhogr;
-    
+    % Get errors by centred differences on the T grid
+    dx = dx * 2;
+    dy = dy * 2;
+    A_X = @(F) (im1_2d(F) + ip1_2d(F)) / 2;
+    D_X = @(F)  ip1_2d(F) - im1_2d(F);
+    A_Y = @(F) (jm1_2d(F) + jp1_2d(F)) / 2;
+    D_Y = @(F)  jp1_2d(F) - jm1_2d(F);
 else
     % Get errors by backward differences, and leave on the U, V grid.
-    r = eos(s, t, x);
-    if eos_is_specvol
-        r = 1 ./ r;     % now r is density [kg m^3]
-    end
-    
-    % Begin calculations for errors in x direction
-    sa = (im1_2d(s) + s) / 2;
-    ta = (im1_2d(t) + t) / 2;
-    xa = (im1_2d(x) + x) / 2;
-    rxa = eos_x(sa, ta, xa);
-    if eos_is_specvol || nonBOUSSINESQ
-        ra = eos(sa, ta, xa);
-    end
-    if eos_is_specvol
-        ra = 1 ./ ra;          % specific volume
-        rxa = -rxa .* ra.^2;   % convert to in-situ density derivative w.r.t. x
-    end
-    
-    ex = ((r - im1_2d(r)) - rxa .* (x - im1_2d(x))) ./ dx;
-    % Note, ex above is virtually identical to ex below:
-    % >> [rs,rt] = eos_s_t(sa,ta,xa);
-    % >> ex = (rs .* (s - im1_2d(s)) + rt .* (t - im1_2d(t))) ./ dx;
-    if nargout < 2; return; end
-    
-    % Begin calculations for errors in y direction.
-    sa = (jm1_2d(s) + s) / 2;
-    ta = (jm1_2d(t) + t) / 2;
-    xa = (jm1_2d(x) + x) / 2;
-    rxa = eos_x(sa, ta, xa);
-    if eos_is_specvol || nonBOUSSINESQ
-        ra = eos(sa, ta, xa);
-    end
-    if eos_is_specvol
-        ra = 1 ./ ra;          % specific volume
-        rxa = -rxa .* ra.^2;   % convert to in-situ density derivative w.r.t. x
-    end
-    
-    ey = ((r - jm1_2d(r)) - rxa .* (x - jm1_2d(x))) ./ dy;
-    if nargout < 3; return; end
-    
-    % Start working on zonal slope error
-    Sa = (S + im1_3d(S)) / 2;
-    Ta = (T + im1_3d(T)) / 2;
-    if isvector(X)
-        Xa = X;
-    else
-        Xa = (X + im1_3d(X)) / 2;
-    end
-    
-    % Compute locally referenced potential density
-    sigma = eos(Sa, Ta, permute(xa, [3 1 2]));
-    if eos_is_specvol
-        sigma = 1 ./ sigma;
-    end
-    
-    % Take derivative of sigma w.r.t pressure or depth (as a SPATIAL coordinate)
-    [~, N2rhogr] = pchipdqn(lead1(xa), Xa, sigma);
-    if nonBOUSSINESQ
-        % P is actually pressure, not depth analogue.
-        % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
-        N2rhogr = N2rhogr .* (Pa2db * grav * ra);
-    end
-    % Now N2rhogr is d(sigma)/d|z| whether P is pressure or inverted depth
-    % N.B. don't multiply by -1, because P increases downwards even if it is depth.
-    
-    % Apply threshold:
-    N2rhogr(N2rhogr < N2rhogr_min) = N2rhogr_min;
-    
-    % Slope error
-    sx = ex ./ N2rhogr ;
-    
-    
-    % Repeat for meridional slope error
-    Sa = (S + jm1_3d(S)) / 2;
-    Ta = (T + jm1_3d(T)) / 2;
-    if isvector(X)
-        Xa = X;
-    else
-        Xa = (X + jm1_3d(X)) / 2;
-    end
-    sigma = eos(Sa, Ta, permute(xa, [3 1 2]));
-    if eos_is_specvol
-        sigma = 1 ./ sigma;
-    end
-    [~, N2rhogr] = pchipdqn(lead1(xa), Xa, sigma);
-    if nonBOUSSINESQ
-        N2rhogr = N2rhogr .* (Pa2db * grav * ra);
-    end
-    N2rhogr(N2rhogr < N2rhogr_min) = N2rhogr_min;
-    sy = ey ./ N2rhogr ;
-    
+    A_X = @(F) (F + im1_2d(F)) / 2;
+    D_X = @(F)  F - im1_2d(F);
+    A_Y = @(F) (F + jm1_2d(F)) / 2;
+    D_Y = @(F)  F - jm1_2d(F);
 end
+
+
+
+r = eos(s, t, x);
+if eos_is_specvol
+    r = 1 ./ r;     % now r is density [kg m^3]
+end
+
+% Begin calculations for errors in x direction
+sa = A_X(s);
+ta = A_X(t);
+xa = A_X(x);
+rxa = eos_x(sa, ta, xa);
+if eos_is_specvol
+    % convert rxa into to in-situ density derivative w.r.t. x:
+    rxa = -rxa ./ eos(sa, ta, xa).^2;
+end
+
+ex = (D_X(r) - rxa .* D_X(x)) ./ dx;
+% Note, ex above is virtually identical to ex below (this equivalence is
+% accurate to third order):
+% >> [rs,rt] = eos_s_t(sa,ta,xa);
+% >> ex = (rs .* D_X(s) + rt .* D_X(t)) ./ dx;
+% In particular, note that for centred differences, this is (written with
+% the original, unmodified dx):
+% >> ex = (rs .* (ip1_2d(s) - im1_2d(s)) + rt .* (ip1_2d(t) - im1_2d(t))) ./ (2*dx);
+% The above ex are NOT identical to the below form:
+% >> rx = eos_x(s, t, x);
+% >> ex = ((ip1_2d(r) - im1_2d(r)) - rx .* (ip1_2d(x) - im1_2d(x))) ./ (2*dx);
+% Lesson: tempting though it is to use s,t and x in the local water column
+% to calculate rx, the partial derivative of density w.r.t x, it's wrong!
+if nargout < 2; return; end
+
+% Begin calculations for errors in y direction.
+sa = A_Y(s);
+ta = A_Y(t);
+xa = A_Y(x);
+rxa = eos_x(sa, ta, xa);
+if eos_is_specvol
+    % convert rxa into to in-situ density derivative w.r.t. x:
+    rxa = -rxa ./ eos(sa, ta, xa).^2;
+end
+
+ey = (D_Y(r) - rxa .* D_Y(x)) ./ dy;
+if nargout < 3; return; end
+
+% Start working on slope errors
+
+% Calculate locally referenced potential density
+sigma = eos(S, T, lead1(x));
+if eos_is_specvol
+    sigma = 1 ./ sigma;  % now sigma is density [kg m^3]
+end
+
+% Take derivative of sigma w.r.t pressure or depth (as a SPATIAL coordinate)
+[~, N2rhogr] = pchipdqn(lead1(x), X, sigma);
+if nonBOUSSINESQ
+    % P is actually pressure, not depth analogue.
+    % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
+    N2rhogr = N2rhogr .* (Pa2db * grav * r);
+end
+% Now N2rhogr is d(sigma)/d|z| whether P is pressure or inverted depth
+% N.B. don't multiply by -1, because P increases downwards even if it is depth.
+
+% Apply threshold:
+N2rhogr(N2rhogr < N2rhogr_min) = N2rhogr_min;
+
+
+% Slope error in x direction
+sx = ex ./ A_X(N2rhogr);
+
+
+% Slope error in y direction
+sy = ey ./ A_Y(N2rhogr);
+
 
     function out = im1_2d(in)
         out = circshift(in, [+1 0]);
@@ -329,14 +261,14 @@ end
     function out = im1_3d(in)
         out = circshift(in, [0 +1 0]);
         if ~wrap(1)
-            out(1,:) = nan;
+            out(:,1,:) = nan;
         end
     end
 
     function out = jm1_3d(in)
         out = circshift(in, [0 0 +1]);
         if ~wrap(2)
-            out(:,1) = nan;
+            out(:,:,1) = nan;
         end
     end
 
