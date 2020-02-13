@@ -333,7 +333,7 @@ hv = (1-(npanel+1)*mv) / npanel;
 
 z = z_PDENS;
 [s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
-eps_x = ntp_epsilon_r_x(s, t, z, g.DXCvec, g.DYCsc, false, g.WRAP);
+eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
 ax = axes('Position', [.1 3*mv+2*hv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
 colorbar
@@ -341,7 +341,7 @@ title('Zonal neutral error on potential density surface [log_{10}]')
 
 z = z_TOPOB;
 [s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
-eps_x = ntp_epsilon_r_x(s, t, z, g.DXCvec, g.DYCsc, false, g.WRAP);
+eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
 ax = axes('Position', [.1 2*mv+hv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
 colorbar
@@ -349,7 +349,7 @@ title('Zonal neutral error on topobaric surface [log_{10}]')
 
 z = z_OMEGA;
 [s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
-eps_x = ntp_epsilon_r_x(s, t, z, g.DXCvec, g.DYCsc, false, g.WRAP);
+eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
 ax = axes('Position', [.1 mv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
 colorbar

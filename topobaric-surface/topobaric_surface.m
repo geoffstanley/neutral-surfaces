@@ -460,8 +460,8 @@ for iter = 1 : OPTS.ITER_MAX
     
     if CALC_ERRORS
         diags_time = tic();
-        % Get neutrality errors on the U,V grid.  
-        [epsx, epsy] = ntp_epsilon_r_x(s, t, x, 1, 1, false, OPTS.WRAP);
+        % Get neutrality errors using r and x differences on the U,V grid.  
+        [epsx, epsy] = ntp_errors(s, t, x, 1, 1, false, false, OPTS.WRAP);
         
         % Compute the L1 and L2 norms of the neutrality (epsilon) errors
         data = [epsx(isfinite(epsx)); epsy(isfinite(epsy))];

@@ -430,11 +430,20 @@ for iZ = 1:nZ
             [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
         end
         
+        switch surfname
+            case {'TOPOB', 'MTOPO', 'ORTHO'}
+                % Topobaric is formulated on density and pressure differences
+                use_s_t = false;
+            otherwise
+                % Omega is formulated on salt and temp differences. Others are
+                use_s_t = true;
+        end
+        
         % Get neutrality errors on the U,V grid
-        [eps.mapx(:,:,iS,iZ), eps.mapy(:,:,iS,iZ)] = ntp_epsilon_r_x(s,t,z,g.DXCvec,g.DYCsc,false,g.WRAP);
+        [eps.mapx(:,:,iS,iZ), eps.mapy(:,:,iS,iZ)] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,false,g.WRAP);
         
         % Get slope errors on the Tracer grid
-        [~, ~, sx, sy] = ntp_epsilon_r_x(s,t,z,g.DXCvec,g.DYCsc,true,g.WRAP,[],S,T,Z);
+        [~, ~, sx, sy] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,true,g.WRAP,[],S,T,Z);
         
         % Fictitious Diapycnal Diffusivity
         fdd.map(:,:,iS,iZ) = K_iso * (sx.^2 + sy.^2);
