@@ -211,7 +211,7 @@ ta = A_X(t);
 xa = A_X(x);
 if use_s_t
     [rsa,rta] = eos_s_t(sa,ta,xa);
-    ex = (rsa .* D_X(s) - rta .* D_X(t)) ./ dx;
+    ex = (rsa .* D_X(s) + rta .* D_X(t)) ./ dx;
 else
     rxa = eos_x(sa, ta, xa);
     ex = (D_X(r) - rxa .* D_X(x)) ./ dx;
@@ -228,7 +228,7 @@ ta = A_Y(t);
 xa = A_Y(x);
 if use_s_t
     [rsa,rta] = eos_s_t(sa,ta,xa);
-    ey = (rsa .* D_Y(s) - rta .* D_Y(t)) ./ dy;
+    ey = (rsa .* D_Y(s) + rta .* D_Y(t)) ./ dy;
 else
     rxa = eos_x(sa, ta, xa);
     ey = (D_Y(r) - rxa .* D_Y(x)) ./ dy;
