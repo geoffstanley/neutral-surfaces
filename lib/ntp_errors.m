@@ -172,7 +172,7 @@ if nargout > 2
     assert(nargin == 12, 'If sx, sy are requested, must provide S, T, X');
     assert(is3Ds(S), 'The last two dimensions of S must match those of s (or be singletons).')
     assert(is3Ds(T), 'The last two dimensions of T must match those of s (or be singletons).')
-    assert(is3Ds(X) 'The last two dimensions of X must match those of s (or be singletons).')
+    assert(is3Ds(X), 'The last two dimensions of X must match those of s (or be singletons).')
     assert(size(T,1) == size(S,1) && size(S,1) == size(X,1), 'The first dimensions of S and T and X must match.');
 end
 
