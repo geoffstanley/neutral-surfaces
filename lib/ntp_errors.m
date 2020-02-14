@@ -154,7 +154,7 @@ assert(nargout <= 2 || nargin == 12, 'If sx, sy are requested, must provide S, T
 [nx,ny] = size(s);
 is2D = @(F) ismatrix(F) && all(size(F) == [nx,ny]);
 is2Ds = @(F) ismatrix(F) && ismember(size(F,1), [1,nx]) && ismember(size(F,2), [1,ny]);
-is3Ds = @(F) ndims(F) == 3 && ismember(size(F,2), [1,nx]) && ismember(size(F,3), [1,ny]);
+is3Ds = @(F) ismember(size(F,2), [1,nx]) && ismember(size(F,3), [1,ny]);
 assert(is2D(t)  , 'the dimensions of t must match those of s');
 assert(is2D(x)  , 'the dimensions of x must match those of s');
 assert(is2Ds(dx), 'the dimensions of dx must match those of s (or be singletons)');
@@ -170,9 +170,10 @@ end
 
 if nargout > 2
     assert(nargin == 12, 'If sx, sy are requested, must provide S, T, X');
-    assert(is3Ds(S), 'The last two dimensions nonBOUSSINESQof S must match those of s (or be singletons).')
+    assert(is3Ds(S), 'The last two dimensions of S must match those of s (or be singletons).')
     assert(is3Ds(T), 'The last two dimensions of T must match those of s (or be singletons).')
-    assert(is3Ds(X), 'The last two dimensions of X must match those of s (or be singletons).')
+    assert(is3Ds(X) 'The last two dimensions of X must match those of s (or be singletons).')
+    assert(size(T,1) == size(S,1) && size(S,1) == size(X,1), 'The first dimensions of S and T and X must match.');
 end
 
 % Set threshold for minimum magnitude of d(sigma)/dz, where sigma =
