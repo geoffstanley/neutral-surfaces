@@ -73,12 +73,14 @@ g.XCvec = g.XCvec(:);
 g.YCvec = g.YCvec(:).';
 g.XGvec = g.XGvec(:);
 g.YGvec = g.YGvec(:).';
-Depth_c = netcdf.getVar(ncid,netcdf.inqVarID(ncid, 'Depth_c'));
-%Depth_l = netcdf.getVar(ncid,netcdf.inqVarID(ncid, 'Depth_l'));
-%Depth_u = netcdf.getVar(ncid,netcdf.inqVarID(ncid, 'Depth_u'));
-%Depth_w = netcdf.getVar(ncid,netcdf.inqVarID(ncid, 'Depth_w'));
+Depth_c = netcdf.getVar(ncid,netcdf.inqVarID(ncid, 'Depth_c'));  % Depth of T grid points 
+%Depth_l = netcdf.getVar(ncid,netcdf.inqVarID(ncid, 'Depth_l')); % Depth at bottom of T box
+%Depth_u = netcdf.getVar(ncid,netcdf.inqVarID(ncid, 'Depth_u')); % Depth at top of T box
+Depth_w = netcdf.getVar(ncid,netcdf.inqVarID(ncid, 'Depth_w')); % Depths at edges of T boxes
 g.RC = double(-Depth_c);
 g.DRC = -diff([0; g.RC]);
+g.RF = double(-Depth_w);
+g.DRF = -diff(g.RF);
 
 % Build our own grid, as the MITgcm does it
 g.resx = 1; % 1 grid cell per zonal degree
