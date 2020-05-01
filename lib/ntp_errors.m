@@ -169,18 +169,13 @@ if nonBOUSSINESQ
 end
 
 if nargout > 2
-    assert(nargin == 12, 'If sx, sy are requested, must provide S, T, X');
+    assert(nargin == 12, 'If sx, sy are requested, must provide grav, S, T, X');
+    assert(isscalar(grav), 'grav must be a scalar.');
     assert(is3Ds(S), 'The last two dimensions of S must match those of s (or be singletons).')
     assert(is3Ds(T), 'The last two dimensions of T must match those of s (or be singletons).')
     assert(is3Ds(X), 'The last two dimensions of X must match those of s (or be singletons).')
     assert(size(T,1) == size(S,1) && size(S,1) == size(X,1), 'The first dimensions of S and T and X must match.');
 end
-
-% Set threshold for minimum magnitude of d(sigma)/dz, where sigma =
-% potential density or potential specific volume.
-% N^2 = -(g / rho) * d(pot dens)/dz = +(g / v) * d(pot spec vol)/dz,   where v = 1/rho
-N_min = 2e-4;
-thresh = N_min^2 * eos(34.5, 3, 1000) / grav; % > 0
 
 eos_is_dens = (eos(34.5, 3, 1000) > 1);
 lead1 = @(x) reshape(x, [1 size(x)]);
@@ -236,6 +231,13 @@ end
 if nargout < 3; return; end
 
 % Start working on slope errors
+
+% Set threshold for minimum magnitude of d(sigma)/dz, where sigma =
+% potential density or potential specific volume.
+% N^2 = -(g / rho) * d(pot dens)/dz = +(g / v) * d(pot spec vol)/dz,   where v = 1/rho
+N_min = 2e-4;
+thresh = N_min^2 * eos(34.5, 3, 1000) / grav; % > 0
+
 
 % Calculate locally referenced potential density (or specific volume)
 sigma = eos(S, T, lead1(x));
