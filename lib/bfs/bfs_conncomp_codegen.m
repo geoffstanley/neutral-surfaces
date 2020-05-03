@@ -4,7 +4,7 @@ function bfs_conncomp_codegen(nk, ni, nj, Xvec, r, OPTS)
 %
 % bfs_conncomp_codegen(nk, ni, nj, false, r)
 % runs codegen on bfs_conncomp.m, appropriate for a grid of ni by nj points
-% in the horizontal and nk points in the vertical.  bfs_wet is compiled
+% in the horizontal and nk points in the vertical.  bfs_conncomp is compiled
 % with its final argument (also called r) provided iff r is true.
 %
 % bfs_conncomp_codegen(nk, ni, nj, true, r)
