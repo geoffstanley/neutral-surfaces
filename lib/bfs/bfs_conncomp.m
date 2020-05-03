@@ -37,7 +37,7 @@ function [qu, qts, ncc, G, L] = bfs_conncomp(G, A, r, qu) %#codegen
 %
 % --- Input:
 % G [array with N elements]: true where there are nodes, false elsewhere
-% A [N,D]: adjacency, where D is the most neighbours possible
+% A [D,N]: adjacency, where D is the most neighbours possible
 % qu [N,1]: vector to work in-place (optional)
 % r [1,1]: perform one BFS from this root node (optional)
 %
@@ -82,7 +82,7 @@ N = numel(G);
 if nargin < 4 || isempty(qu)
     qu = zeros(N, 1); % pre-allocate queue storing linear indices to nodes
 end
-D = size(A,2); % maximal degree
+D = size(A,1); % maximal degree
 
 qt = 0; % Queue Tail
 qh = 0; % Queue Head
@@ -113,7 +113,7 @@ if nargin < 3 || isempty(r)
                 qh = qh + 1; % advance head of the queue
                 m = qu(qh); % me node; pop from head of queue
                 for d = 1 : D
-                    n = A(m,d); % neighbour node
+                    n = A(d,m); % neighbour node
                     if n && G(n) % n is undiscovered
                         qt = qt + 1;  % Add n to queue
                         qu(qt) = n;
@@ -141,7 +141,7 @@ else
         qh = qh + 1; % advance head of the queue
         m = qu(qh);  % me node; pop from head of queue
         for d = 1 : D
-            n = A(m,d); % neighbour node
+            n = A(d,m); % neighbour node
             if n && G(n)
                 % n is on the surface, and undiscovered
                 qt = qt + 1;  % Add n to queue

@@ -93,7 +93,7 @@ try
         vs = true;
         t_G    = coder.typeof(true, [ni, nj], [vs, vs]);
         nij = ni * nj;
-        t_A    = coder.typeof(0, [nij, 8], [vs, true]);
+        t_A    = coder.typeof(0, [9, nij], [true, vs]);
         t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
         
         if r

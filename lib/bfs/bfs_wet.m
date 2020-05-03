@@ -37,7 +37,7 @@ function [qu, qt, s, t, x, freshly_wet] = bfs_wet(SppX, TppX, X, s, t, x, X_TOL,
 % t [ni,nj]: potential/Conservative temperature on the surface
 % x [ni,nj]: pressure [dbar] or depth [m] of the surface
 % X_TOL [1,1]: tolerance in x for finding neutral connections
-% A [ni*nj, D]: adjacency, where D is the most neighbours possible
+% A [D, ni*nj]: adjacency, where D is the most neighbours possible
 % BotK [ni,nj]: number of valid bottles on each cast
 % r [1,1]: perform one BFS from this root node (optional)
 % qu [N,1]: vector to work in-place (optional)
@@ -95,7 +95,7 @@ if nargin < 11 || isempty(qu)
     qu = zeros(nij, 1); % pre-allocate queue storing linear indices to pixels
 end
 
-D = size(A,2); % maximal degree
+D = size(A,1); % maximal degree
 
 G = isfinite(x); % good pixels
 
@@ -121,7 +121,7 @@ if nargin < 10 || isempty(r)
                 qh = qh + 1; % advance head of the queue
                 m = qu(qh); % me node; pop from head of queue
                 for d = 1 : D
-                    n = A(m,d); % neighbour node
+                    n = A(d,m); % neighbour node
                     if n  % check that n is not 0, i.e. a non-periodic boundary
                         if G(n)
                             % n is on the surface, and undiscovered
@@ -160,7 +160,7 @@ else
         qh = qh + 1; % advance head of the queue
         m = qu(qh); % me node; pop from head of queue
         for d = 1 : D
-            n = A(m,d); % neighbour node
+            n = A(d,m); % neighbour node
             if n  % check that n is not 0, i.e. a non-periodic boundary
                 if G(n)
                     % n is on the surface, and undiscovered
