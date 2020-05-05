@@ -34,16 +34,14 @@ function OPTS = omega_defaults()
 
 OPTS = struct();
 
-OPTS.INTERPFN = @ppc_linterp;  % Use linear interpolation in the vertical dimension.
-
 OPTS.MLX = []; % Do not remove the Mixed Layer
 
 OPTS.FIGS_SHOW = false; % do not show figures
 
+OPTS.INTERPFN = @ppc_linterp; % Use linear interpolation in the vertical dimension.
+
 OPTS.SppX = [];  % Pre-computed interpolation functions.  None given here.
 OPTS.TppX = [];  % Pre-computed interpolation functions.  None given here.
-
-OPTS.INTERPFN = @ppc_linterp; % Use linear interpolation in the vertical dimension.
 
 OPTS.ITER_MAX = 10; % maximum number of iterations
 
