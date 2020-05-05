@@ -86,7 +86,7 @@ if DO_FILL
     Ground = ~wet;
     
     % Calculate connected components of Ground.  Use 8 connectivity here!
-    neigh = grid_adjacency([ni,nj], OPTS.WRAP, 8);
+    neigh = grid_adjacency([ni,nj], 8, OPTS.WRAP);
     [qu,qts,~,~,L] = bfs_conncomp(Ground, neigh, []);
     
     % Set to false (will not fill) for land regions that have > specified number of pixels:

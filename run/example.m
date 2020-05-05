@@ -151,7 +151,7 @@ z = z_PDENS;
 I0 = sub2ind([ni nj], i0, j0);
 
 % Find the connected component containing the reference cast I0
-[~,~,~,wet] = bfs_conncomp(isfinite(z), grid_adjacency([ni,nj], OPTS.WRAP), I0);
+[~,~,~,wet] = bfs_conncomp(isfinite(z), grid_adjacency([ni,nj], 4, OPTS.WRAP), I0);
 
 % Remove other regions from the surface
 z(~wet) = nan;

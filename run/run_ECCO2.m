@@ -90,7 +90,7 @@ Z = -g.RC(:); % We are going to be Z > 0 people!
 Z2P = Pa2db * rho_c * grav ; % Note > 0
 lead1 = @(x) reshape(x, [1 size(x)]);
 
-neigh = grid_adjacency([ni,nj], g.WRAP);
+neigh = grid_adjacency([ni,nj], 4, g.WRAP);
 
 %% Set alias functions
 % Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_x.m

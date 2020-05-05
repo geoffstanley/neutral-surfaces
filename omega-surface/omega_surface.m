@@ -186,7 +186,7 @@ phi = nan(ni,nj);
 
 % Pre-calculate things for Breadth First Search
 qu = zeros(nij, 1); % queue storing linear indices to pixels
-A = grid_adjacency([ni,nj], OPTS.WRAP, 4); % all grid points that are adjacent to all grid points, using 4-connectivity
+A = grid_adjacency([ni,nj], 4, OPTS.WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
 
 % Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
 BotK = squeeze(sum(isfinite(S), 1));

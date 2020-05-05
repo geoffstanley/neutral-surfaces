@@ -172,7 +172,7 @@ end
 
 % Find the connected regions
 wet = isfinite(x);
-neigh = grid_adjacency([ni,nj], OPTS.WRAP, 4);
+neigh = grid_adjacency([ni,nj], 4, OPTS.WRAP);
 [qu,qts,ncc] = bfs_conncomp(wet, neigh);
 
 % The number of data points in the largest connected region

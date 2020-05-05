@@ -129,7 +129,7 @@ H = length(island_names);
 island_pitch = nan(1,H);
 island_pos = nan(2,H);
 other_pitch = nan(ni,H);
-neigh = grid_adjacency([ni,nj], g.WRAP, 4);
+neigh = grid_adjacency([ni,nj], 4, g.WRAP);
 LMAX = 2000;
 for h = 1 : H
     

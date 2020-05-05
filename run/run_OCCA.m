@@ -154,7 +154,7 @@ OPTS.SIMPLIFY_WEIGHT_PERSIST = 0.5;
 
 
 % Find the connected component containing the reference cast I0
-[~,~,~,wet] = bfs_conncomp(isfinite(p), grid_adjacency([ni,nj], OPTS.WRAP), I0);
+[~,~,~,wet] = bfs_conncomp(isfinite(p), grid_adjacency([ni,nj], 4, OPTS.WRAP), I0);
 p(~wet) = nan;
 
 % Calculate the Reeb graph

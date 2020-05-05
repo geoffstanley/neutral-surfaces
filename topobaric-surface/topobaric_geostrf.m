@@ -220,7 +220,7 @@ else
     d_fn = [];
     
     % Find the connected component containing the reference cast I0, using 4-connectivity
-    [~,~,~,wet] = bfs_conncomp(isfinite(x), grid_adjacency([ni,nj], OPTS.WRAP), I0, 4);
+    [~,~,~,wet] = bfs_conncomp(isfinite(x), grid_adjacency([ni,nj], 4, OPTS.WRAP), I0, 4);
     x(~wet) = nan;
     
     % Calculate the Reeb graph

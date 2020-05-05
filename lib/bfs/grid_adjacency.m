@@ -1,40 +1,40 @@
-function A = grid_adjacency(sz, wrap, D)
+function ADJ = grid_adjacency(SZ, CONN, WRAP)
 % GRID_ADJACENCY  Linear indices to each neighbour of each grid point on a grid
 %
 %
-% A = grid_adjacency(sz, wrap)
-% builds a matrix A giving linear indices to each neighbour of each grid
-% point in a grid of size specified by sz and periodicity specified by
-% wrap.  The grid is periodic in the i'th dimension if and only if wrap(i)
-% is true. The n'th column of A is a vector of linear indices to grid
-% points that are adjacent to the grid point whose linear index is n.  The
-% maximum number of neighbours of any grid point is D, which is the number
-% of rows of A.  If grid point n has fewer neighbours than D, A(:,n) will
-% contain some 0's.
+% ADJ = grid_adjacency(SZ, CONN, WRAP)
+% builds a matrix ADJ giving linear indices to each of CONN neighbours of
+% each grid point in a grid of size specified by SZ.  The grid is periodic
+% in the i'th dimension if and only if WRAP(i) is true. The n'th column of
+% ADJ is a vector of linear indices to grid points that are adjacent to the
+% grid point whose linear index is n.  The maximum number of neighbours of
+% any grid point is CONN, which is the number of rows of ADJ.  If grid
+% point n has fewer neighbours than CONN, due to being near a non-periodic
+% boundary, ADJ(:,n) will contain some 0's.
 %
-% The connectivity D specifies the number of neighbours to a central grid
-% point, possibly including itself.  For i between 1 and D, the i'th
+% The connectivity CONN specifies the number of neighbours to a central grid
+% point, possibly including itself.  For i between 1 and CONN, the i'th
 % neighbour is located relative to the central grid point according to the
 % following diagram:
-%    D == 4       D == 5    D == 8    D == 9
+%  CONN==4        CONN==5   CONN==8   CONN==9
 % +---------> j
 % |   . 2 .       . 2 .     5 2 6     1 4 7
-% |   1 . 4       1 . 4     1 . 4     2 5 8
-% v   . 3 .       . 3 .     7 3 8     3 6 9
+% |   1 . 4       1 3 5     1 . 4     2 5 8
+% v   . 3 .       . 4 .     7 3 8     3 6 9
 % i
-% Here, i increases downward and j increases right.  For example, if D ==
-% 4, the 2'nd neighbour of the central grid point at (i,j) is located at
+% Here, i increases downward and j increases right.  For example, if CONN
+% == 4, the 2'nd neighbour of the central grid point at (i,j) is located at
 % (i-1,j) .
 %
 %
 % --- Input:
-% sz: vector specifying dimensions of the grid, i.e. the output of size()
-% wrap: vector specifying periodicity of the grid.
-% D: the connectivity: 4 (default), 5, 8, or 9.
+% SZ: vector specifying dimensions of the grid, i.e. the output of size()
+% CONN: the connectivity: 4, 5, 8, or 9.
+% WRAP: vector specifying periodicity of the grid.
 %
 %
 % --- Output:
-% A [D,N]: the adjacency matrix
+% ADJ [CONN, SZ]: the adjacency matrix
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -47,7 +47,7 @@ function A = grid_adjacency(sz, wrap, D)
 %
 % This program is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% MERCHANTABILITY or FITNESS FOR ADJ PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
 %
 % You should have received a copy of the GNU General Public License
@@ -62,95 +62,92 @@ function A = grid_adjacency(sz, wrap, D)
 % Date        : --
 % Changes     : --
 
-dim = length(sz); % Number of dimensions in the grid
+dim = length(SZ); % Number of dimensions in the grid
 assert(dim == 2, 'grid_adjacency currently only works for 2D grids.');
-assert(length(wrap) == dim, 'wrap must be a vector the same length as sz.');
+assert(length(WRAP) == dim, 'WRAP must be a vector the same length as SZ.');
 
-if nargin < 3 || isempty(D)
-  D = 4;
-end
-
-N = prod(sz);
-ni = sz(1);
-nj = sz(2);
+ni = SZ(1);
+nj = SZ(2);
 
 
 % Build adjacency matrix and handle periodicity
-if D == 4
+if CONN == 4
   % . 2 .
   % 1 . 4
   % . 3 .
   DIR = [2 4 6 8];
-  A = helper(ni, nj, N, D, DIR);
+  ADJ = helper(ni, nj, DIR);
   
-  if ~wrap(1)
-    A(2, 1 , :) = 0; % i-1 hits a wall when i = 1
-    A(3, ni, :) = 0; % i+1 hits a wall when i = ni
+  if ~WRAP(1)
+    ADJ(2, 1 , :) = 0; % i-1 hits a wall when i = 1
+    ADJ(3, ni, :) = 0; % i+1 hits a wall when i = ni
   end
-  if ~wrap(2)
-    A(1, :, 1 ) = 0; % j-1 hits a wall when j = 1
-    A(4, :, nj) = 0; % j+1 hits a wall when j = nj
+  if ~WRAP(2)
+    ADJ(1, :, 1 ) = 0; % j-1 hits a wall when j = 1
+    ADJ(4, :, nj) = 0; % j+1 hits a wall when j = nj
   end
   
-elseif D == 5
+elseif CONN == 5
   % . 2 .
   % 1 3 5
   % . 4 .
   DIR = [2 4 5 6 8];
-  A = helper(ni, nj, N, D, DIR);
+  ADJ = helper(ni, nj, DIR);
   
-  if ~wrap(1)
-    A(2, 1 , :) = 0; % i-1 hits a wall when i = 1
-    A(3, ni, :) = 0; % i+1 hits a wall when i = ni
+  if ~WRAP(1)
+    ADJ(2, 1 , :) = 0; % i-1 hits a wall when i = 1
+    ADJ(3, ni, :) = 0; % i+1 hits a wall when i = ni
   end
-  if ~wrap(2)
-    A(1, :, 1 ) = 0; % j-1 hits a wall when j = 1
-    A(4, :, nj) = 0; % j+1 hits a wall when j = nj
+  if ~WRAP(2)
+    ADJ(1, :, 1 ) = 0; % j-1 hits a wall when j = 1
+    ADJ(4, :, nj) = 0; % j+1 hits a wall when j = nj
   end
   
-elseif D == 8
+elseif CONN == 8
   % 5 2 6
   % 1 . 4
   % 7 3 8
   DIR = [2 4 6 8 1 7 3 9];
-  A = helper(ni, nj, N, D, DIR);
+  ADJ = helper(ni, nj, DIR);
   
-  if ~wrap(1)
-    A([2,5,6], 1 , :) = 0; % i-1 hits a wall when i = 1
-    A([3,7,8], ni, :) = 0; % i+1 hits a wall when i = ni
+  if ~WRAP(1)
+    ADJ([2,5,6], 1 , :) = 0; % i-1 hits a wall when i = 1
+    ADJ([3,7,8], ni, :) = 0; % i+1 hits a wall when i = ni
   end
-  if ~wrap(2)
-    A([1,5,7], :, 1 ) = 0; % j-1 hits a wall when j = 1
-    A([4,6,8], :, nj) = 0; % j+1 hits a wall when j = nj
+  if ~WRAP(2)
+    ADJ([1,5,7], :, 1 ) = 0; % j-1 hits a wall when j = 1
+    ADJ([4,6,8], :, nj) = 0; % j+1 hits a wall when j = nj
   end
   
-elseif D == 9
+elseif CONN == 9
   % 1 4 7
   % 2 5 8
   % 3 6 9
   DIR = 1:9;
-  A = helper(ni, nj, N, D, DIR);
+  ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
-    A([1 4 7], 1 , :) = 0; % i-1 hits a wall when i = 1
-    A([3 6 9], ni, :) = 0; % i+1 hits a wall when i = ni
+    ADJ([1 4 7], 1 , :) = 0; % i-1 hits a wall when i = 1
+    ADJ([3 6 9], ni, :) = 0; % i+1 hits a wall when i = ni
   end
   if ~WRAP(2)
-    A([1 2 3], :, 1 ) = 0; % j-1 hits a wall when j = 1
-    A([7 8 9], :, nj) = 0; % j+1 hits a wall when j = nj
+    ADJ([1 2 3], :, 1 ) = 0; % j-1 hits a wall when j = 1
+    ADJ([7 8 9], :, nj) = 0; % j+1 hits a wall when j = nj
   end
   
 else
-  error('Unknown number of neighbours.  D should be one of 4, 5, 8, or 9.');
+  error('Unknown number of neighbours.  CONN must be one of 4, 5, 8, or 9.');
 end
 
 
-% Reshape A to a matrix of dimensions [D, N]
-A = reshape(A, D, N);
+% Reshape ADJ to a matrix of dimensions [CONN, N]
+%ADJ = reshape(ADJ, CONN, N);
 
 end
 
-function A = helper(ni, nj, N, D, DIR)
+function ADJ = helper(ni, nj, DIR)
+
+D = length(DIR);
 
 % Prepare to circshift linear indices to some subset of its neighbours,
 % generally ordered as follows:
@@ -163,10 +160,10 @@ spin(2:3,:) = -[ ... % negative prepares for circshift
   1,     1,     1,     0,     0,     0,    -1,    -1,    -1];
 
 % Build linear index to each grid point, and repeat them D times
-A = repmat(reshape(1:N, [1, ni, nj]), [D 1 1]);  % D x ni x nj
+ADJ = repmat(reshape(1:ni*nj, [1, ni, nj]), [D 1 1]);  % D x ni x nj
 
 % Shift these linear indices so they refer to their neighbours.
 for d = 1 : D
-  A(d,:,:) = circshift(A(d,:,:), -spin(:, DIR(d)));
+  ADJ(d,:,:) = circshift(ADJ(d,:,:), -spin(:, DIR(d)));
 end
 end
