@@ -336,6 +336,7 @@ for iter = 1 : OPTS.ITER_MAX
         I = sort(qu(qts(icc) : qts(icc+1)-1));  % sorting here makes mat better structured; overall speedup.
         
         nwc = length(I);  % Number of water columns
+        nwc_total = nwc_total + nwc; % Accumulate total number of water columns
         if nwc <= 1  % There are definitely no equations to solve
             phi(I) = 0; % Leave this isolated pixel at current pressure
             continue
@@ -391,8 +392,10 @@ for iter = 1 : OPTS.ITER_MAX
         % Save solution into phi and accumulate statistics for phi
         phi(I) = sol;
         phiL1 = phiL1 + sum(abs(sol));
-        nwc_total = nwc_total + nwc;
+        
     end
+    
+    nwc_total = qts(ncc+1) - 1;  % == sum of nwc from above loop
     phiL1 = phiL1 / nwc_total;
     if USE_INTEGRATING_FACTOR
         phi = phi ./ OPTS.INTEGRATING_FACTOR;
