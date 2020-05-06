@@ -96,11 +96,11 @@ elseif CONN == 5
   
   if ~WRAP(1)
     ADJ(2, 1 , :) = 0; % i-1 hits a wall when i = 1
-    ADJ(3, ni, :) = 0; % i+1 hits a wall when i = ni
+    ADJ(4, ni, :) = 0; % i+1 hits a wall when i = ni
   end
   if ~WRAP(2)
     ADJ(1, :, 1 ) = 0; % j-1 hits a wall when j = 1
-    ADJ(4, :, nj) = 0; % j+1 hits a wall when j = nj
+    ADJ(5, :, nj) = 0; % j+1 hits a wall when j = nj
   end
   
 elseif CONN == 8
@@ -141,7 +141,7 @@ end
 
 
 % Reshape ADJ to a matrix of dimensions [CONN, N]
-%ADJ = reshape(ADJ, CONN, N);
+ADJ = reshape(ADJ, CONN, []);
 
 end
 
@@ -154,10 +154,10 @@ D = length(DIR);
 % 1 4 7
 % 2 5 8
 % 3 6 9
-spin = zeros(3, 9);
-spin(2:3,:) = -[ ... % negative prepares for circshift
-  1,     0,    -1,     1,     0,    -1,     1,     0,    -1;
-  1,     1,     1,     0,     0,     0,    -1,    -1,    -1];
+spin = [ ...
+  0 , 0, 0,   0, 0, 0,   0, 0, 0; ...
+  -1, 0, 1,  -1, 0, 1,  -1, 0, 1; ...
+  -1,-1,-1,   0, 0, 0,   1, 1, 1];
 
 % Build linear index to each grid point, and repeat them D times
 ADJ = repmat(reshape(1:ni*nj, [1, ni, nj]), [D 1 1]);  % D x ni x nj
