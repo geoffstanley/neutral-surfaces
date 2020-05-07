@@ -106,7 +106,7 @@ if isempty(file_mex) ... % No mex file yet
     end
     nij = ni * nj;
     t_x    = coder.typeof(0, [ni, nj], [vs, vs]);
-    t_A    = coder.typeof(0, [9, nij], [true, vs]);
+    t_A    = coder.typeof(0, [9, nij, nj], [true, vs, vs]); % [? x nij] or [? x ni x nj]
     t_BotK = coder.typeof(0, [ni, nj], [vs, vs]);
     t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
     
