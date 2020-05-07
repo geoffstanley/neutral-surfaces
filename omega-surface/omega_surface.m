@@ -97,11 +97,11 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 %   MLX []: do not remove the mixed layer (default)
 %   MLX [struct]: calculate the mixed layer using these parameters in mixed_layer().
 %   MLX [ni, nj]: use a pre-computed mixed layer pressure [dbar] or depth [m]
-%   SppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
-%       knots are X that interpolate S as a function of X in each water 
+%   SppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials, whose 
+%       knots are X, that interpolate S as a function of X in each water 
 %       column.  E.g. SppX = ppc_linterp(X, S);
-%   TppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
-%       knots are X that interpolate T as a function of X in each water 
+%   TppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials, whose 
+%       knots are X, that interpolate T as a function of X in each water 
 %       column.  E.g. TppX = ppc_linterp(X, T);
 %   TOL_DENS [scalar]: Target error tolerance in density [kg m^-3].
 %       Iterations stop when the L1 norm of the density change of the
@@ -264,8 +264,23 @@ end
 
 %% Interpolate S and T casts onto surface
 mytic = tic;
-SppX = OPTS.INTERPFN(X, S);
-TppX = OPTS.INTERPFN(X, T);
+
+[~, K, N] = size(OPTS.SppX);
+if K > 0
+  assert(K == nk-1 && N == nij, 'size(SppX) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
+  SppX = OPTS.SppX;
+else
+  SppX = OPTS.INTERPFN(X, S);
+end
+
+[~, K, N] = size(OPTS.TppX);
+if K > 0
+  assert(K == nk-1 && N == nij, 'size(TppX) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
+  TppX = OPTS.TppX;
+else
+  TppX = OPTS.INTERPFN(X, T);
+end
+
 [s,t] = ppc_val2(X,SppX,TppX,lead1(x));
 
 if OPTS.VERBOSE > 0
@@ -446,10 +461,11 @@ for iter = 1 : OPTS.ITER_MAX
         end
         ax = subplot(4, 3, mod(iter-1,12)+1, 'Parent', hf );
         if nj > ni % x, and phi, are probably lon x lat
-            pcolor(ax, phi)
+            imagesc(ax, phi)
         else       % x, and phi, are probably lat x lon
-            pcolor(ax, phi.')
+            imagesc(ax, phi.')
         end
+        ax.YDir = 'normal';
         shading('flat')
         title(sprintf('%d: |\\phi''|_1 = %.2e', iter, phiL1), 'fontsize',10);
         caxis(prctile(phi(:), [1 99]));
