@@ -1,12 +1,12 @@
-function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx) %#codegen
+function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx, k) %#codegen
 %NTP_BOTTLE_TO_CAST  Find a bottle's level of neutral buoyancy in a water
 %                    column, using the Neutral Tangent Plane relationship.
 %
-% [x, s, t] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx)
+% [x, s, t] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx, k)
 % finds (s, t, x), with precision in x of tolx, that is at the level of
 % neutral buoyancy for a fluid bottle of (sB, tB, xB) in a water column of
 % with piecewise polynomial interpolants for S and T given by SppX and TppX 
-% with knots at X.  Specifically, s and t are given by
+% with knots at X(1:k).  Specifically, s and t are given by
 %   [s,t] = ppc_val(X, SppX, TppX, x)
 % and x satisfies
 %      eos(s, t, x') = eos(sB, tB, x')
@@ -34,6 +34,8 @@ function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx
 % xB [1 , 1]: pressure or depth of current bottle
 % tolx [1, 1]: tolerance for solving the level of neutral buoyancy (same
 %             units as X and xB)
+% k [1, 1]: number of valid (non-NaN) data points in the water column.
+%          Specifically, SppX(end,1:k) and TppX(end,1:k) must all be valid.
 %
 % Note: physical units for SppX, TppX, X, sB, tB, xB, x, s, t  are
 % determined by eos.m.
@@ -73,10 +75,11 @@ function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx
 % Date        : --
 % Changes     : --
 
-if size(SppX,2) > 0
+if k > 1
+  
     % The water column has at least two data points, and a valid interpolant. 
     % Search for a solution to the nonlinear root-finding problem
-    x = bisectguess(@diff_fun, X(1), X(end), tolx, xB, SppX, TppX, X, sB, tB, xB);
+    x = bisectguess(@diff_fun, X(1), X(k), tolx, xB, SppX, TppX, X, sB, tB, xB);
     
     if isnan(x)
         s = nan;

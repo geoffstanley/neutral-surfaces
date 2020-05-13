@@ -132,7 +132,7 @@ if nargin < 10 || isempty(r)
                             k = BotK(n);
                             % n is off the surface but in the ocean. Check for neutral connection
                             nX = (n-1) * Xmat + 1; % = n if Xmat, 1 if not Xmat
-                            [x(n), s(n), t(n), success] = ntp_bottle_to_cast(SppX(:,1:k-1,n), TppX(:,1:k-1,n), X(1:k,nX), s(m), t(m), x(m), X_TOL);
+                            [x(n), s(n), t(n), success] = ntp_bottle_to_cast(SppX(:,:,n), TppX(:,:,n), X(:,nX), s(m), t(m), x(m), X_TOL, k);
                             if success
                                 qt = qt + 1;     % Add n to queue
                                 qu(qt) = n;
@@ -171,7 +171,7 @@ else
                     k = BotK(n);
                     % n is off the surface but in the ocean. Check for neutral connection
                     nX = (n-1) * Xmat + 1; % = n if Xmat, 1 if not Xmat
-                    [x(n), s(n), t(n), success] = ntp_bottle_to_cast(SppX(:,1:k-1,n), TppX(:,1:k-1,n), X(1:k,nX), s(m), t(m), x(m), X_TOL);
+                    [x(n), s(n), t(n), success] = ntp_bottle_to_cast(SppX(:,:,n), TppX(:,:,n), X(:,nX), s(m), t(m), x(m), X_TOL, k);
                     if success
                         qt = qt + 1;     % Add n to queue
                         qu(qt) = n;

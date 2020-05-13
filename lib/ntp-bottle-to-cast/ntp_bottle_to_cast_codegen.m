@@ -96,7 +96,7 @@ try
         t_SppX = coder.typeof(0, [8, nk-1], [true, true]);
         t_X    = coder.typeof(0, [nk  , 1], [true, false]);
         
-        args = {t_SppX, t_SppX, t_X, 0, 0, 0, 0};
+        args = {t_SppX, t_SppX, t_X, 0, 0, 0, 0, 0};
         
         % Configure MEX for speed.
         mexconfig = coder.config('mex');
