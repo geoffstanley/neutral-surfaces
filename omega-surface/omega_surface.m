@@ -290,8 +290,8 @@ end
 if DIAGS
   
   diags = struct();
-  diags.epsL2_prior = nan(ITER_MAX, 1);
-  diags.epsL2_post  = nan(ITER_MAX, 1);
+  diags.epsL2_before= nan(ITER_MAX, 1);
+  diags.epsL2_after = nan(ITER_MAX, 1);
   diags.mean_x      = nan(ITER_MAX + 1, 1);
   diags.mean_eos    = nan(ITER_MAX + 1, 1);
   diags.clocktime   = nan(ITER_MAX + 1, 1);
@@ -368,8 +368,6 @@ for iter = 1 : ITER_MAX
       timer_ntperrors = toc(mytic);
     end
     
-    
-    foo = ntp_epsilon_L2(x,s,t);
     
     % --- Build and solve sparse matrix problem
     mytic = tic;
@@ -518,12 +516,12 @@ for iter = 1 : ITER_MAX
         Delta_x_L1 =      sum(abs(Delta_x(:))) / ngood;
         Delta_x_L2 = sqrt(sum(  Delta_x(:).^2) / ngood);
         epsL2 = sqrt(epsL2 / neq_total);
-        epsL2_post = ntp_epsilon_L2(x, s, t);
+        epsL2_after = ntp_epsilon_L2(x, s, t);
         mean_x = nanmean(x(:));
         mean_eos = nanmean(eos(s(:),t(:),x(:)));
         
         % Diagnostics about state BEFORE this iteration, but AFTER wetting
-        diags.epsL2_prior(iter) = epsL2;
+        diags.epsL2_before(iter) = epsL2;
         
         % Diagnostics about what THIS iteration did
         diags.phiL1(iter)       = phiL1;
@@ -539,13 +537,13 @@ for iter = 1 : ITER_MAX
         diags.timer_update(iter)    = timer_update;
         
         % Diagnostics about the state AFTER this iteration
-        diags.epsL2_post(iter)  = epsL2_post;
+        diags.epsL2_after(iter) = epsL2_after;
         diags.mean_x(iter+1)    = mean_x;
         diags.mean_eos(iter+1)  = mean_eos;
         diags.clocktime(iter+1) = toc(iter_tic);
         
         if VERBOSE > 0
-          fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), log10(epsL2_post), phiL1, ncc, freshly_wet, Delta_x_L1, mean_x, mean_eos);
+          fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), log10(epsL2_after), phiL1, ncc, freshly_wet, Delta_x_L1, mean_x, mean_eos);
         end
     end
     

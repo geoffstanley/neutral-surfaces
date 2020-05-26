@@ -1,8 +1,8 @@
-function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx, k) %#codegen
+function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, k, sB, tB, xB, tolx) %#codegen
 %NTP_BOTTLE_TO_CAST  Find a bottle's level of neutral buoyancy in a water
 %                    column, using the Neutral Tangent Plane relationship.
 %
-% [x, s, t] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx, k)
+% [x, s, t] = ntp_bottle_to_cast(SppX, TppX, X, k, sB, tB, xB, tolx)
 % finds (s, t, x), with precision in x of tolx, that is at the level of
 % neutral buoyancy for a fluid bottle of (sB, tB, xB) in a water column of
 % with piecewise polynomial interpolants for S and T given by SppX and TppX 
@@ -29,13 +29,13 @@ function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, sB, tB, xB, tolx
 % TppX [O, K-1]: coefficients for piecewise polynomial for potential 
 %                   / Conservative Temperature in terms of X
 % X [K, 1]: pressure or depth in water column
+% k [1, 1]: number of valid (non-NaN) data points in the water column.
+%          Specifically, SppX(end,1:k) and TppX(end,1:k) must all be valid.
 % sB [1 , 1]: practical / Absolute salinity of current bottle
 % tB [1 , 1]: potential / Conservative temperature of current bottle
 % xB [1 , 1]: pressure or depth of current bottle
 % tolx [1, 1]: tolerance for solving the level of neutral buoyancy (same
 %             units as X and xB)
-% k [1, 1]: number of valid (non-NaN) data points in the water column.
-%          Specifically, SppX(end,1:k) and TppX(end,1:k) must all be valid.
 %
 % Note: physical units for SppX, TppX, X, sB, tB, xB, x, s, t  are
 % determined by eos.m.

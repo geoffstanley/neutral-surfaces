@@ -183,7 +183,7 @@ for h = 1 : H
             end
             
             % Test a neutral trajectory from current location to neighbouring location
-            [z2, s2, t2, success] = ntp_bottle_to_cast_mex(SppZ(:,:,i2,j2), TppZ(:,:,i2,j2), Z, s, t, z, tol, k);
+            [z2, s2, t2, success] = ntp_bottle_to_cast_mex(SppZ(:,:,i2,j2), TppZ(:,:,i2,j2), Z, k, s, t, z, tol);
             
             if success
                 % A successful step! We did not ground. This direction worked -- we grounded.
@@ -242,7 +242,7 @@ for h = 1 : H
                 j2 = ij(l,2);
                 k = BotK(i2,j2);
                 
-                [z, s, t, success] = ntp_bottle_to_cast_mex(SppZ(:,:,i2,j2), TppZ(:,:,i2,j2), Z, s, t, z, tol, k);
+                [z, s, t, success] = ntp_bottle_to_cast_mex(SppZ(:,:,i2,j2), TppZ(:,:,i2,j2), Z, k, s, t, z, tol);
                 
                 if ~success
                     break
