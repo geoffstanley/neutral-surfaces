@@ -111,7 +111,7 @@ try
         vs = true;
         t_SppX   = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
         if Xvec
-            t_X  = coder.typeof(0, [nk, 1], [vs, vs]);
+            t_X  = coder.typeof(0, [nk, 1], [vs, false]);
         else
             t_X  = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
         end

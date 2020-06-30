@@ -10,8 +10,8 @@ function [x, s, t] = omega_vertsolve(SppX, TppX, X, BotK, s, t, x, tolx, phi) %#
 %   (S(:,n),X(:,n)) and (T(:,n),X(:,n)).
 % This also determines salinities s and temperatures t such that
 %   s(n) = S_n(x(n)) and t(n) = T_n(x(n)).
-% The function eos.m, found in the same directory as this function,
-% determines either the in-situ density or the specific volume.
+% The function eos.m determines either the in-situ density or the specific
+% volume.
 %
 %
 % --- Input
@@ -85,11 +85,9 @@ function [x, s, t] = omega_vertsolve(SppX, TppX, X, BotK, s, t, x, tolx, phi) %#
 % Inputs s0, t0, and p0 are named s, t, x so operations are done in-place.
 
 N = numel(x);
-[K,XN] = size(X);
-KX = K * double(XN > 1);
+Xmat = ~isvector(X);
 
 % Loop over each water column
-nX = 0;
 for n = 1:N
     d = phi(n);
     k = BotK(n);
@@ -98,7 +96,11 @@ for n = 1:N
         % Select this water column
         SppXn = SppX(:,1:k-1,n);
         TppXn = TppX(:,1:k-1,n);
-        Xn = X((nX+1:nX+k).');
+        if Xmat
+          Xn = X(1:k,n);
+        else
+          Xn = X(1:k);
+        end
         
         % DEV: The following attempts to limit the search direction based
         % on phi's sign, but in practice this doesn't seem to work well.
@@ -112,6 +114,7 @@ for n = 1:N
         %        SppXn, TppXn, Xn, s(n), t(n), x(n), err);
         %end
         
+        %{
         % Bisect through the whole water column to find a solution to the
         % nonlinear root finding problem
         x(n) = bisectguess(@eos_diff, Xn(1), Xn(k), tolx, x(n), ...
@@ -119,9 +122,29 @@ for n = 1:N
         
         % Interpolate S and T onto the updated surface
         [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+        %}
+          
+        
+        % Search for a sign-change, expanding outward from an initial guess 
+        [lb, ub] = fzero_guess_to_bounds(@eos_diff, x(n), Xn(1), Xn(k), ...
+          SppXn, TppXn, Xn, s(n), t(n), x(n), d);
+        
+        if ~isnan(lb)
+          % A sign change was discovered, so a root exists in the interval.
+          % Solve the nonlinear root-finding problem using Brent's method
+          x(n) = fzero_brent(@eos_diff, lb, ub, tolx, ...
+            SppXn, TppXn, Xn, s(n), t(n), x(n), d);
+          
+          % Interpolate S and T onto the updated surface
+          [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+        else
+          x(n) = nan;
+          s(n) = nan;
+          t(n) = nan;
+        end
         
     end
-    nX = nX + KX;
+    
 end
 
 end

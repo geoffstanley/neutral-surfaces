@@ -47,7 +47,7 @@ function [x, s, t] = tbs_vertsolve(SppX, TppX, X, BotK, s, t, x, branchmap, d_fn
 %             by d_fn(:,b), which can be evaluated by pvaln or pvallin.
 % s0 [1, 1]: reference S value for delta
 % t0 [1, 1]: reference T value for delta
-% tolx [1, 1]: tolerance on pressure [dbar] or depth [m] for bisection solver
+% tolx [1, 1]: tolerance on pressure [dbar] or depth [m] for root finding solver
 % DX [1, 1]: seek solutions in the domain of the local d_fn branch expanded
 %            by DX in both directions.
 %
@@ -102,11 +102,9 @@ function [x, s, t] = tbs_vertsolve(SppX, TppX, X, BotK, s, t, x, branchmap, d_fn
 % Changes     : --
 
 N = numel(x);
-[K,XN] = size(X);
-KX = K * double(XN > 1);
+Xmat = ~isvector(X);
 
 % Loop over each cast
-nX = 0;
 for n = 1:N
     b = branchmap(n);
     k = BotK(n);
@@ -115,18 +113,44 @@ for n = 1:N
         % Select this water column
         SppXn = SppX(:,1:k-1,n);
         TppXn = TppX(:,1:k-1,n);
-        Xn = X((nX+1:nX+k).');
+        if Xmat
+          Xn = X(1:k,n);
+        else
+          Xn = X(1:k);
+        end
         
+        lb = max(Xn(1), d_fn(1,b) - DX);
+        ub = min(Xn(k), d_fn(2,b) + DX);
+        
+        %{
         % Bisect in the water column +/- DX metres or dbar from the current
         % surface to find a solution to the nonlinear root finding problem
-        x(n) = bisectguess(@diff_fun, max(Xn(1), d_fn(1,b) - DX), min(Xn(k), d_fn(2,b) + DX), tolx, x(n), ...
+        x(n) = bisectguess(@diff_fun, lb, ub, tolx, x(n), ...
             SppXn, TppXn, Xn, d_fn(:,b), s0, t0);
-        
         % Interpolate S and T onto the updated surface
         [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+        %}
+        
+        % Search for a sign-change, expanding outward from an initial guess 
+        [lb, ub] = fzero_guess_to_bounds(@diff_fun, x(n), lb, ub, ...
+          SppXn, TppXn, Xn, d_fn(:,b), s0, t0);
+        
+        if ~isnan(lb)
+          % A sign change was discovered, so a root exists in the interval.
+          % Solve the nonlinear root-finding problem using Brent's method
+          x(n) = fzero_brent(@diff_fun, lb, ub, tolx, ...
+            SppXn, TppXn, Xn, d_fn(:,b), s0, t0);
+          
+          % Interpolate S and T onto the updated surface
+          [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+        else
+          x(n) = nan;
+          s(n) = nan;
+          t(n) = nan;
+        end
         
     end
-    nX = nX + KX;
+    
 end
 
 end

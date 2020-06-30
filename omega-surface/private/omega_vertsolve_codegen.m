@@ -111,7 +111,7 @@ try
         vs = false;
         t_SppX   = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
         if Xvec
-            t_X  = coder.typeof(0, [nk, 1], [vs, vs]);
+            t_X  = coder.typeof(0, [nk, 1], [vs, false]);
         else
             t_X  = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
         end
@@ -122,9 +122,9 @@ try
         
         % Configure MEX for speed.
         mexconfig = coder.config('mex');
-        %mexconfig.ExtrinsicCalls = false;
-        %mexconfig.ResponsivenessChecks = false;
-        %mexconfig.IntegrityChecks = false;
+        mexconfig.ExtrinsicCalls = false;
+        mexconfig.ResponsivenessChecks = false;
+        mexconfig.IntegrityChecks = false;
         
         % Compile the MEX function
         cd(file_mat.folder);
