@@ -245,7 +245,7 @@ sigma = eos(S, T, lead1(x));
 % Take derivative of sigma w.r.t pressure or depth (as a SPATIAL coordinate)
 [~, dsigmadz] = pchipdqn(lead1(x), X, sigma);
 if nonBOUSSINESQ
-    % P is actually pressure, not depth.
+    % X is pressure, not depth.
     % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
     if eos_is_dens
         dsigmadz = dsigmadz .* (Pa2db * grav * r);
