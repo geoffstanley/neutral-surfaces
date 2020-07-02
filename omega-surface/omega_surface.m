@@ -250,7 +250,7 @@ Xvec = isvector(X);
 omega_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
 bfs_conncomp_codegen(nk, ni, nj, Xvec, false, OPTS);
 if ITER_START_WETTING <= ITER_MAX
-    bfs_wet_codegen(nk, ni, nj, Xvec, false, OPTS);
+    bfs_wet_codegen(nk, ni, nj, Xvec, OPTS);
 end
 
 %% Get MLX: the pressure or depth of the mixed layer
@@ -337,20 +337,17 @@ for iter = 1 : ITER_MAX
     % --- Wetting via Breadth First Search
     mytic = tic;
     if iter >= ITER_START_WETTING
-      [qu, qt, s, t, x, freshly_wet] = bfs_wet_all_mex(SppX, TppX, X, s, t, x, X_TOL, A, BotK, [], qu);
-      wet = false(ni,nj);
-      wet(qu(1:qt)) = true;
+        [s, t, x, freshly_wet, qu] = bfs_wet_mex(SppX, TppX, X, s, t, x, X_TOL, A, BotK, qu);
     else
-      freshly_wet = 0;
-      wet = isfinite(x);
+        freshly_wet = 0;
     end
     if DIAGS
-      timer_wetting = toc(mytic);
+        timer_wetting = toc(mytic);
     end
     
     % --- Accumulate regions via Breadth First Search
     mytic = tic;
-    [qu, qts, ncc] = bfs_conncomp_all_mex(wet, A, [], qu);
+    [qu, qts, ncc] = bfs_conncomp_all_mex(isfinite(x), A, [], qu);
     if DIAGS
         timer_regions = toc(mytic);
     end
@@ -415,6 +412,7 @@ for iter = 1 : ITER_MAX
         
         % Build the sparse matrix, with neq+1 rows and nwc columns
         mat = sparse( ii, jj, vv, neq+1, nwc );
+        
         
         % Accumulate errors from this region
         if DIAGS

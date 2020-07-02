@@ -1,13 +1,12 @@
-function bfs_wet_codegen(nk, ni, nj, Xvec, r, OPTS)
+function bfs_wet_codegen(nk, ni, nj, Xvec, OPTS)
 %BFS_WET_CODEGEN  Create MEX function for bfs_wet
 %
 %
-% bfs_wet_codegen(nk, ni, nj, false, r)
+% bfs_wet_codegen(nk, ni, nj, false)
 % runs codegen on bfs_wet.m, appropriate for a grid of ni by nj points in
-% the horizontal and nk points in the vertical.  bfs_wet is compiled with
-% its final argument (also called r) provided iff r is true.
+% the horizontal and nk points in the vertical.
 %
-% bfs_wet_codegen(nk, ni, nj, true, r)
+% bfs_wet_codegen(nk, ni, nj, true)
 % specifies that X in bfs_wet.m is just a vector: X(k) specifies the
 % pressure or depth of all grid points having vertical index k. Use this
 % for simple Z-level models (not hybrid coordinate models).
@@ -60,11 +59,7 @@ V = filesep();
 
 % Get info about which functions are on the path
 name = 'bfs_wet';
-if r
-    name_mex = [name '_one_mex'];
-else
-    name_mex = [name '_all_mex'];
-end
+name_mex = [name '_mex'];
 file_mex = dir(which(name_mex));
 file_mat = dir(which(name));
 assert(~isempty(file_mat), ['Cannot locate ' name '.m']);
@@ -110,11 +105,7 @@ if isempty(file_mex) ... % No mex file yet
     t_BotK = coder.typeof(0, [ni, nj], [vs, vs]);
     t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
     
-    if r        %(SppX,   TppX,   X,   s,   t,  x,X_TOL, A,   BotK, r,  qu)
-        args = {t_SppX, t_SppX, t_X, t_x, t_x, t_x, 0, t_A, t_BotK, 0, t_q};
-    else
-        args = {t_SppX, t_SppX, t_X, t_x, t_x, t_x, 0, t_A, t_BotK, [], t_q};
-    end
+    args = {t_SppX, t_SppX, t_X, t_x, t_x, t_x, 0, t_A, t_BotK, t_q};
     
     % Configure MEX for speed.
     mexconfig = coder.config('mex');

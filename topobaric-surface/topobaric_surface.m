@@ -375,7 +375,7 @@ else
 end
 bfs_conncomp_codegen(nk, ni, nj, Xvec, true, OPTS);
 if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX
-    bfs_wet_codegen(nk, ni, nj, Xvec, true, OPTS);
+    bfs_wet_codegen(nk, ni, nj, Xvec, OPTS);
 end
 
 %% Get MLX: the pressure or depth of the mixed layer
@@ -445,14 +445,18 @@ for iter = 1 : OPTS.ITER_MAX
         x(x < MLX) = nan;
     end
     
-    % --- Breadth First Search, to find connected region, and possibly wet
+    % --- Wetting via Breadth First Search
     if iter >= OPTS.ITER_START_WETTING
-        [qu, qt, s, t, x, freshly_wet] = bfs_wet_one_mex(SppX, TppX, X, s, t, x, OPTS.X_TOL, A, BotK, I0, qu);
+        [s, t, x, freshly_wet, qu] = bfs_wet_mex(SppX, TppX, X, s, t, x, OPTS.X_TOL, A, BotK, qu);
     else
-        [qu, qts] = bfs_conncomp_one_mex(isfinite(x), A, I0, qu);
-        qt = qts(2)-1;
         freshly_wet = 0;
     end
+    
+    % --- Breadth First Search to find connected region
+    [qu, qts] = bfs_conncomp_one_mex(isfinite(x), A, I0, qu);
+    qt = qts(2)-1;
+    
+    
     % Keep only the component of the surface connected to the reference cast
     wet = false(ni,nj);
     wet(qu(1:qt)) = true;
