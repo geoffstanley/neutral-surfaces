@@ -116,21 +116,12 @@ for n = 1:N
         if Xmat
           Xn = X(1:k,n);
         else
-          Xn = X(1:k);
+          Xn = X(1:k); % .' is for codegen, so X and (1:k).' both column vectors
         end
         
         lb = max(Xn(1), d_fn(1,b) - DX);
         ub = min(Xn(k), d_fn(2,b) + DX);
-        
-        %{
-        % Bisect in the water column +/- DX metres or dbar from the current
-        % surface to find a solution to the nonlinear root finding problem
-        x(n) = bisectguess(@diff_fun, lb, ub, tolx, x(n), ...
-            SppXn, TppXn, Xn, d_fn(:,b), s0, t0);
-        % Interpolate S and T onto the updated surface
-        [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
-        %}
-        
+
         % Search for a sign-change, expanding outward from an initial guess 
         [lb, ub] = fzero_guess_to_bounds(@diff_fun, x(n), lb, ub, ...
           SppXn, TppXn, Xn, d_fn(:,b), s0, t0);

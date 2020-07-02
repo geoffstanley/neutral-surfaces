@@ -99,31 +99,8 @@ for n = 1:N
         if Xmat
           Xn = X(1:k,n);
         else
-          Xn = X(1:k);
+          Xn = X(1:k); % .' is for codegen, so X and (1:k).' both column vectors
         end
-        
-        % DEV: The following attempts to limit the search direction based
-        % on phi's sign, but in practice this doesn't seem to work well.
-        %if phiI > 0  %, only search in one direction by setting lower bound (upper bound?)
-        %    % Target specific volume is larger than current specific volume: move up, to lower pressures
-        %    x(n) = bisectguess(@diff_fun, X(nX+1), x(n), tolx, x(n), ...
-        %        SppXn, TppXn, Xn, s(n), t(n), x(n), err);
-        %else
-        %    % Target specific volume is smaller than current specific volume: move down, to higher pressures
-        %    x(n) = bisectguess(@diff_fun, x(n), X(nX+k), tolx, x(n), ...
-        %        SppXn, TppXn, Xn, s(n), t(n), x(n), err);
-        %end
-        
-        %{
-        % Bisect through the whole water column to find a solution to the
-        % nonlinear root finding problem
-        x(n) = bisectguess(@eos_diff, Xn(1), Xn(k), tolx, x(n), ...
-            SppXn, TppXn, Xn, s(n), t(n), x(n), d);
-        
-        % Interpolate S and T onto the updated surface
-        [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
-        %}
-          
         
         % Search for a sign-change, expanding outward from an initial guess 
         [lb, ub] = fzero_guess_to_bounds(@eos_diff, x(n), Xn(1), Xn(k), ...
