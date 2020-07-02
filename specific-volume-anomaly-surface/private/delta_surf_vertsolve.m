@@ -34,14 +34,12 @@ function [x,s,t] = delta_surf_vertsolve(SppX, TppX, X, BotK, x, s0, t0, d0, tolx
 % Changes     : --
 
 N = numel(x);
-[K,XN] = size(X);
-KX = K * double(XN > 1);
+Xmat = ~isvector(X);
 
 s = nan(size(x));
 t = nan(size(x));
 
 % Loop over each cast
-nX = 0;
 for n = 1:N
     k = BotK(n);
     if k > 1
@@ -49,22 +47,36 @@ for n = 1:N
         % Select this water column
         SppXn = SppX(:,1:k-1,n);
         TppXn = TppX(:,1:k-1,n);
-        Xn = X((nX+1:nX+k).');
+        if Xmat
+          Xn = X(1:k,n);
+        else
+          Xn = X((1:k).'); % .' is for codegen, so X and (1:k).' both column vectors
+        end
         
-        % Solve non-linear problem at each water column
-        x(n) = bisectguess(@diff_fun, Xn(1), Xn(k), tolx, x(n), ...
+        % Search for a sign-change, expanding outward from an initial guess 
+        [lb, ub] = fzero_guess_to_bounds(@myfcn, x(n), Xn(1), Xn(k), ...
+          SppXn, TppXn, Xn, s0, t0, d0);
+        
+        if ~isnan(lb)
+          % A sign change was discovered, so a root exists in the interval.
+          % Solve the nonlinear root-finding problem using Brent's method
+          x(n) = fzero_brent(@myfcn, lb, ub, tolx, ...
             SppXn, TppXn, Xn, s0, t0, d0);
-        
-        % Interpolate S and T onto the updated surface
-        [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+          
+          % Interpolate S and T onto the updated surface
+          [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+        else
+          x(n) = nan;
+          s(n) = nan;
+          t(n) = nan;
+        end
         
     end
-    nX = nX + KX;
 end
 
 end
 
-function out = diff_fun(x, SppX, TppX, X, s0, t0, d0)
+function out = myfcn(x, SppX, TppX, X, s0, t0, d0)
 [s,t] = ppc_val2(X, SppX, TppX, x);
 out = eos(s, t, x) - eos(s0, t0, x) - d0 ;
 end

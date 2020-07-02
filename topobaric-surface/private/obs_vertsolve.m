@@ -110,13 +110,13 @@ for n = 1:N
         ub = Xn(k);
         
         % Search for a sign-change, expanding outward from an initial guess 
-        [lb, ub] = fzero_guess_to_bounds(@diff_fun, x(n), lb, ub, ...
+        [lb, ub] = fzero_guess_to_bounds(@myfcn, x(n), lb, ub, ...
           SppXn, TppXn, Xn, dfnb, dfnc, s0, t0);
         
         if ~isnan(lb)
           % A sign change was discovered, so a root exists in the interval.
           % Solve the nonlinear root-finding problem using Brent's method
-          x(n) = fzero_brent(@diff_fun, lb, ub, tolx, ...
+          x(n) = fzero_brent(@myfcn, lb, ub, tolx, ...
             SppXn, TppXn, Xn, dfnb, dfnc, s0, t0);
           
           % Interpolate S and T onto the updated surface
@@ -135,7 +135,7 @@ end
 end
 
 
-function out = diff_fun(x, SppX, TppX, X, dfnb, dfnc, s0, t0)
+function out = myfcn(x, SppX, TppX, X, dfnb, dfnc, s0, t0)
 % The difference in delta between the single-valued function and the
 % equation of state.
 [s,t] = ppc_val2(X, SppX, TppX, x);

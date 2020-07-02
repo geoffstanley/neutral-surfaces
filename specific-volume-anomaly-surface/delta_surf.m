@@ -121,7 +121,12 @@ DEFS.FILE_ID = 1;  % standard output to MATLAB terminal
 DEFS.VERBOSE = 1;  % show a moderate level of information
 
 % Override any options with user-specified OPTS
-OPTS = catstruct(DEFS, OPTS); 
+if nargin < 7 || isempty(OPTS)
+  OPTS = DEFS;
+else
+  OPTS = catstruct(DEFS, OPTS); 
+end
+
 
 % Run codegen to create MEX function handling the main computation
 delta_surf_vertsolve_codegen(nk, ni, nj, isvector(X), OPTS);

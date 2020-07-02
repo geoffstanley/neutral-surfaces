@@ -99,17 +99,17 @@ for n = 1:N
         if Xmat
           Xn = X(1:k,n);
         else
-          Xn = X(1:k); % .' is for codegen, so X and (1:k).' both column vectors
+          Xn = X((1:k).'); % .' is for codegen, so X and (1:k).' both column vectors
         end
         
         % Search for a sign-change, expanding outward from an initial guess 
-        [lb, ub] = fzero_guess_to_bounds(@eos_diff, x(n), Xn(1), Xn(k), ...
+        [lb, ub] = fzero_guess_to_bounds(@myfcn, x(n), Xn(1), Xn(k), ...
           SppXn, TppXn, Xn, s(n), t(n), x(n), d);
         
         if ~isnan(lb)
           % A sign change was discovered, so a root exists in the interval.
           % Solve the nonlinear root-finding problem using Brent's method
-          x(n) = fzero_brent(@eos_diff, lb, ub, tolx, ...
+          x(n) = fzero_brent(@myfcn, lb, ub, tolx, ...
             SppXn, TppXn, Xn, s(n), t(n), x(n), d);
           
           % Interpolate S and T onto the updated surface
@@ -127,7 +127,7 @@ end
 end
 
 
-function out = eos_diff(x, SppX, TppX, X, s0, t0, x0, d)
+function out = myfcn(x, SppX, TppX, X, s0, t0, x0, d)
 % Evaluate difference between (a) eos at location on the cast (S, T, X)
 % where the pressure or depth is x, and (b) d + eos of the bottle (s0, t0,
 % x0); here, eos is always evaluated at the average pressure or depth, (x +

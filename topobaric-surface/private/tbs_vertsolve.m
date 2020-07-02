@@ -116,20 +116,20 @@ for n = 1:N
         if Xmat
           Xn = X(1:k,n);
         else
-          Xn = X(1:k); % .' is for codegen, so X and (1:k).' both column vectors
+          Xn = X((1:k).'); % .' is for codegen, so X and (1:k).' both column vectors
         end
         
         lb = max(Xn(1), d_fn(1,b) - DX);
         ub = min(Xn(k), d_fn(2,b) + DX);
 
         % Search for a sign-change, expanding outward from an initial guess 
-        [lb, ub] = fzero_guess_to_bounds(@diff_fun, x(n), lb, ub, ...
+        [lb, ub] = fzero_guess_to_bounds(@myfcn, x(n), lb, ub, ...
           SppXn, TppXn, Xn, d_fn(:,b), s0, t0);
         
         if ~isnan(lb)
           % A sign change was discovered, so a root exists in the interval.
           % Solve the nonlinear root-finding problem using Brent's method
-          x(n) = fzero_brent(@diff_fun, lb, ub, tolx, ...
+          x(n) = fzero_brent(@myfcn, lb, ub, tolx, ...
             SppXn, TppXn, Xn, d_fn(:,b), s0, t0);
           
           % Interpolate S and T onto the updated surface
@@ -147,7 +147,7 @@ end
 end
 
 
-function out = diff_fun(x, SppX, TppX, X, d_fn, s0, t0)
+function out = myfcn(x, SppX, TppX, X, d_fn, s0, t0)
 % The difference between delta evaluated (a) using the local branch of the
 % multivalued function, and (b) using the equation of state with the local
 % water properties.
