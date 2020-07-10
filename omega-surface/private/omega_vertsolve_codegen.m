@@ -108,7 +108,7 @@ try
         
         % Note: for omega surfaces, resulting MEX is the same speed whether
         % arrays are variable size or fixed size (vs = true, or vs = false)
-        vs = false;
+        vs = true;
         t_SppX   = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
         if Xvec
             t_X  = coder.typeof(0, [nk, 1], [vs, false]);

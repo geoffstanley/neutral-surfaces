@@ -79,9 +79,11 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 %   FINAL_ROW_VALUES [scalar]: value with which to fill the final row of
 %       the sparse matrix for the purpose of maintaining the mean density
 %       on the surface. (The other values in the matrix have values of 1.)
-%       As this is lowered, the solution to the matrix equation cares more
-%       about neutrality and less about maintaining the mean density.
-%       Default: 1e-2 (chosen empirically from tests on 1x1deg OCCA data).
+%       The matrix problem is perfectly (not over, not under) determined so
+%       this value doesn't matter in theory.  In practice, large values
+%       (e.g. 100) degrade the numerical solution.  Values in the range of
+%       1e-4 to 1 were tested on 1x1deg OCCA data, and all work well.
+%       Default: 1e-2.
 %   INTEGRATING_FACTOR: use this [ni,nj] matrix of a pre-computed
 %       integrating factor (b) to modify the weights of the matrix problem.
 %       Use the regular weights when this is []. Default: [].
@@ -212,7 +214,7 @@ OPTS = catstruct(omega_defaults(), OPTS);
 % Dereference for speed
 FIGS_SHOW = OPTS.FIGS_SHOW;
 FILE_ID = OPTS.FILE_ID;
-FINAL_ROW_VALUES = OPTS.FINAL_ROW_VALUES;
+FINAL_ROW_VALUES = OPTS.FINAL_ROW_VALUES
 ITER_MAX = OPTS.ITER_MAX;
 ITER_START_WETTING = OPTS.ITER_START_WETTING;
 INTEGRATING_FACTOR = OPTS.INTEGRATING_FACTOR;
@@ -247,10 +249,12 @@ DIAGS = (VERBOSE > 0) || (nargout > 3);
 
 %% Just in time code generation
 Xvec = isvector(X);
-omega_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
-bfs_conncomp_codegen(nk, ni, nj, Xvec, false, OPTS);
+ni_ = max(ni, 2048); % using variable size code generation and avoiding
+nj_ = max(nj, 2048); % recompiling all the time
+omega_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
+bfs_conncomp_codegen(nk, ni_, nj_, Xvec, false, OPTS);
 if ITER_START_WETTING <= ITER_MAX
-    bfs_wet_codegen(nk, ni, nj, Xvec, OPTS);
+    bfs_wet_codegen(nk, ni_, nj_, Xvec, OPTS);
 end
 
 %% Get MLX: the pressure or depth of the mixed layer
@@ -370,8 +374,7 @@ for iter = 1 : ITER_MAX
     mytic = tic;
     phi(:) = nan;
     idx(:) = 0;    % Overwrite with linear indices to regions
-    phiL1 = 0;     % For accumulating the L1 norm of phi
-    nwc_total = 0; % For accumulating the L1 norm of phi
+    nwc_total = 0; % For accumulating the number of water columns involved in neutrality comparisons
     epsL1 = 0;     % For accumulating the L1 norm of the epsilon error
     epsL2 = 0;     % For accumulating the L2 norm of the epsilon error
     neq_total = 0; % For accumulating the L2 norm of the epsilon error
@@ -439,14 +442,11 @@ for iter = 1 : ITER_MAX
         % Save solution 
         phi(I) = sol;
         
-        % Accumulate statistics about solution
-        phiL1 = phiL1 + sum(abs(sol));
-        
     end
     
     % Finalize statistics about solution
     nwc_total = qts(ncc+1) - 1;  % == sum of nwc from above loop
-    phiL1 = phiL1 / nwc_total;
+    %phiL1 = phiL1 / nwc_total;
     if USE_INTEGRATING_FACTOR
         phi = phi ./ INTEGRATING_FACTOR;
     end
@@ -466,6 +466,9 @@ for iter = 1 : ITER_MAX
         % mean(phi) = 0 seems to help |phi|_1 to decrease monotonically.
         phi = phi - nanmean(phi(:));
     end
+    
+    % Build statistics about solution
+    phiL1 = nansum(abs(phi(:))) / nwc_total;
     
     if DIAGS
         timer_solver = toc(mytic);
