@@ -74,7 +74,7 @@ try
     
     % Create textual identifier for this build of the MEX function.
     build_text = sprintf('%s_k%d_i%d_j%d_%dD', name_mex, nk, ni, nj, (1-Xvec)*2+1);
-    fileName_build_text = [file_mat.folder V name '_info.txt'];
+    fileName_build_text = [file_mat.folder V name_mex '_info.txt'];
     fileID_build_text = fopen(fileName_build_text, 'rt');
 
     
