@@ -368,14 +368,16 @@ diags.xdiffL2 = nan(OPTS.ITER_MAX,1);
 diags.freshly_wet = nan(OPTS.ITER_MAX,1);
 
 %% Just In Time code generation
+ni_ = max(ni, 2048); % using variable size code generation and avoiding
+nj_ = max(nj, 2048); % recompiling all the time
 if OPTS.REEB
-    tbs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
+    tbs_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
 else
-    obs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS);
+    obs_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
 end
-bfs_conncomp_codegen(nk, ni, nj, Xvec, true, OPTS);
+bfs_conncomp_codegen(nk, ni_, nj_, Xvec, true, OPTS);
 if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX
-    bfs_wet_codegen(nk, ni, nj, Xvec, OPTS);
+    bfs_wet_codegen(nk, ni_, nj_, Xvec, OPTS);
 end
 
 %% Get MLX: the pressure or depth of the mixed layer
