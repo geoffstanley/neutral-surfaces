@@ -94,15 +94,16 @@ if n1 == arc_to(e) % Reverse the fact that F had integrated from lower node
     F(end,e) = -pvaln(F(:,e), node_fn(n1));
 end
 
-% Integrate f from node 2 to node 3 in the ordering
+
 if nNodes > 2
+    % Integrate f from node 2 to node 3 in the ordering
     n2 = bfs_topo_order(3);
     n1 = bfs_parent_node(n2);
     if n1 == 1
         % Handle rare case where root node (1) has two neighbours:
-        % n2 --> o   o <-- n2
-        %         \ /
-        % root --> o <-- n1
+        % bfs_topo_order(3) == n2 --> o   o <-- n0 == bfs_topo_order(2)
+        %                              \ /
+        %                      root --> o <-- n1 == 1
         n0 = bfs_topo_order(2);
     else
         % Handle the usual case, where the root has one neighbour:
@@ -118,27 +119,29 @@ if nNodes > 2
     if n1 == arc_to(e) % Reverse the fact that F had integrated from lower node
         F(end,e) = -pvaln(F(:,e), node_fn(n1));
     end
-end
 
-% Connect this branch with its parent branch
-a01 = full(graph(n0, n1));
-F(end,e) = F(end,e)  +  pvaln(F(:,a01), node_fn(n1));
-
-for k = 4:nNodes
-    % Integrate f to node k in the topological ordering
-    n2 = bfs_topo_order(k);
-    n1 = bfs_parent_node(n2);
-    n0 = bfs_parent_node(n1);
-    e = full(graph(n1, n2));
-    
-    if n1 == arc_to(e) % Reverse the fact that F had integrated from lower node
-        F(end,e) = -pvaln(F(:,e), node_fn(n1));
-    end
-    
     % Connect this branch with its parent branch
     a01 = full(graph(n0, n1));
     F(end,e) = F(end,e)  +  pvaln(F(:,a01), node_fn(n1));
+
     
+    for k = 4:nNodes
+        % Integrate f to node k in the topological ordering
+        n2 = bfs_topo_order(k);
+        n1 = bfs_parent_node(n2);
+        n0 = bfs_parent_node(n1);
+        e = full(graph(n1, n2));
+
+        if n1 == arc_to(e) % Reverse the fact that F had integrated from lower node
+            F(end,e) = -pvaln(F(:,e), node_fn(n1));
+        end
+
+        % Connect this branch with its parent branch
+        a01 = full(graph(n0, n1));
+        F(end,e) = F(end,e)  +  pvaln(F(:,a01), node_fn(n1));
+
+    end
+
 end
 
 % Now integrate the arcs that define elements of the cycle basis.

@@ -150,6 +150,10 @@ clear faces
 RG = struct(RAA.pack(nV,1));
 clear RAA
 
+% Handle the special case of only one arc.
+if RG.nArcs == 1
+  RG.arc_segment = {RG.arc_segment};
+end
 
 % Dereference RG for faster execution. Also convert to double (which is not slower overall)
 arc_from    = double(RG.arc_from);
