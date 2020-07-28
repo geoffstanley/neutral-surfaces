@@ -129,7 +129,9 @@ end
 
 
 % Run codegen to create MEX function handling the main computation
-delta_surf_vertsolve_codegen(nk, ni, nj, isvector(X), OPTS);
+ni_ = max(ni, 2048); % using variable size code generation and avoiding
+nj_ = max(nj, 2048); % recompiling all the time
+delta_surf_vertsolve_codegen(nk, ni_, nj_, isvector(X), OPTS);
 
 % Interpolate S and T as functions of X, or use pre-computed interpolants in OPTS.
 if isfield(OPTS, 'SppX') && isfield(OPTS, 'TppX')
