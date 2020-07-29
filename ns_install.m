@@ -13,7 +13,7 @@ function ns_install()
 % (at your option) any later version.
 %
 % This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% but WITHOUT ANY WARRANTY; withouasdft even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
 %
@@ -114,7 +114,7 @@ mex('-setup', 'C');
 
 % Step 6: Add Neutral Surfaces to MATLAB's search path
 fprintf('* Adding\n %s\nand appropriate sub-folders to MATLAB''s search path.\n', PATH_PROJECT)
-run([PATH_PROJEcT 'ns_add_to_path.m']);
+run([PATH_PROJECT 'ns_add_to_path.m']);
 
 reply = input('* Shall I edit your startup.m file to add these folders to MATLAB''s search path every time MATLAB starts? [Y/n]: ', 's');
 if isempty(reply) || lower(reply(1)) == 'y'
