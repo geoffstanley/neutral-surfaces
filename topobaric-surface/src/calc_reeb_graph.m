@@ -28,11 +28,12 @@ function [x, varargout] = calc_reeb_graph(x, OPTS)
 %             perturbed by an amount near machine precision.  The input
 %             and output x have identical finite vs NaN structure. 
 % RG [struct]: The Reeb graph. See topobaric_surface.m for details.
+% timer_recon:  time from tic/toc spent running ReCon. 
 %
-% If more than two outputs are requested, the first output is x and the
+% If more than three outputs are requested, the first output is x and the
 % rest of the outputs are the following fields of RG: arc_from, arc_to,
 % arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs,
-% nNodes, wet, n_casts.
+% nNodes, wet, n_casts.  Finally, timer_recon is the last output. 
 %
 %
 % --- References:
@@ -132,7 +133,7 @@ end
 % Ensure all vertices have unique values
 [verts(:,3), perturbed] = perturb_until_unique(verts(:,3));
 
-
+mytic = tic(); % DEV
 % --- Processing: the Reeb Graph (RG)
 % Note: Recon (version 1.0) can only handle surfaces with one connected
 % component.
@@ -149,6 +150,8 @@ clear faces
 % Second argument (1): shift everything by +1, for MATLAB 1 indexing.
 RG = struct(RAA.pack(nV,1));
 clear RAA
+
+timer_recon = toc(mytic);
 
 % Handle the special case of only one arc.
 if RG.nArcs == 1
@@ -241,7 +244,7 @@ for n = 1:nNodes
 end
 %}
 
-if nargout == 2
+if nargout <= 3
     % Pack output into a struct
     RG = struct();
     RG.arc_from    = arc_from;
@@ -257,6 +260,7 @@ if nargout == 2
     RG.wet         = wet;
     RG.n_casts     = nV;
     varargout{1} = RG;
+    varargout{2} = timer_recon;
 else
     % Return a long list of outputs
     varargout{1} = arc_from;
@@ -271,5 +275,6 @@ else
     varargout{10} = nNodes;
     varargout{11} = wet;
     varargout{12} = nV;
+    varargout{13} = timer_recon;
 end
 

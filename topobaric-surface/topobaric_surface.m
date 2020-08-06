@@ -33,7 +33,7 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 % >>     I = RG.arc_segment{e};                          % get linear indices to all pixels in the region associated with arc e
 % >>     d_fn_at_x(I) = pvallin(d_fn(:,e), x_(I);        % evaluate local branch of the multivalued function for delta in terms of x
 % >> end
-% The smaller OPTS.X_TOL, the smaller OPTS.ITER_L2_CHANGE, and the larger 
+% The smaller OPTS.TOL_X_UPDATE, the smaller OPTS.ITER_L2_CHANGE, and the larger
 % OPTS.ITER_MAX, the closer (d_fn_at_x - d) will be to zero.
 %
 % [x, s, t, RG, s0, t0, d_fn1] = topobaric_surface(S, T, X, x, OPTS)
@@ -97,11 +97,11 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 %   INTERPFN [function handle]: vertical interpolation function, used to
 %       evaluate SppX and TppX if those are not provided.  Default:
 %       INTERPFN = @ppc_linterp.
-%   SppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
-%       knots are X that interpolate S as a function of X in each water 
+%   SppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose
+%       knots are X that interpolate S as a function of X in each water
 %       column.  E.g. SppX = ppc_linterp(X, S);
-%   TppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose 
-%       knots are X that interpolate T as a function of X in each water 
+%   TppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials whose
+%       knots are X that interpolate T as a function of X in each water
 %       column.  E.g. TppX = ppc_linterp(X, T);
 %   REEB [1, 1]: true to compute topobaric surfaces, false to compute
 %     "orthobaric" surfaces.
@@ -109,7 +109,7 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 %       OPTS.REEB is true), which applies extra constraints to the
 %       empirical delta function to ensure the exact geostrophic
 %       streamfunction on the surface is well-defined.
-%   SPLINE_BREAKS [vector]: knots of the single-valued function for delta 
+%   SPLINE_BREAKS [vector]: knots of the single-valued function for delta
 %     in terms of x [units the same as x], when OPTS.REEB is false.
 %   SPLINE_ORDER [1, 1]: order of the spline of the single-valued function
 %     for delta in terms of x when OPTS.REEB is false. [E: 4 for cubic splines.]
@@ -133,16 +133,16 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 %       persistence (the difference between pressure values associated with
 %       nodes) as opposed to area (number of pixels in each assocaited region)
 %       during graph simplification.
-%   X_TOL [1, 1]: error tolerance, in the same units as X [dbar] or [m], 
-%      when root-finding to update the surface.
+%   TOL_X_UPDATE [1, 1]: error tolerance, in the same units as X [dbar] or
+%      [m], when root-finding to update the surface.
 %   X_EXPN [1, 1]: solutions to the root-finding problem in each water
 %       column are sought in the domain of the local branch of the
 %       multivalued function expanded outwards by this amount, in the same
 %       units as X [dbar] or [m].
 %   ITER_MAX [1, 1]: maximum number of iterations
-%   ITER_L2_CHANGE [1, 1]: quit when the change in the root-mean-square of
-%       the surface pressure [dbar] or depth [m] exceeds this value. Set to
-%       0 to deactivate.
+%   TOL_X_CHANGE_L2 [1, 1]: quit when the change in the L2 norm of
+%       the change in surface pressure [dbar] or depth [m] exceeds this
+%       value. Set to 0 to deactivate.
 %   ITER_START_WETTING [1, 1]: Iteration number at which to start wetting
 %                              (use inf to disable wetting entirely).
 %   VERBOSE [1, 1]: 0 for no output, 1 for basic information
@@ -355,56 +355,79 @@ OPTS = catstruct(tbs_defaults(ni,nj), OPTS);
 % Whether the rectangular data contains all vertices in the simplical decomposition
 ALL_VERTS = OPTS.DECOMP(1) == 'd' && OPTS.FILL_PIX == 0 && isempty(OPTS.FILL_IJ);
 assert(ALL_VERTS || OPTS.ITER_MAX < 1, ...
-    'To empirically fit the multivalued function, must use ''diagonal'' simplical decomposition and fill no holes during pre-processing');
+  'To empirically fit the multivalued function, must use ''diagonal'' simplical decomposition and fill no holes during pre-processing');
 
-
-CALC_ERRORS = (OPTS.VERBOSE > 0) || (nargout >= 8);
-
-diags = struct();
-diags.clocktime = nan(OPTS.ITER_MAX,1);
-diags.epsL1 = nan(OPTS.ITER_MAX,1);
-diags.epsL2 = nan(OPTS.ITER_MAX,1);
-diags.xdiffL2 = nan(OPTS.ITER_MAX,1);
-diags.freshly_wet = nan(OPTS.ITER_MAX,1);
+DX = OPTS.DX;
+DY = OPTS.DY;
 
 %% Just In Time code generation
 ni_ = max(ni, 2048); % using variable size code generation and avoiding
 nj_ = max(nj, 2048); % recompiling all the time
 if OPTS.REEB
-    tbs_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
+  tbs_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
 else
-    obs_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
+  obs_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
 end
 bfs_conncomp_codegen(nk, ni_, nj_, Xvec, true, OPTS);
 if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX
-    bfs_wet_codegen(nk, ni_, nj_, Xvec, OPTS);
+  bfs_wet_codegen(nk, ni_, nj_, Xvec, OPTS);
 end
 
 %% Get MLX: the pressure or depth of the mixed layer
 if OPTS.ITER_MAX > 1
-    if isempty(OPTS.MLX)
-        % Do not remove the mixed layer
-        MLX = [];
-    elseif isstruct(OPTS.MLX)
-        MLX = mixed_layer(S, T, X, OPTS.MLX);
-    else
-        % Use a pre-computed mixed layer
-        MLX = OPTS.MLX;
-    end
+  if isempty(OPTS.MLX)
+    % Do not remove the mixed layer
+    MLX = [];
+  elseif isstruct(OPTS.MLX)
+    MLX = mixed_layer(S, T, X, OPTS.MLX);
+  else
+    % Use a pre-computed mixed layer
+    MLX = OPTS.MLX;
+  end
 end
 
 %% Interpolate S and T casts onto surface
 if isfield(OPTS, 'SppX')
-    SppX = OPTS.SppX;
+  SppX = OPTS.SppX;
 else
-    SppX = OPTS.INTERPFN(X, S);
+  SppX = OPTS.INTERPFN(X, S);
 end
 if isfield(OPTS, 'TppX')
-    TppX = OPTS.TppX;
+  TppX = OPTS.TppX;
 else
-    TppX = OPTS.INTERPFN(X, T);
+  TppX = OPTS.INTERPFN(X, T);
 end
 [s,t] = ppc_val2(X,SppX,TppX,lead1(x));
+
+%% Prepare Diagnostics
+DIAGS = (OPTS.VERBOSE > 0) || (nargout >= 8);
+
+
+diags = struct();
+diags.clocktime     = nan(OPTS.ITER_MAX,1);
+diags.x_change_L1   = nan(OPTS.ITER_MAX,1);
+diags.x_change_L2   = nan(OPTS.ITER_MAX,1);
+diags.x_change_Linf = nan(OPTS.ITER_MAX,1);
+diags.freshly_wet   = nan(OPTS.ITER_MAX,1);
+
+diags.epsL1 = nan(OPTS.ITER_MAX + 1,1);
+diags.epsL2 = nan(OPTS.ITER_MAX + 1,1);
+
+diags.timer_wetting   = nan(OPTS.ITER_MAX, 1);
+diags.timer_recon     = nan(OPTS.ITER_MAX, 1);
+diags.timer_reebgraph = nan(OPTS.ITER_MAX, 1);
+diags.timer_fitting   = nan(OPTS.ITER_MAX, 1);
+diags.timer_update    = nan(OPTS.ITER_MAX, 1);
+
+% Get neutrality errors using r and x differences on the U,V grid.
+[epsx, epsy] = ntp_errors(s, t, x, DX, DY, false, false, OPTS.WRAP);
+
+% Compute the L1 and L2 norms of the neutrality (epsilon) errors
+data = [epsx(:); epsy(:)];
+diags.epsL1(1) = nanmean(abs(data(:)));
+diags.epsL2(1) = nanrms(data(:));
+
+
 
 %% Process the reference cast:
 % Get linear index to reference cast
@@ -413,9 +436,9 @@ I0 = sub2ind([ni,nj], OPTS.REF_IJ(1), OPTS.REF_IJ(2));
 
 % Set x0: the x value the surface will be pinned to at this ref cast
 if isscalar(OPTS.REF_X)
-    x0 = OPTS.REF_X;
+  x0 = OPTS.REF_X;
 else
-    x0 = x(I0);
+  x0 = x(I0);
 end
 
 % Get (s0,t0): (S,T) values at the reference cast at the reference x.
@@ -425,10 +448,10 @@ d0 = eos(s0, t0, x0); % temporary, will be over-written
 
 % Overwrite with reference values if provided
 if isscalar(OPTS.REF_S)
-    s0 = OPTS.REF_S;
+  s0 = OPTS.REF_S;
 end
 if isscalar(OPTS.REF_T)
-    t0 = OPTS.REF_T;
+  t0 = OPTS.REF_T;
 end
 
 % Pre-compute delta (using the reference S and T) at the reference cast
@@ -438,96 +461,99 @@ d0 = d0 - eos(s0,t0,x0);
 
 %% Begin iterations
 for iter = 1 : OPTS.ITER_MAX
-    iter_tic = tic();
+  iter_tic = tic();
+  
+  % --- Remove the Mixed Layer
+  % But keep it for the first iteration, which may be initialized from a
+  % not very neutral surface
+  if iter > 1 && ~isempty(MLX)
+    x(x < MLX) = nan;
+  end
+  
+  
+  % --- Wetting via Breadth First Search
+  mytic = tic();
+  if iter >= OPTS.ITER_START_WETTING
+    [s, t, x, freshly_wet, qu] = bfs_wet_mex(SppX, TppX, X, s, t, x, OPTS.TOL_X_UPDATE, A, BotK, qu);
+  else
+    freshly_wet = 0;
+  end
+  
+  % --- Breadth First Search to find connected region
+  [qu, qts] = bfs_conncomp_one_mex(isfinite(x), A, I0, qu);
+  qt = qts(2)-1;
+  
+  % Keep only the component of the surface connected to the reference cast
+  wet = false(ni,nj);
+  wet(qu(1:qt)) = true;
+  x(~wet) = nan;
+  
+  if DIAGS
+    timer_wetting = toc(mytic);
+  end
+  
+  
+  if OPTS.REEB
+    mytic = tic();
+    % --- Calculate the Reeb graph:
+    % 1. Pre-process to select one region, possibly filling in certain holes;
+    % 2. Calculate the Reeb graph;
+    % 3. Post-process to undo any hole-filling and possibly simplify the graph.
+    [x, arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes, timer_recon] = calc_reeb_graph(x, OPTS);
     
-    % --- Remove the Mixed Layer
-    % But keep it for the first iteration, which may be initialized from a
-    % not very neutral surface
-    if iter > 1 && ~isempty(MLX)
-        x(x < MLX) = nan;
+    % --- Prepare info about cycles
+    [~, graph, ~, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb_arcs, cb_nodes] = ...
+      cycle_analy_bfs(arc_from, arc_to, nNodes);
+    
+    if DIAGS
+      timer_reebgraph = toc(mytic) - timer_recon;
     end
+  else
+    timer_recon = 0;
+    timer_reebgraph = 0;
+  end
+  
+  
+  % --- Begin empirical fitting and graph integration
+  mytic = tic();
+  
+  % --- Build x_, the vector containing x at each valid point on the surface
+  x_ = x(wet).'; % Row vector
+  n_casts = length(x_);
+  
+  
+  if OPTS.REEB
+    % --- Build vector associating each water column with an arc
+    % Note some water columns (saddles) are associated with multiple arcs!
+    % arc and arc_ simply take one of them.
+    arc_ = zeros(1, n_casts);
+    for e = 1 : nArcs
+      arc_(arc_segment{e}) = e;
+    end % Now all arc_ > 0
+    arc = zeros(ni,nj);
+    arc(wet) = arc_;
+  end
+  
+  
+  % --- Get derivative of delta on surface
+  dx = eos_x(s, t, x) - eos_x(s0, t0, x);
+  dx_ = dx(wet).';
+  
+  
+  % --- Fit d(delta) / d(pressure), then integrate it
+  if OPTS.REEB
+    % --- Fit partial derivative of delta w.r.t. x as a multivalued function of x,
+    dx_fn = branches_fit(x_, dx_, arc_from, arc_to, arc_segment, node_fn, cb_arcs, cb_nodes, OPTS.GEOSTRF);
     
-    % --- Wetting via Breadth First Search
-    if iter >= OPTS.ITER_START_WETTING
-        [s, t, x, freshly_wet, qu] = bfs_wet_mex(SppX, TppX, X, s, t, x, OPTS.X_TOL, A, BotK, qu);
-    else
-        freshly_wet = 0;
-    end
+    % --- Integrate to get delta as a multivalued function of x
+    d_fn = int_graph_fun(dx_fn, arc_from, arc_to, node_fn, graph, bfs_parent_node, bfs_topo_order, bfs_missing_arc);
     
-    % --- Breadth First Search to find connected region
-    [qu, qts] = bfs_conncomp_one_mex(isfinite(x), A, I0, qu);
-    qt = qts(2)-1;
+    % Adjust d_fn so that the new surface coincides with the old one on the starting water column
+    % i.e. force d_fn(:,arc(I0)) evaluated at x0 to equal d0.
+    d_fn(end,:) = d_fn(end,:) + (d0 - pvallin(d_fn(:,arc(I0)), x0));
     
-    
-    % Keep only the component of the surface connected to the reference cast
-    wet = false(ni,nj);
-    wet(qu(1:qt)) = true;
-    x(~wet) = nan;
-    
-    if CALC_ERRORS
-        diags_time = tic();
-        % Get neutrality errors using r and x differences on the U,V grid.  
-        [epsx, epsy] = ntp_errors(s, t, x, 1, 1, false, false, OPTS.WRAP);
-        
-        % Compute the L1 and L2 norms of the neutrality (epsilon) errors
-        data = [epsx(isfinite(epsx)); epsy(isfinite(epsy))];
-        diags.epsL1(iter) = sum(abs(data)) / numel(data);
-        diags.epsL2(iter) = sqrt(sum(data.^2) / numel(data));
-        diags.freshly_wet(iter) = freshly_wet;
-        
-        diags_time = toc(diags_time);
-    end
-    
-    if OPTS.REEB
-        % --- Calculate the Reeb graph:
-        % 1. Pre-process to select one region, possibly filling in certain holes;
-        % 2. Calculate the Reeb graph;
-        % 3. Post-process to undo any hole-filling and possibly simplify the graph.
-        [x, arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes] = calc_reeb_graph(x, OPTS);
-        
-        % --- Prepare info about cycles
-        [~, graph, ~, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb_arcs, cb_nodes] = ...
-            cycle_analy_bfs(arc_from, arc_to, nNodes);
-    end
-    
-    
-    % --- Build x_, the vector containing x at each valid point on the surface
-    x_ = x(wet).'; % Row vector
-    n_casts = length(x_);
-    
-    
-    if OPTS.REEB
-        % --- Build vector associating each water column with an arc
-        % Note some water columns (saddles) are associated with multiple arcs!
-        % arc and arc_ simply take one of them.
-        arc_ = zeros(1, n_casts);
-        for e = 1 : nArcs
-            arc_(arc_segment{e}) = e;
-        end % Now all arc_ > 0
-        arc = zeros(ni,nj);
-        arc(wet) = arc_;
-    end
-    
-    
-    % --- Get derivative of delta on surface
-    dx = eos_x(s, t, x) - eos_x(s0, t0, x);
-    dx_ = dx(wet).';
-    
-    
-    % --- Fit d(delta) / d(pressure), then integrate it
-    if OPTS.REEB
-        % --- Fit partial derivative of delta w.r.t. x as a multivalued function of x,
-        dx_fn = branches_fit(x_, dx_, arc_from, arc_to, arc_segment, node_fn, cb_arcs, cb_nodes, OPTS.GEOSTRF);
-        
-        % --- Integrate to get delta as a multivalued function of x
-        d_fn = int_graph_fun(dx_fn, arc_from, arc_to, node_fn, graph, bfs_parent_node, bfs_topo_order, bfs_missing_arc);
-        
-        % Adjust d_fn so that the new surface coincides with the old one on the starting water column
-        % i.e. force d_fn(:,arc(I0)) evaluated at x0 to equal d0.
-        d_fn(end,:) = d_fn(end,:) + (d0 - pvallin(d_fn(:,arc(I0)), x0));
-        
-        % Double check matching conditions at nodes of the Reeb Graph.
-        %{
+    % Double check matching conditions at nodes of the Reeb Graph.
+    %{
         for n = 1:nNodes
             neigharcs = [node_prev{n}; node_next{n}].';
             e = neigharcs(1);
@@ -541,79 +567,122 @@ for iter = 1 : OPTS.ITER_MAX
             end
         end
         clear neigharcs node_x d_fn_at_e diff ee e
-        %}
-    else
-        % --- Fit partial derivative of delta w.r.t. x as a single-valued function of x
-        breaks = OPTS.SPLINE_BREAKS ;
-        breaks = min(breaks, max(x_));
-        breaks = max(breaks, min(x_));
-        breaks = unique(breaks);
-        dx_fn = splinefit(x_, dx_, breaks, OPTS.SPLINE_ORDER);
-        
-        % --- Integrate to get delta as a single-valued function of x
-        d_fn = ppint(dx_fn);
-        
-        % Adjust d_fn so that the new surface coincides with the old one on the starting water column
-        % i.e. force d_fn(:,arc(I0)) evaluated at x0 to equal d0.
-        d_fn.coefs(:,end) = d_fn.coefs(:,end) + ( d0 - ppval(d_fn, x0) );
+    %}
+  else
+    % --- Fit partial derivative of delta w.r.t. x as a single-valued function of x
+    breaks = OPTS.SPLINE_BREAKS ;
+    breaks = min(breaks, max(x_));
+    breaks = max(breaks, min(x_));
+    breaks = unique(breaks);
+    dx_fn = splinefit(x_, dx_, breaks, OPTS.SPLINE_ORDER);
+    
+    % --- Integrate to get delta as a single-valued function of x
+    d_fn = ppint(dx_fn);
+    
+    % Adjust d_fn so that the new surface coincides with the old one on the starting water column
+    % i.e. force d_fn(:,arc(I0)) evaluated at x0 to equal d0.
+    d_fn.coefs(:,end) = d_fn.coefs(:,end) + ( d0 - ppval(d_fn, x0) );
+  end
+  clear dx_fn dx_
+  if DIAGS
+    timer_fitting = toc(mytic);
+  end
+  
+  % --- Solve for new pressures at which specific volume is that of the multivalued function
+  mytic = tic();
+  x_old = x; % Record old surface for diagnostic purposes. 
+  if OPTS.REEB
+    [x, s, t] = tbs_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, arc, d_fn, s0, t0, OPTS.TOL_X_UPDATE, OPTS.X_EXPN);
+  else
+    [x, s, t] = obs_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, d_fn.breaks, d_fn.coefs, s0, t0, OPTS.TOL_X_UPDATE);
+  end
+  if DIAGS
+    timer_update = toc(mytic);
+  end
+  
+  % --- Get ready for next iteration
+  x_change = x - x_old;
+  x_change_L2 = nanrms(x_change(:));
+  
+  % --- Closing remarks
+  if DIAGS
+    
+    clocktime = toc(iter_tic);
+    
+    x_change_L1 = nanmean(abs(x_change(:)));
+    x_change_Linf = max(abs(x_change(:)));
+    if OPTS.VERBOSE >= 1
+      fprintf(OPTS.FILE_ID, 'Iter %2d (%.2fsec):  %4d casts wet; %4d casts in/outcropped; x change has: L_1 %.6e, L_2 %.6e, L_inf %.6eg\n',...
+        iter, toc(iter_tic), freshly_wet, sum(isnan(x(wet))), x_change_L1, x_change_L2, x_change_Linf);
     end
-    clear dx_fn dx_
+    diags.clocktime(iter) = clocktime;
     
-    % --- Solve for new pressures at which specific volume is that of the multivalued function
-    if OPTS.REEB
-        [xnew, s, t] = tbs_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, arc, d_fn, s0, t0, OPTS.X_TOL, OPTS.X_EXPN);
-    else
-        [xnew, s, t] = obs_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, d_fn.breaks, d_fn.coefs, s0, t0, OPTS.X_TOL);
-    end
     
-    % --- Get ready for next iteration
-    xdiff = xnew - x;
-    xdiffL2 = nanrms(xdiff(:));
-    x = xnew;
+    % Diagnostics about what THIS iteration did
+    diags.x_change_L1(iter) = x_change_L1;
+    diags.x_change_L2(iter) = x_change_L2;
+    diags.x_change_Linf(iter) = x_change_Linf;
+    diags.freshly_wet(iter) = freshly_wet;
     
-    % --- Closing remarks
-    if CALC_ERRORS
-        
-        diags.xdiffL2(iter) = xdiffL2;
-        clocktime = toc(iter_tic) - diags_time;
-        if OPTS.VERBOSE >= 1
-            fprintf(OPTS.FILE_ID, 'Iter %02d (%.2fsec):  %d casts wet; %d casts in/outcropped; x change has: Mean %0.5g, L_2 %0.5g, L_inf %0.5g\n',...
-                iter, toc(iter_tic), freshly_wet, sum(isnan(xnew(wet))), nanmean(xdiff(:)), xdiffL2, max(abs(xdiff(:))));
-        end
-        diags.clocktime(iter) = clocktime;
-        
-    end
+    diags.timer_wetting(iter)   = timer_wetting;
+    diags.timer_recon(iter)     = timer_recon;
+    diags.timer_reebgraph(iter) = timer_reebgraph;
+    diags.timer_fitting(iter)   = timer_fitting;
+    diags.timer_update(iter)    = timer_update;
     
-    % --- Check for convergence or maximum iterations
-    if (iter >= OPTS.ITER_MAX) || (xdiffL2 < OPTS.ITER_L2_CHANGE)
-        break
-    end
+    % Diagnostics about the state AFTER this iteration
     
+    % Get neutrality errors using r and x differences on the U,V grid.
+    [epsx, epsy] = ntp_errors(s, t, x, DX, DY, false, false, OPTS.WRAP);
+    
+    % Compute the L1 and L2 norms of the neutrality (epsilon) errors
+    data = [epsx(:); epsy(:)];
+    diags.epsL1(iter+1) = nanmean(abs(data(:)));
+    diags.epsL2(iter+1) = nanrms(data(:));
+    
+  end
+  
+  % --- Check for convergence
+  if (x_change_L2 < OPTS.TOL_X_CHANGE_L2) && iter >= OPTS.ITER_MIN
+    break
+  end
+  
 end
 
 if nargout >= 4
-    % Return Reeb Graph (if it was computed) and ReGion
-    RG.wet = wet;
-    RG.n_casts = n_casts;
-    if OPTS.REEB
-        RG.arc_from        = arc_from;
-        RG.arc_to          = arc_to;
-        RG.arc_segment     = arc_segment;
-        RG.node_next       = node_next;
-        RG.node_prev       = node_prev;
-        RG.node_type       = node_type;
-        RG.node_v          = node_v;
-        RG.nArcs           = nArcs;
-        RG.nNodes          = nNodes;
-        RG.node_fn         = node_fn;
-        
-        % Add extra info to RG
-        RG.cb_nodes        = cb_nodes;
-        RG.cb_arcs         = cb_arcs;
-        RG.graph           = graph;
-        RG.bfs_parent_node = bfs_parent_node;
-        RG.bfs_topo_order  = bfs_topo_order;
-        RG.bfs_missing_arc = bfs_missing_arc;
-    end
+  % Return Reeb Graph (if it was computed) and ReGion
+  RG.wet = wet;
+  RG.n_casts = n_casts;
+  if OPTS.REEB
+    RG.arc_from        = arc_from;
+    RG.arc_to          = arc_to;
+    RG.arc_segment     = arc_segment;
+    RG.node_next       = node_next;
+    RG.node_prev       = node_prev;
+    RG.node_type       = node_type;
+    RG.node_v          = node_v;
+    RG.nArcs           = nArcs;
+    RG.nNodes          = nNodes;
+    RG.node_fn         = node_fn;
     
+    % Add extra info to RG
+    RG.cb_nodes        = cb_nodes;
+    RG.cb_arcs         = cb_arcs;
+    RG.graph           = graph;
+    RG.bfs_parent_node = bfs_parent_node;
+    RG.bfs_topo_order  = bfs_topo_order;
+    RG.bfs_missing_arc = bfs_missing_arc;
+  end
+  
+end
+
+
+
+if DIAGS
+  % Trim output
+  fields = fieldnames(diags);
+  for i = 1 : length(fields)
+    f = fields{i};
+    diags.(f) = diags.(f)( isfinite( diags.(f) ));
+  end
 end

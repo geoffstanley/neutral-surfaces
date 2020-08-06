@@ -39,6 +39,10 @@ function OPTS = tbs_defaults(ni, nj)
 % using a spline. Set REEB to false and set the SPLINE parameters below.
 OPTS.REEB = true;
 
+% When true, adjust the empirical function to ensure exact geostrophic
+% stream function is well-defined
+OPTS.GEOSTRF = false;
+
 % Spine parameters, only used for "orthobaric" surfaces
 OPTS.SPLINE_BREAKS = [0 200 1500 1800 6000]; % [dbar] or [m]
 OPTS.SPLINE_ORDER = 4; % Cubic
@@ -83,7 +87,7 @@ OPTS.SIMPLIFY_ARC_REMAIN = Inf;     % No leaf pruning simplification
 
 % Error tolerance when root-finding to update surface, in the same units as
 % X [dbar] or [m].
-OPTS.X_TOL = 1e-4;
+OPTS.TOL_X_UPDATE = 1e-4;
 
 % Solutions to the root-finding problem in each water column are sought in
 % the domain of the local branch of the multivalued function expanded
@@ -95,23 +99,29 @@ OPTS.SppX = [];
 OPTS.TppX = [];
 
 % Conditions to terminate iterations:
+OPTS.ITER_MIN = 6;  % minimum number of iterations
 OPTS.ITER_MAX = 6;  % maximum number of iterations
-
-% quit when the L2 change of pressure on surface exceeds this value (set to
-% 0 to deactivate), in the same units as X [dbar] or [m].
-OPTS.ITER_L2_CHANGE = 1e-3;
 
 % Iteration number at which to begin wetting (use inf for no wetting)
 OPTS.ITER_START_WETTING = 1; % Start wetting immediately
 
-% When true, adjust the empirical function to ensure exact geostrophic
-% stream function is well-defined
-OPTS.GEOSTRF = false;
+% quit when the L2 change of pressure on surface exceeds this value (set to
+% 0 to deactivate), in the same units as X [dbar] or [m].
+%OPTS.ITER_L2_CHANGE = 1e-3;
+OPTS.TOL_X_CHANGE_L2 = 1e-3;
+
+
+% Grid distances used for calculating gradients, such as when calculating
+% epsilon errors
+OPTS.DX = 1;  %      Zonal grid distance [m]
+OPTS.DY = 1;  % Meridional grid distance [m]
 
 % Verbosity level
 OPTS.VERBOSE = 1;
 
 % File ID to write output
 OPTS.FILE_ID = 1; % standard output to MATLAB terminal
+
+
 
 end
