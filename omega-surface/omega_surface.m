@@ -189,12 +189,6 @@ nij = nj * ni;
 % Setup anonymous functions:
 lead1 = @(x) reshape(x, [1 size(x)]);
 
-% Set up indices used when building the matrix mat
-idx = reshape(1:nij, ni, nj); % Linear index to each pixel on the full grid (ocean or not)
-
-% The density or specific volume change in each water column
-phi = nan(ni,nj);
-
 % Pre-calculate things for Breadth First Search
 qu = zeros(nij, 1); % queue storing linear indices to pixels
 A5 = grid_adjacency([ni,nj], 5, OPTS.WRAP); % all grid points that are adjacent to all grid points, using 5-connectivity
@@ -221,13 +215,14 @@ ITER_MAX = OPTS.ITER_MAX;
 ITER_START_WETTING = OPTS.ITER_START_WETTING;
 VERBOSE = OPTS.VERBOSE;
 WRAP = OPTS.WRAP;
+REF_IJ = OPTS.REF_IJ;
+POISSON = OPTS.POISSON; 
 
-
-PIN_IJ = ~isempty(OPTS.REF_IJ);
-if PIN_IJ
-  i0 = OPTS.REF_IJ(1);
-  j0 = OPTS.REF_IJ(2);
-  I0 = sub2ind([ni, nj], i0, j0);
+PIN = ~isempty(REF_IJ);
+if PIN
+  I0 = sub2ind([ni, nj], REF_IJ(1), REF_IJ(2));
+else
+  I0 = [];
 end
 
 eos0 = eos(34.5, 3, 1000);
@@ -245,6 +240,15 @@ DIAGS = (VERBOSE > 0) || (nargout > 3);
 
 DX = OPTS.DX;
 DY = OPTS.DY;
+
+if ~POISSON
+  % Set up indices used when building the matrix mat
+  shift_im1 = @(F) circshift(F, [+1, 0]); % if x is [lat x lon], this shifts south
+  shift_jm1 = @(F) circshift(F, [0, +1]); % if x is [lat x lon], this shifts west
+  idx = reshape(1:nij, ni, nj); % Linear index to each pixel on the full grid (ocean or not)
+  idx_im1 = shift_im1(idx);     % Linear index to the pixel above (^)   the local pixel
+  idx_jm1 = shift_jm1(idx);     % Linear index to the pixel left (<) of the local pixel
+end
 
 %% Just in time code generation
 Xvec = isvector(X);
@@ -270,7 +274,6 @@ if ITER_MAX > 1
 end
 
 %% Interpolate S and T casts onto surface
-
 [~, K, N] = size(OPTS.SppX);
 if K > 0
   assert(K == nk-1 && N == nij, 'size(SppX) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
@@ -360,97 +363,23 @@ for iter = 1 : ITER_MAX
   
   % --- Build the compact representation of the matrix optimization problem
   mytic = tic;
-  [G, H, epsL2] = linprob_dens(x, s, t, [], [], 5);
+  if POISSON
+    [G, H, epsL2] = linprob_dens(x, s, t, [], [], 5);
+  else
+    [eps_i, eps_j] = ntp_errors(s, t, x, 1, 1, true, false, WRAP);
+    epsL2 = nanrms([eps_i(:); eps_j(:)]);
+  end
   if DIAGS
     timer_ntperrors = toc(mytic);
   end
   
-
-  
-  
   % --- Build and solve sparse matrix problem
   mytic = tic;
-  phi(:) = nan;
-  idx(:) = 0;    % Overwrite with linear indices to regions
-  for icc = 1 : ncc % icc = index of region
-    
-    
-    % Collect and sort linear indices to all pixels in this region
-    I = sort(qu(qts(icc) : qts(icc+1)-1));  % sorting here makes mat better structured; overall speedup.
-    
-    nwc = length(I);  % Number of water columns
-    if nwc <= 1  % There are definitely no equations to solve
-      phi(I) = 0; % Leave this isolated pixel at current pressure
-      continue
-    end
-    
-    % Label the water columns in this region alone by 1, 2, ...
-    % No need to reset other elements of idx to 0.
-    idx(I) = 1:nwc;
-    
-    
-    %PIN_HERE = PIN_IJ && I(binsrchleft(I0, I)) == I0;  % Alternative test option
-    PIN_HERE = PIN_IJ && icc == L(I0);
-    if PIN_HERE
-      % I0 is in this region.
-      I1 = I0;
-    else
-      % I0 is not in this region.  Pin the first cast we see, and adjust later
-      I1 = I(1);
-    end
-    
-    % Pin surface at I1 = I0 or I1 = I(1), by changing the I1'th equation
-    % to be phi[I1], to be 1 * phi[I1] = 0.
-    G(I1) = 0;
-    H(:,I1) = 0;
-    H(3,I1) = 1;
-    
-    % The above change renders the I1'th column on all rows irrelevant,
-    % since phi[I1] will be zero.  So, we may also set this column to 0,
-    % which we do here by setting the appropriate links in H to 0. This
-    % maintains symmetry of the matrix, and speeds up solution by a
-    % factor of about 2.
-    H(1,A5(5,I1)) = 0;
-    H(2,A5(4,I1)) = 0;
-    H(4,A5(2,I1)) = 0;
-    H(5,A5(1,I1)) = 0;
-    
-    % Build the RHS of the matrix problem
-    rhs = G(I);
-    
-    % Build indices for the rows of the sparse matrix
-    ii = repmat(1:nwc, 5, 1);
-    
-    % Build indices for the columns of the sparse matrix
-    % idx() remaps global indices to local indices for this region, numbered 1, 2, ...
-    jj = idx(A5(:,I));
-    
-    % Build the values of the sparse matrix
-    vv = H(:,I);
-    
-    % Build the sparse matrix, with nwc rows and nwc columns
-    good = jj > 0; % Ignore connections to dry pixels (though they should have zero J anyway, this is faster)
-    mat = sparse( ii(good), jj(good), vv(good), nwc, nwc );
-    
-    % Solve the matrix problem
-    sol = mat \ rhs;
-    
-    if ~PIN_HERE
-      % Adjust solution, not in the region containing the reference cast, to have zero mean.
-      sol = sol - mean(sol);
-    end
-    
-    % Save solution
-    phi(I) = sol;
-    
-  end % icc
-  
-  
-  % Build statistics about solution
-  nwc_total = qts(ncc+1) - 1;  % == sum of nwc from above loop
-  phiL1 = nansum(abs(phi(:))) / nwc_total;
-  assert(phiL1 == nanmean(abs(phi(:))));
-  
+  if POISSON
+    [phi, G, H] = omega_matsolve_poisson(G, H, A5, L, I0, qu, qts);
+  else
+    phi = omega_matsolve_grad(eps_i, eps_j, idx_im1, idx_jm1, L, I0, qu, qts);
+  end
   if DIAGS
     timer_solver = toc(mytic);
   end
@@ -461,10 +390,10 @@ for iter = 1 : ITER_MAX
   x_old = x;      % Record old surface for pinning or diagnostic purposes.
   [x, s, t] = omega_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, TOL_X_UPDATE, phi);
   
-  if PIN_IJ && ~isnan(phi(i0,j0))
+  if PIN && ~isnan(phi(I0))
     % Force x(i0,j0) to stay constant at the reference column,
     % identically. This avoids any intolerance from the vertical solver.
-    x(i0,j0) = x_old(i0,j0);
+    x(I0) = x_old(I0);
   end
   
   if DIAGS
@@ -472,6 +401,7 @@ for iter = 1 : ITER_MAX
   end
   
   % --- Closing Remarks
+  phiL1 = nanmean(abs(phi(:)));
   if DIAGS || isfinite(TOL_X_CHANGE_L2)
     x_change = x - x_old;
     x_change_L2   = nanrms(x_change(:));

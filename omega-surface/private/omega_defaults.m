@@ -57,24 +57,16 @@ OPTS.TOL_LRPD_L1 = 1e-7; % Tolerance in Locally Referenced Potential Density [kg
 % 0 to deactivate), in the same units as X [dbar] or [m].
 OPTS.TOL_X_CHANGE_L2 = inf;
 
-% Relative tolerance for LSQR. Since the matrix problem is overdetermined,
-% the relative residual will, in general, exceed this tolerance bound. As
-% such, it is challenging to relate LSQR's relative tolerance to physical
-% tolerances on density or pressure.  From several numerical tests,
-% the default relative tolerance of 1e-6 seems to work well.
-OPTS.TOL_LSQR_REL = 1e-6;
-
 % Error tolerance when root-finding to update surface, in the same units as
 % X [dbar] or [m].
 OPTS.TOL_X_UPDATE = 1e-4;
 
 OPTS.VERBOSE = 1; % show a moderate level of information
 
-% The matrix has 1's and 0's everywhere, except this value in the final row
-OPTS.FINAL_ROW_VALUES = 1e-2; % chosen empirically from tests on 1x1deg OCCA data
-
 OPTS.INTEGRATING_FACTOR = [];  % No integrating factor
 
 OPTS.FILE_ID = 1; % standard output to MATLAB terminal
 
 OPTS.REF_IJ = []; % No reference water column at which the surface is pinned.  Instead, maintain the mean density. 
+
+OPTS.POISSON = true; % Whether to solve the square, symmetric Poisson matrix problem, or a rectangular gradient problem
