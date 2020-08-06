@@ -499,7 +499,7 @@ for iter = 1 : OPTS.ITER_MAX
     % 1. Pre-process to select one region, possibly filling in certain holes;
     % 2. Calculate the Reeb graph;
     % 3. Post-process to undo any hole-filling and possibly simplify the graph.
-    [x, arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes, timer_recon] = calc_reeb_graph(x, OPTS);
+    [x, arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes, ~, ~, timer_recon] = calc_reeb_graph(x, OPTS);
     
     % --- Prepare info about cycles
     [~, graph, ~, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb_arcs, cb_nodes] = ...
@@ -612,7 +612,7 @@ for iter = 1 : OPTS.ITER_MAX
     x_change_L1 = nanmean(abs(x_change(:)));
     x_change_Linf = max(abs(x_change(:)));
     if OPTS.VERBOSE >= 1
-      fprintf(OPTS.FILE_ID, 'Iter %2d (%.2fsec):  %4d casts wet; %4d casts in/outcropped; x change has: L_1 %.6e, L_2 %.6e, L_inf %.6eg\n',...
+      fprintf(OPTS.FILE_ID, 'Iter %2d (%.2fsec):  %4d casts wet; %4d casts in/outcropped; x change has: L_1 %.6e, L_2 %.6e, L_inf %.6e\n',...
         iter, toc(iter_tic), freshly_wet, sum(isnan(x(wet))), x_change_L1, x_change_L2, x_change_Linf);
     end
     diags.clocktime(iter) = clocktime;
