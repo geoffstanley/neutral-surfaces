@@ -34,7 +34,7 @@ function [x, s, t] = obs_vertsolve(SppX, TppX, X, BotK, s, t, x, dfnb, dfnc, s0,
 % dfnc [B-1,D+1]: coefficient matrix for the spline giving delta as a function of x
 % s0 [1, 1]: reference S value for delta
 % t0 [1, 1]: reference T value for delta
-% tolx [1, 1]: tolerance on pressure [dbar] or depth [m] for bisection solver
+% tolx [1, 1]: tolerance on pressure [dbar] or depth [m] for vertical solver
 %
 % Note: O is the order of the piecewise polynomials down each cast
 %       K is the maximum number of knots in these piecewise polynomials, 

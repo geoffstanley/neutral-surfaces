@@ -463,8 +463,7 @@ for iter = 1 : ITER_MAX
   
   if PIN_IJ && ~isnan(phi(i0,j0))
     % Force x(i0,j0) to stay constant at the reference column,
-    % identically. This avoids any intolerance from the bisection
-    % method.
+    % identically. This avoids any intolerance from the vertical solver.
     x(i0,j0) = x_old(i0,j0);
   end
   

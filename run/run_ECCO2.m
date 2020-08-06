@@ -160,7 +160,7 @@ x0 = 180; y0 = 0;
 i0 = x_to_i(x0);
 j0 = y_to_j(y0);
 
-% Tolerance for bisection to find surfaces
+% Tolerance for vertical solver to find surfaces
 tolx = 1e-4;
 
 OPTS = struct();
