@@ -1,4 +1,4 @@
-function [x,s,t,d0] = pot_dens_surf(S, T, X, xref, var, OPTS)
+function [x,s,t,d0,diags] = pot_dens_surf(S, T, X, xref, var, OPTS)
 %POT_DENS_SURF  Potential density surface by nonlinear solution in each water column.
 %
 %
@@ -110,6 +110,8 @@ DEFS.X_TOL = 1e-4;  % error tolerance in the vertical dimension
 DEFS.INTERPFN = @ppc_linterp;  % linear interpolation in the vertical
 DEFS.FILE_ID = 1;  % standard output to MATLAB terminal
 DEFS.VERBOSE = 1;  % show a moderate level of information
+DEFS.DX = 1;  %      Zonal grid distance [m]
+DEFS.DY = 1;  % Meridional grid distance [m]
 
 % Override any options with user-specified OPTS
 if nargin < 6 || isempty(OPTS)
@@ -117,6 +119,8 @@ if nargin < 6 || isempty(OPTS)
 else
   OPTS = catstruct(DEFS, OPTS); 
 end
+
+DIAGS = nargout >= 5;
 
 % Run codegen to create MEX function handling the main computation
 ni_ = max(ni, 2048); % using variable size code generation and avoiding
@@ -179,5 +183,15 @@ D = sort(eos(S, T, xref), 1, sortdir);
 % Get started with the discrete version (and linear interpolation)
 x = interp1qn(d0, D, X);
 
+% Start timer after all the setup has been done.
+iter_tic = tic();
+
 % Solve non-linear root finding problem in each cast
 [x, s, t] = pot_dens_surf_vertsolve_mex(SppX, TppX, X, BotK, x, xref, d0, OPTS.X_TOL);
+
+if DIAGS
+    diags = struct();
+    diags.clocktime = toc(iter_tic);
+    [eps_i, eps_j] = ntp_errors(s, t, x, OPTS.DX, OPTS.DY, true, false, OPTS.WRAP);
+    diags.epsL2 = nanrms([eps_i(:); eps_j(:)]);
+end
