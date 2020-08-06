@@ -76,19 +76,28 @@ function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, k, sB, tB, xB, t
 % Changes     : --
 
 if k > 1
-  
-    % The water column has at least two data points, and a valid interpolant. 
-    % Search for a solution to the nonlinear root-finding problem
-    x = bisectguess(@diff_fun, X(1), X(k), tolx, xB, SppX, TppX, X, sB, tB, xB);
+
+    % Search for a sign-change, expanding outward from an initial guess
+    [lb, ub] = fzero_guess_to_bounds(@myfcn, xB, X(1), X(k), ...
+      SppX, TppX, X, sB, tB, xB);
     
-    if isnan(x)
-        s = nan;
-        t = nan;
-        success = false;
+    if ~isnan(lb)
+      % A sign change was discovered, so a root exists in the interval.
+      % Solve the nonlinear root-finding problem using Brent's method
+      x = fzero_brent(@myfcn, lb, ub, tolx, ...
+        SppX, TppX, X, sB, tB, xB);
+      
+      % Interpolate S and T onto the updated surface
+      [s,t] = ppc_val2(X, SppX, TppX, x);
+
+      success = true;
     else
-        [s,t] = ppc_val2(X, SppX, TppX, reshape(x, [1, size(x)]));
-        success = true;
+      x = nan;
+      s = nan;
+      t = nan;
+      success = false;
     end
+
     
 else
     x = nan;
@@ -98,7 +107,7 @@ else
 end
 end
 
-function out = diff_fun(x, SppX, TppX, X, sB, tB, xB)
+function out = myfcn(x, SppX, TppX, X, sB, tB, xB)
 % Evaluate difference between (a) eos at location on the cast (S, T, X)
 % where the pressure or depth is x, and (b) eos of the bottle (sB, tB, xB);
 % here, eos is always evaluated at the average pressure or depth, (x +
