@@ -29,7 +29,11 @@ function [qu, qts, ncc, G, L] = bfs_conncomp(G, A, r, qu) %#codegen
 % vector of length N and class double.  Pass r as [] to use this with the
 % second form above.
 %
-% [qu, qts, ncc, L] = bfs_conncomp(...)
+% [qu, qts, ncc, G] = bfs_conncomp(...)
+% also returns a modified G that is true only where the BFS has walked.
+% When r is not provided, the output G should match the input G.
+%
+% [qu, qts, ncc, G, L] = bfs_conncomp(...)
 % also returns a label array L, the same size as G. Specifically, L(n) = i
 % for all n in the i'th connected component, for i = 1 : ncc; otherwise
 % L(n) = 0.
@@ -38,14 +42,15 @@ function [qu, qts, ncc, G, L] = bfs_conncomp(G, A, r, qu) %#codegen
 % --- Input:
 % G [array with N elements]: true where there are nodes, false elsewhere
 % A [D,N]: adjacency, where D is the most neighbours possible
-% qu [N,1]: vector to work in-place (optional)
 % r [1,1]: perform one BFS from this root node (optional)
+% qu [N,1]: vector to work in-place (optional)
 %
 %
 % --- Output:
 % qu [N,1]: the nodes visited by the BFS's in order from 1 to qts(end)
 % qts [ncc+1,1]: the queue tail indices for each connected component
 % ncc [1,1]: the number of connected components of G
+% G [array with N elements]: true where there are nodes that have been discovered
 % L [array with N elements]: label array
 %
 %
@@ -80,93 +85,86 @@ function [qu, qts, ncc, G, L] = bfs_conncomp(G, A, r, qu) %#codegen
 N = numel(G);
 
 if nargin < 4 || isempty(qu)
-    qu = zeros(N, 1); % pre-allocate queue storing linear indices to nodes
+  qu = zeros(N, 1); % pre-allocate queue storing linear indices to nodes
 end
-D = size(A,1); % maximal degree
+
 
 qt = 0; % Queue Tail
 qh = 0; % Queue Head
 
 if nargin < 3 || isempty(r)
-    % No root provided.  Sweep over all nodes, starting a new BFS rooted at
-    % any previously undiscovered node.
-    ncc = 0;             % Number of Connected Components
-    len = ceil(sqrt(N)); % A # hopefully greater than the final ncc
-    qts = zeros(len,1);  % Queue TailS
-    
-    for r = 1 : N
-        if G(r)
-            
-            ncc = ncc + 1; % Found another connected component
-            if ncc > len   % Too many components.  Double length of qts. Crude.
-                qts = [qts; zeros(len,1)]; %#ok<AGROW>
-                len = len * 2;
-            end
-            qts(ncc) = qt + 1; % Record search queue tail from this connected component
-            
-            % --- BEGIN BFS
-            qt = qt + 1; % Add r to queue
-            qu(qt) = r;
-            G(r) = false; % mark r as discovered
-            
-            while qt > qh
-                qh = qh + 1; % advance head of the queue
-                m = qu(qh); % me node; pop from head of queue
-                for d = 1 : D
-                    n = A(d,m); % neighbour node
-                    if n && G(n) % n is undiscovered
-                        qt = qt + 1;  % Add n to queue
-                        qu(qt) = n;
-                        G(n) = false; % mark n as discovered
-                    end
-                end
-            end
-            % --- END BFS
-            
-        end
+  % No root provided.  Sweep over all nodes, starting a new BFS rooted at
+  % any previously undiscovered node.
+  ncc = 0;             % Number of Connected Components
+  len = ceil(sqrt(N)); % A # hopefully greater than the final ncc
+  qts = zeros(len,1);  % Queue TailS
+  
+  for r = 1 : N
+    if G(r)
+      
+      ncc = ncc + 1; % Found another connected component
+      if ncc > len   % Too many components.  Double length of qts. Crude.
+        qts = [qts; zeros(len,1)]; %#ok<AGROW>
+        len = len * 2;
+      end
+      qts(ncc) = qt + 1; % Record search queue tail from this connected component
+      
+      [G, qu, qh, qt] = bfs(r, G, A, qu, qh, qt);
+      
     end
-    
-    qts(ncc+1) = qt + 1;  % Record search queue tail for final connected component
-    qts = qts(1 : ncc+1); % Trim
-    
+  end
+  
+  qts(ncc+1) = qt + 1;  % Record search queue tail for final connected component
+  qts = qts(1 : ncc+1); % Trim
+  
 else
-    % Root location specified.  Do one BFS from that root node.
-    
-    % --- BEGIN BFS
-    qt = qt + 1; % Add r to queue
-    qu(qt) = r;
-    G(r) = false; % mark r as discovered
-    
-    while qt > qh
-        qh = qh + 1; % advance head of the queue
-        m = qu(qh);  % me node; pop from head of queue
-        for d = 1 : D
-            n = A(d,m); % neighbour node
-            if n && G(n)
-                % n is on the surface, and undiscovered
-                qt = qt + 1;  % Add n to queue
-                qu(qt) = n;
-                G(n) = false; % mark n as discovered
-            end
-        end
-    end
-    % --- END BFS
-    
-    ncc = 1;
-    qts = [1; qt+1];
+  % Root location specified.  Do one BFS from that root node.
+  
+  [G, qu, ~, qt] = bfs(r, G, A, qu, qh, qt);
+  
+  ncc = 1;
+  qts = [1; qt+1];
 end
 
 if nargout >= 4
+  % Create the Label
+  G(:) = false;
+  G(qu(1 : qts(end)-1)) = true;
+  
+  if nargout == 5
     % Create the Label
-    G(:) = false;
-    G(qu(1 : qts(end)-1)) = true;
-    
-    if nargout == 5
-        % Create the Label
-        L = zeros(size(G));
-        for i = 1 : ncc
-            L(qu(qts(i) : qts(i+1)-1)) = i;
-        end
+    L = zeros(size(G));
+    for i = 1 : ncc
+      L(qu(qts(i) : qts(i+1)-1)) = i;
     end
-    
+  end
+  
 end
+
+
+end
+
+function [G, qu, qh, qt] = bfs(r, G, A, qu, qh, qt)
+D = size(A,1); % maximal degree
+
+qt = qt + 1; % Add r to queue
+qu(qt) = r;
+G(r) = false; % mark r as discovered
+
+while qt > qh
+  qh = qh + 1; % advance head of the queue
+  m = qu(qh);  % me node; pop from head of queue
+  for d = 1 : D
+    n = A(d,m); % neighbour node
+    if n && G(n)
+      % n is on the surface, and undiscovered
+      qt = qt + 1;  % Add n to queue
+      qu(qt) = n;
+      G(n) = false; % mark n as discovered
+    end
+  end
+end
+
+end
+
+
