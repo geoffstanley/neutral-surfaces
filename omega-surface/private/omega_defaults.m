@@ -34,6 +34,9 @@ function OPTS = omega_defaults()
 
 OPTS = struct();
 
+OPTS.DX = 1;  %      Zonal grid distance [m]
+OPTS.DY = 1;  % Meridional grid distance [m]
+
 OPTS.MLX = []; % Do not remove the Mixed Layer
 
 OPTS.FIGS_SHOW = false; % do not show figures
@@ -43,11 +46,16 @@ OPTS.INTERPFN = @ppc_linterp; % Use linear interpolation in the vertical dimensi
 OPTS.SppX = [];  % Pre-computed interpolation functions.  None given here.
 OPTS.TppX = [];  % Pre-computed interpolation functions.  None given here.
 
+OPTS.ITER_MIN = 1;  % minimum number of iterations
 OPTS.ITER_MAX = 10; % maximum number of iterations
 
 OPTS.ITER_START_WETTING = 1; % start wetting immediately
 
-OPTS.TOL_DENS = 1e-7; % Density tolerance [kg m^-3]
+OPTS.TOL_LRPD_L1 = 1e-7; % Tolerance in Locally Referenced Potential Density [kg m^-3]
+
+% quit when the L2 change of pressure on surface exceeds this value (set to
+% 0 to deactivate), in the same units as X [dbar] or [m].
+OPTS.TOL_X_CHANGE_L2 = inf;
 
 % Relative tolerance for LSQR. Since the matrix problem is overdetermined,
 % the relative residual will, in general, exceed this tolerance bound. As
@@ -55,6 +63,10 @@ OPTS.TOL_DENS = 1e-7; % Density tolerance [kg m^-3]
 % tolerances on density or pressure.  From several numerical tests,
 % the default relative tolerance of 1e-6 seems to work well.
 OPTS.TOL_LSQR_REL = 1e-6;
+
+% Error tolerance when root-finding to update surface, in the same units as
+% X [dbar] or [m].
+OPTS.TOL_X_UPDATE = 1e-4;
 
 OPTS.VERBOSE = 1; % show a moderate level of information
 

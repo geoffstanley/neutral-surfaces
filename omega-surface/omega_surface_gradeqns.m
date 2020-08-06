@@ -1,8 +1,9 @@
-function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
-% OMEGA_SURFACE  Create an omega surface, minimizing error from the neutral tangent plane.
+function [x, s, t, diags] = omega_surface_gradeqns(S, T, X, x, OPTS)
+% OMEGA_SURFACE_GRADEQNS  Create an omega surface, using the original 
+%                         gradient equations from Klocker et al (2009)
 %
 %
-% [x, s, t] = omega_surface(S, T, X, x, OPTS)
+% [x, s, t] = omega_surface_gradeqns(S, T, X, x, OPTS)
 % returns the pressure or depth x, practical / Absolute salinity s, and
 % potential / Conservative temperature t on an omega surface, initialized
 % from an approximately neutral surface of (input) pressure or depth x, in
@@ -187,10 +188,15 @@ assert(isstruct(OPTS) && isfield(OPTS, 'WRAP') && isvector(OPTS.WRAP) && length(
 nij = nj * ni;
 
 % Setup anonymous functions:
+shift_im1 = @(F) circshift(F, [+1, 0]); % if x is [lat x lon], this shifts south
+shift_jm1 = @(F) circshift(F, [0, +1]); % if x is [lat x lon], this shifts west
+flat = @(x) x(:);
 lead1 = @(x) reshape(x, [1 size(x)]);
 
 % Set up indices used when building the matrix mat
 idx = reshape(1:nij, ni, nj); % Linear index to each pixel on the full grid (ocean or not)
+idx_im1 = shift_im1(idx);     % Linear index to the pixel above (^)   the local pixel
+idx_jm1 = shift_jm1(idx);     % Linear index to the pixel left (<) of the local pixel
 
 % The density or specific volume change in each water column
 phi = nan(ni,nj);
@@ -216,12 +222,15 @@ OPTS = catstruct(omega_defaults(), OPTS);
 % Dereference for speed
 FIGS_SHOW = OPTS.FIGS_SHOW;
 FILE_ID = OPTS.FILE_ID;
-ITER_MIN = OPTS.ITER_MIN;
+FINAL_ROW_VALUES = OPTS.FINAL_ROW_VALUES;
 ITER_MAX = OPTS.ITER_MAX;
 ITER_START_WETTING = OPTS.ITER_START_WETTING;
+INTEGRATING_FACTOR = OPTS.INTEGRATING_FACTOR;
+TOL_LSQR_REL = OPTS.TOL_LSQR_REL;
 VERBOSE = OPTS.VERBOSE;
 WRAP = OPTS.WRAP;
 
+USE_INTEGRATING_FACTOR = ~isempty(OPTS.INTEGRATING_FACTOR);
 
 PIN_IJ = ~isempty(OPTS.REF_IJ);
 if PIN_IJ
@@ -245,6 +254,7 @@ DIAGS = (VERBOSE > 0) || (nargout > 3);
 
 DX = OPTS.DX;
 DY = OPTS.DY;
+HAVE_DX_DY = ~(isscalar(DX) && DX == 1 && isscalar(DY) && DY == 1);
 
 %% Just in time code generation
 Xvec = isvector(X);
@@ -270,7 +280,6 @@ if ITER_MAX > 1
 end
 
 %% Interpolate S and T casts onto surface
-
 [~, K, N] = size(OPTS.SppX);
 if K > 0
   assert(K == nk-1 && N == nij, 'size(SppX) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
@@ -349,7 +358,7 @@ for iter = 1 : ITER_MAX
   end
   
   % --- Accumulate regions via Breadth First Search
-  [qu, qts, ncc, ~, L] = bfs_conncomp_all_mex(isfinite(x), A4, [], qu);
+  [qu, qts, ncc] = bfs_conncomp_all_mex(isfinite(x), A4, [], qu);
   
   if DIAGS
     timer_wetting = toc(mytic);
@@ -357,14 +366,20 @@ for iter = 1 : ITER_MAX
   
   
   
-  
-  % --- Build the compact representation of the matrix optimization problem
+  % --- Calculate epsilon neutrality errors on the current surface
+  % Note that these are errors, not gradients, i.e. the density
+  % differences have not been divided by distance.
   mytic = tic;
-  [G, H, epsL2] = linprob_dens(x, s, t, [], [], 5);
+  epsL2 = 0;     % For accumulating the L2 norm of the epsilon error
+  if USE_INTEGRATING_FACTOR
+    [no_b_eps_i, no_b_eps_j, eps_i, eps_j] = ntp_error_s_t_withb(s, t, x, WRAP, INTEGRATING_FACTOR);
+  else
+    %[eps_i, eps_j] = ntp_error_s_t_withb(s, t, x, WRAP);
+    [eps_i, eps_j] = ntp_errors(s, t, x, 1, 1, true, false, WRAP);
+  end
   if DIAGS
     timer_ntperrors = toc(mytic);
   end
-  
 
   
   
@@ -372,6 +387,8 @@ for iter = 1 : ITER_MAX
   mytic = tic;
   phi(:) = nan;
   idx(:) = 0;    % Overwrite with linear indices to regions
+  epsL1 = 0;     % For accumulating the L1 norm of the epsilon error
+  neq_total = 0; % For accumulating the L2 norm of the epsilon error
   for icc = 1 : ncc % icc = index of region
     
     
@@ -389,61 +406,84 @@ for iter = 1 : ITER_MAX
     idx(I) = 1:nwc;
     
     
-    %PIN_HERE = PIN_IJ && I(binsrchleft(I0, I)) == I0;  % Alternative test option
-    PIN_HERE = PIN_IJ && icc == L(I0);
-    if PIN_HERE
-      % I0 is in this region.
-      I1 = I0;
-    else
-      % I0 is not in this region.  Pin the first cast we see, and adjust later
-      I1 = I(1);
-    end
-    
-    % Pin surface at I1 = I0 or I1 = I(1), by changing the I1'th equation
-    % to be phi[I1], to be 1 * phi[I1] = 0.
-    G(I1) = 0;
-    H(:,I1) = 0;
-    H(3,I1) = 1;
-    
-    % The above change renders the I1'th column on all rows irrelevant,
-    % since phi[I1] will be zero.  So, we may also set this column to 0,
-    % which we do here by setting the appropriate links in H to 0. This
-    % maintains symmetry of the matrix, and speeds up solution by a
-    % factor of about 2.
-    H(1,A5(5,I1)) = 0;
-    H(2,A5(4,I1)) = 0;
-    H(4,A5(2,I1)) = 0;
-    H(5,A5(1,I1)) = 0;
-    
-    % Build the RHS of the matrix problem
-    rhs = G(I);
-    
-    % Build indices for the rows of the sparse matrix
-    ii = repmat(1:nwc, 5, 1);
+    % Build the RHS of the matrix problem, containing neutrality errors
+    rhs = [eps_i(I); eps_j(I)];
+    good_eq = ~isnan(rhs);
+    rhs = [rhs(good_eq); 0]; % Ignore equations where the east or the north water column is invalid.
+    neq = length(rhs) - 1; % Number of equations, excluding density conserving equation.  Note neq > 0 is guaranteed, because bfs_conncomp used 4-connectivity
     
     % Build indices for the columns of the sparse matrix
-    % idx() remaps global indices to local indices for this region, numbered 1, 2, ...
-    jj = idx(A5(:,I));
+    jj = [[idx_im1(I); idx_jm1(I)], repmat(I, 2, 1)];
+    jj = idx(jj);  % Remap global indices to local indices for this region, numbered 1, 2, ...
+    jj = [flat(jj(good_eq,:)); (1:nwc).']; % Augment with the specific volume conserving equation
+    
+    % Build indices for the rows of the sparse matrix
+    ii = [flat(repelem((1:neq).', 1, 2)); repelem(neq+1, nwc, 1)];
     
     % Build the values of the sparse matrix
-    vv = H(:,I);
+    vv = [flat(repelem([-1, 1], neq, 1)); repelem(FINAL_ROW_VALUES, nwc,1)];
     
-    % Build the sparse matrix, with nwc rows and nwc columns
-    good = jj > 0; % Ignore connections to dry pixels (though they should have zero J anyway, this is faster)
-    mat = sparse( ii(good), jj(good), vv(good), nwc, nwc );
     
-    % Solve the matrix problem
-    sol = mat \ rhs;
+    % Build the sparse matrix, with neq+1 rows and nwc columns
+    mat = sparse( ii, jj, vv, neq+1, nwc );
     
-    if ~PIN_HERE
-      % Adjust solution, not in the region containing the reference cast, to have zero mean.
+    % Solve the LSQR problem
+    [sol,flag] = omega_lsqr(mat, rhs, TOL_LSQR_REL);
+    if flag > 0
+      warning('omega_surface:lsqr did not converge on iter %d, region %d', iter, icc);
+    end
+    
+    
+    if PIN_IJ
+      [PIN_HERE, I0_in_I] = ismember(I0, I);
+    else
+      PIN_HERE = false;
+    end
+    if PIN_HERE
+      % Force phi(i0,j0) = 0 exactly.  This keeps the surface pinned at
+      % its initial depth in water column (i0,j0).  Note, there could be
+      % multiple connected components, and the reference column exists in
+      % only one of them.  The other connected components are heaved up
+      % or down by this density (phi) amount.
+      sol = sol - sol(I0_in_I);
+    else
+      % Force mean(phi) = 0 exactly. The LSQR solution only tries to keep
+      % mean(phi) near zero in a least-squares sense, while also trying to
+      % make the neutrality errors zero. When FINAL_ROW_VALUES is badly
+      % chosen, |phi|_1 can wobble as iterations proceed, but forcing
+      % mean(phi) = 0 seems to help |phi|_1 to decrease monotonically.
       sol = sol - mean(sol);
     end
+    
     
     % Save solution
     phi(I) = sol;
     
+    
+    % Accumulate errors from this region
+    if DIAGS
+      rhs = rhs(1:end-1); % Remove final, augmented row
+      if USE_INTEGRATING_FACTOR
+        rhs_no_b = [no_b_eps_i(I); no_b_eps_j(I)];
+        rhs_no_b(isnan(rhs_no_b)) = 0;
+        epsL1 = epsL1 + sum(abs(rhs_no_b));
+        epsL2 = epsL2 + sum(rhs_no_b .* rhs_no_b);
+      else
+        if HAVE_DX_DY
+          DXDY = [DX(I); DY(I)];
+          rhs = rhs ./ DXDY(good_eq);
+        end
+        epsL1 = epsL1 + sum(abs(rhs));
+        epsL2 = epsL2 + sum(rhs .* rhs);
+      end
+      neq_total = neq_total + neq;
+    end
+    
   end % icc
+  
+  if USE_INTEGRATING_FACTOR
+    phi = phi ./ INTEGRATING_FACTOR;
+  end
   
   
   % Build statistics about solution
@@ -484,6 +524,8 @@ for iter = 1 : ITER_MAX
     
     x_change_L1   = nanmean(abs(x_change(:)));
     x_change_Linf = max(abs(x_change(:)));
+    
+    epsL2 = sqrt(epsL2 / neq_total);
     
     [eps_i, eps_j] = ntp_errors(s, t, x, DX, DY, true, false, WRAP);
     epsL2_after = nanrms([eps_i(:); eps_j(:)]);
@@ -542,7 +584,7 @@ for iter = 1 : ITER_MAX
   end
   
   % --- Check for convergence
-  if (phiL1 < TOL_LRPD_L1 || x_change_L2 < TOL_X_CHANGE_L2) && iter >= ITER_MIN
+  if phiL1 < TOL_LRPD_L1 || x_change_L2 < TOL_X_CHANGE_L2
     break
   end
   
