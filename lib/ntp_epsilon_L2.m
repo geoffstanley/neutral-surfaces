@@ -1,4 +1,4 @@
-function epsL2 = ntp_epsilon_L2(x, s, t, wrap)
+function epsL2 = ntp_epsilon_L2(x, s, t, WRAP, DX, DY)
 % NTP_EPSILON_L2 Calculate the L2 norm of epsilon neutrality errors
 %
 %
@@ -7,9 +7,9 @@ function epsL2 = ntp_epsilon_L2(x, s, t, wrap)
 % depth or pressure is x, whose practical / Absolute salinity is s, and whose
 % potential / Conservative temperature is t. 
 %
-% epsL2 = ntp_epsilon_L2(x, s, t, wrap)
+% epsL2 = ntp_epsilon_L2(x, s, t, WRAP)
 % also specifies periodicity.  The i'th dimension is treated as periodic
-% iff wrap(i) is true.
+% iff WRAP(i) is true.
 %
 % See also: ntp_errors
 
@@ -40,17 +40,21 @@ function epsL2 = ntp_epsilon_L2(x, s, t, wrap)
 % Changes     : --
 
 
-if nargin < 4 || isempty(wrap)
+if nargin < 4 || isempty(WRAP)
   % doubly periodic domain, by default
-  wrap = [1 1]; 
+  WRAP = [1 1]; 
+end
+
+if nargin < 5 || isempty(DX)
+  DX = 1;
+end
+if nargin < 6 || isempty(DY)
+  DY = 1;
 end
 
 % Calculate epsilon neutrality errors
-[eps_i, eps_j] = ntp_errors(s, t, x, 1, 1, true, false, wrap);
-
-% Calculate number of valid neutral links
-neq = sum(isfinite(eps_i(:))) + sum(isfinite(eps_j(:)));
+[eps_i, eps_j] = ntp_errors(s, t, x, DX, DY, true, false, WRAP);
 
 % Calculate L2 norm of the epsilon vector field
-epsL2 = sqrt((nansum(eps_i(:).^2) + nansum(eps_j(:).^2)) / neq);
+epsL2 = nanrms([eps_i(:); eps_j(:)]);
 
