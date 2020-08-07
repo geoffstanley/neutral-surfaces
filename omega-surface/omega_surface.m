@@ -157,7 +157,7 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.1
+% Version   : 2.2.0
 %
 % Modified by : --
 % Date        : --
@@ -352,7 +352,7 @@ for iter = 1 : ITER_MAX
   end
   
   % --- Accumulate regions via Breadth First Search
-  [qu, qts, ncc, ~, L] = bfs_conncomp_all_mex(isfinite(x), A4, [], qu);
+  [qu, qts, ncc, ~, Lcc] = bfs_conncomp_all_mex(isfinite(x), A4, [], qu);
   
   if DIAGS
     timer_wetting = toc(mytic);
@@ -364,7 +364,7 @@ for iter = 1 : ITER_MAX
   % --- Build the compact representation of the matrix optimization problem
   mytic = tic;
   if POISSON
-    [G, H, epsL2] = linprob_dens(x, s, t, [], [], 5);
+    [D, L, epsL2] = omega_build_poisson(x, s, t);
   else
     [eps_i, eps_j] = ntp_errors(s, t, x, 1, 1, true, false, WRAP);
     epsL2 = nanrms([eps_i(:); eps_j(:)]);
@@ -376,9 +376,9 @@ for iter = 1 : ITER_MAX
   % --- Build and solve sparse matrix problem
   mytic = tic;
   if POISSON
-    [phi, G, H] = omega_matsolve_poisson(G, H, A5, L, I0, qu, qts);
+    [phi, D, L] = omega_matsolve_poisson(D, L, A5, Lcc, I0, qu, qts);
   else
-    phi = omega_matsolve_grad(eps_i, eps_j, idx_im1, idx_jm1, L, I0, qu, qts);
+    phi = omega_matsolve_grad(eps_i, eps_j, idx_im1, idx_jm1, Lcc, I0, qu, qts);
   end
   if DIAGS
     timer_solver = toc(mytic);
