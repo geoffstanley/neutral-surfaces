@@ -197,8 +197,9 @@ else
     D_Y = @(F)  F - jm1(F);
 end
     
-
-r = eos(s, t, x); % in-situ density (or specific volume)
+if ~use_s_t || nargout >= 3
+  r = eos(s, t, x); % in-situ density (or specific volume)
+end
 
 % Begin calculations for errors in x direction
 sa = A_X(s);
