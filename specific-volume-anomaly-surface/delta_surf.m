@@ -1,24 +1,25 @@
-function [x,s,t,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, OPTS)
+function [x,s,t,d0,s0,t0,diags] = delta_surf(S, T, X, s0, t0, var, OPTS)
 %DELTASURF Specific volume anomaly surface by nonlinear solution in each water column.
 %
 %
-% x = delta_surf(S, T, X, s0, t0, d0)
-% finds pressure or depth x of the isosurface d0 of delta = eos(S,T,X) -
-% eos(s0,t0,X) with reference practical / Absolute salinity s0 and
-% reference potential / Conservative temperature t0, in an ocean with
-% practical / Absolute salinity S and potential / Conservative temperature
-% T at data sites where the pressure or depth is X.  The equation of state
-% is given by eos.m in MATLAB's path, which accepts S, T, and X as its 3
-% inputs.  For a non-Boussinesq ocean, x and X are pressure [dbar] and eos
-% gives the specific volume.  For a Boussinesq ocean, x and X are depth [m]
-% positive and increasing down, and eos gives the in-situ density.
+% [x,s,t] = delta_surf(S, T, X, s0, t0, d0)
+% finds pressure or depth x -- and its salinity s and temperature t -- of
+% the isosurface d0 of delta = eos(S,T,X) - eos(s0,t0,X) with reference
+% practical / Absolute salinity s0 and reference potential / Conservative
+% temperature t0, in an ocean with practical / Absolute salinity S and
+% potential / Conservative temperature T at data sites where the pressure
+% or depth is X.  The equation of state is given by eos.m in MATLAB's path,
+% which accepts S, T, and X as its 3 inputs.  For a non-Boussinesq ocean, x
+% and X are pressure [dbar] and eos gives the specific volume.  For a
+% Boussinesq ocean, x and X are depth [m] positive and increasing down, and
+% eos gives the in-situ density.
 %
-% [x, d0] = delta_surf(S, T, X, s0, t0, [i0, j0, x0])
+% [x, s, t, d0] = delta_surf(S, T, X, s0, t0, [i0, j0, x0])
 % as above but finds the delta isosurface, delta = d0, that intersects the
 % reference cast at grid indices (i0,j0) at pressure or depth x0.
 %
-% [x, d0, s0, t0] = delta_surf(S, T, X, [], [], [i0, j0, x0])
-% as above but also finds the reference practical / Absolute salinity s0
+% [x, s, t, d0, s0, t0] = delta_surf(S, T, X, [], [], [i0, j0, x0])
+% as above but also chooses the reference practical / Absolute salinity s0
 % and reference potential / Conservative temperature t0 by interpolating S
 % and T at the reference cast (i0,j0) to pressure or depth x0.
 %
@@ -51,6 +52,7 @@ function [x,s,t,d0,s0,t0] = delta_surf(S, T, X, s0, t0, var, OPTS)
 % d0 [1, 1]: isovalue of the delta surface
 % s0 [1, 1]: reference S that defines delta
 % t0 [1, 1]: reference T that defines delta
+% diags [struct]: diagnostics of the solution and computation time
 %
 %
 % --- Options:
@@ -127,6 +129,8 @@ else
   OPTS = catstruct(DEFS, OPTS); 
 end
 
+DIAGS = nargout >= 7;
+
 
 % Run codegen to create MEX function handling the main computation
 ni_ = max(ni, 2048); % using variable size code generation and avoiding
@@ -197,5 +201,16 @@ D = sort(eos(S, T, X) - eos(s0, t0, X), 1, sortdir);
 % Get started with the discrete version (and linear interpolation)
 x = interp1qn(d0, D, X);
 
+% Start timer after all the setup has been done.
+iter_tic = tic();
+
 % Solve non-linear root finding problem in each cast
 [x, s, t] = delta_surf_vertsolve_mex(SppX, TppX, X, BotK, x, s0, t0, d0, OPTS.X_TOL);
+
+if DIAGS
+    diags = struct();
+    diags.clocktime = toc(iter_tic);
+    [eps_i, eps_j] = ntp_errors(s, t, x, OPTS.DX, OPTS.DY, true, false, OPTS.WRAP);
+    diags.epsL2 = nanrms([eps_i(:); eps_j(:)]);
+end
+

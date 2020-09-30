@@ -2,18 +2,18 @@ function [x,s,t,d0,diags] = pot_dens_surf(S, T, X, xref, var, OPTS)
 %POT_DENS_SURF  Potential density surface by nonlinear solution in each water column.
 %
 %
-% x = pot_dens_surf(S, T, X, xref, d0)
-% finds the pressure or depth x of the isosurface d0 of potential density
-% referenced to xref, in the ocean with practical / Absolute salinity S and
-% potential / Conservative temperature T at data sites where the and
-% pressure or depth is X.  The equation of state is given by eos.m in
-% MATLAB's path, which accepts S, T, xref as its 3 inputs. For a
-% non-Boussinesq ocean, x, X, and xref should be pressure [dbar].  For a
-% Boussinesq ocean, x, X, and xref should be depth [m], positive and
-% increasing down.  Algorithmic parameters are provided in OPTS (see
-% "Options" below for further details).
+% [x,s,t] = pot_dens_surf(S, T, X, xref, d0)
+% finds the pressure or depth x -- and its salinity s and temperature t --
+% of the isosurface d0 of potential density referenced to xref, in the
+% ocean with practical / Absolute salinity S and potential / Conservative
+% temperature T at data sites where the and pressure or depth is X.  The
+% equation of state is given by eos.m in MATLAB's path, which accepts S, T,
+% xref as its 3 inputs. For a non-Boussinesq ocean, x, X, and xref should
+% be pressure [dbar].  For a Boussinesq ocean, x, X, and xref should be
+% depth [m], positive and increasing down.  Algorithmic parameters are
+% provided in OPTS (see "Options" below for further details).
 %
-% [p,d0] = pot_dens_surf(S, T, X, xref, [i0, j0, x0])
+% [x,s,t,d0] = pot_dens_surf(S, T, X, xref, [i0, j0, x0])
 % as above but finds the surface intersecting a reference cast given by
 % grid indices (i0,j0) at pressure or depth x0.
 %
@@ -37,12 +37,14 @@ function [x,s,t,d0,diags] = pot_dens_surf(S, T, X, xref, var, OPTS)
 %
 % Note: X must increase monotonically along its first dimension.
 %
+%
 % --- Output:
 % x [ni, nj]: pressure [dbar] or depth [m] of the surface
 % s [ni, nj]: practical / Absolute salinity on the surface
 % t [ni, nj]: potential / Conservative temperature the surface
 % d0 [1, 1]: potential density [kg m^-3] or specific volume [m^3 kg^-1] of
 %            the surface
+% diags [struct]: diagnostics of the solution and computation time
 %
 %
 % --- Options:
