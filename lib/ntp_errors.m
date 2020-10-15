@@ -2,7 +2,7 @@ function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav
 %NTP_ERRORS  The epsilon neutrality error and slope error from the neutral tangent plane
 %
 %
-% [ex,ey] = ntp_errors(s,t,x,dx,dy,centre,wrap)
+% [ex,ey] = ntp_errors(s,t,x,dx,dy,use_s_t,centre,wrap)
 % computes the zonal and meridional neutrality errors, ex and ey, for an
 % approximately neutral surface on which the practical / Absolute salinity
 % is s, the potential / Conservative temperature is t, and the pressure or
@@ -21,7 +21,7 @@ function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav
 % Data is treated periodic in the i'th (i=1 or 2) dimension of x if and
 % only if wrap(i) is true.
 %
-% [ex,ey,sx,sy] = ntp_errors(s,t,x,dx,dy,centre,wrap,grav,S,T,X)
+% [ex,ey,sx,sy] = ntp_errors(s,t,x,dx,dy,use_s_t,centre,wrap,grav,S,T,X)
 % also computes the zonal and meridional slope errors, sx and sy, for an
 % ocean of practical / Absolute salinity S and potential / Conservative
 % temperature T at datasites where the pressure or depth is X.
