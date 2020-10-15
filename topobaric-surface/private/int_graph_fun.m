@@ -49,7 +49,7 @@ function [F, F2] = int_graph_fun(f, arc_from, arc_to, node_fn, graph, bfs_parent
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
-% Copyright (C) 2019  Geoff Stanley
+% Copyright (C) 2020  Geoff Stanley
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -67,7 +67,6 @@ function [F, F2] = int_graph_fun(f, arc_from, arc_to, node_fn, graph, bfs_parent
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

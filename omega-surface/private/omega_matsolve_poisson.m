@@ -57,7 +57,6 @@ function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu,
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.2.0
 %
 % Modified by : --
 % Date        : --

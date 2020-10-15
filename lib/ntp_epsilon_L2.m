@@ -15,7 +15,7 @@ function epsL2 = ntp_epsilon_L2(x, s, t, WRAP, DX, DY)
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
-% Copyright (C) 2019  Geoff Stanley
+% Copyright (C) 2020  Geoff Stanley
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@ function epsL2 = ntp_epsilon_L2(x, s, t, WRAP, DX, DY)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.2.0
 %
 % Modified by : --
 % Date        : --

@@ -91,7 +91,6 @@ function d1 = int_grad_lrpd(x0, d0, S, T, X, x1, s1, t1, dx, interpfn)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.2.0
 %
 % Modified by : --
 % Date        : --

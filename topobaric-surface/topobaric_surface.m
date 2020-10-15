@@ -274,7 +274,7 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
-% Copyright (C) 2019  Geoff Stanley
+% Copyright (C) 2020  Geoff Stanley
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -292,7 +292,6 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --

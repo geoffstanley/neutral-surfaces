@@ -18,7 +18,6 @@ function [x,flag,relres] = omega_lsqr(A,b,tol)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --

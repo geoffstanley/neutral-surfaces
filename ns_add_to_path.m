@@ -5,7 +5,7 @@ function ns_add_to_path()
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
-% Copyright (C) 2019  Geoff Stanley
+% Copyright (C) 2020  Geoff Stanley
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ function ns_add_to_path()
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.1
 %
 % Modified by : --
 % Date        : --

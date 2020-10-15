@@ -18,7 +18,7 @@ function bfs_conncomp_codegen(nk, ni, nj, Xvec, r, OPTS)
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
-% Copyright (C) 2019  Geoff Stanley
+% Copyright (C) 2020  Geoff Stanley
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -36,7 +36,6 @@ function bfs_conncomp_codegen(nk, ni, nj, Xvec, r, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-% Version   : 2.1.0
 %
 % Modified by : --
 % Date        : --
