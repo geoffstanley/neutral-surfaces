@@ -15,7 +15,7 @@ The specific volume anomaly (Montgomery 1937) is the difference between the  in-
 
 #### Omega surfaces
 
-Omega surfaces (Klocker et al., 2009) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
+Omega surfaces (Klocker et al., 2009;  Stanley et al. 2020) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
 
 #### Topobaric surfaces
 
@@ -72,15 +72,11 @@ If this does not work, see manual_install.md.
 
 
 ## Usage:
-`./run/examples.m` gives examples to create the approximately neutral surfaces and geostrophic streamfunctions provided in this toolbox
+The `./run` folder contains scripts to produce the results shown in various papers.
 
-`./run/run_ECCO2.m` generates most figures in “Neutral surface topology” and “The exact geostrophic streamfunction for neutral surfaces”.
+Note: The scripts for old papers are not necessarily updated as the codebase evolves; to guarantee reproducibility one must roll back the codebase to the time of the appropriate script.
 
-`./run/run_OCCA.m `generates Figure 3 in “Neutral surface topology”.
-
-`./run/pitch.m` generates Figure B.7 in “Neutral surface topology”.
-
-Note, to reproduce the figures of Stanley (2019a,b) exactly, use the v1.0 Topobaric-Surface code available at https://github.com/geoffstanley/Topobaric-Surface
+To reproduce the figures of Stanley (2019a,b) exactly, use the v1.0 Topobaric-Surface code available at https://github.com/geoffstanley/Topobaric-Surface
 
 
 ## ReCon
@@ -94,7 +90,7 @@ Doraiswamy, H. & Natarajan, V. Computing Reeb Graphs as a Union of Contour Trees
 
 The ReCon code included with Topobaric Surface has been modified to work with double precision and to allow the input and output to be from memory rather than files on the hard disk.
 
-Note that ReCon requires Java 1.5 or higher, though it must be built for the version of the Java Runtime Environment that is packaged with MATLAB.  
+Note that ReCon requires Java 1.5 or higher, though it must be built for the version of the Java Runtime Environment that is packaged with MATLAB.
 
 
 ## References:
@@ -118,6 +114,8 @@ Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling 138, 88–106. h
 
 Stanley, G.J., 2019b. The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling 138, 107–121. https://doi.org/10.1016/j.ocemod.2019.04.002
 
+Stanley, G.J., McDougall, T.J., Barker, P.M., 2020. Algorithmic improvements to finding approximately neutral surfaces. J. Adv. Model. Earth Syst. submitted.
+
 Wüst, G., 1935. The stratosphere of the Atlantic ocean. Scientific Results of the German Atlantic Expedition of the Research Vessel “Meteor” 1925–27 6.
 
 Zhang, H.-M., Hogg, N.G., 1992. Circulation and water mass balance in the Brazil Basin. Journal of marine research 50, 385–420. https://doi.org/10.1357/002224092784797629
@@ -137,5 +135,3 @@ Author(s) : Geoff Stanley
 Email     : g.stanley@unsw.edu.au
 
 Email     : geoffstanley@gmail.com
-
-Version   : 2.1.0
