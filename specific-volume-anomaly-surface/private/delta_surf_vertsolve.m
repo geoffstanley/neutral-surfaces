@@ -1,4 +1,4 @@
-function [x,s,t] = delta_surf_vertsolve(SppX, TppX, X, BotK, x, s0, t0, d0, tolx) %#codegen
+function [x,s,t] = delta_surf_vertsolve(SppX, TppX, X, BotK, x, s_ref, t_ref, d0, tolx) %#codegen
 %DELTA_SURF_VERTSOLVE  Helper function for delta_surf, solving non-linear
 %                      root finding problem in each water column.
 %
@@ -55,13 +55,13 @@ for n = 1:N
         
         % Search for a sign-change, expanding outward from an initial guess 
         [lb, ub] = fzero_guess_to_bounds(@myfcn, x(n), Xn(1), Xn(k), ...
-          SppXn, TppXn, Xn, s0, t0, d0);
+          SppXn, TppXn, Xn, s_ref, t_ref, d0);
         
         if ~isnan(lb)
           % A sign change was discovered, so a root exists in the interval.
           % Solve the nonlinear root-finding problem using Brent's method
           x(n) = fzero_brent(@myfcn, lb, ub, tolx, ...
-            SppXn, TppXn, Xn, s0, t0, d0);
+            SppXn, TppXn, Xn, s_ref, t_ref, d0);
           
           % Interpolate S and T onto the updated surface
           [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
@@ -76,7 +76,7 @@ end
 
 end
 
-function out = myfcn(x, SppX, TppX, X, s0, t0, d0)
+function out = myfcn(x, SppX, TppX, X, s_ref, t_ref, d0)
 [s,t] = ppc_val2(X, SppX, TppX, x);
-out = eos(s, t, x) - eos(s0, t0, x) - d0 ;
+out = eos(s, t, x) - eos(s_ref, t_ref, x) - d0 ;
 end

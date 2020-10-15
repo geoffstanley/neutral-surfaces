@@ -105,16 +105,16 @@ for n = 1:N
         rn = eos(s(n), t(n), x(n));
         
         % Search for a sign-change, expanding outward from an initial guess 
-        %[lb, ub] = fzero_guess_to_bounds(@diff_avgx, x(n), Xn(1), Xn(k), ...
-        %  SppXn, TppXn, Xn, s(n), t(n), x(n), d);  % DEV:  testing reference x = average of current and point-to-be
+        [lb, ub] = fzero_guess_to_bounds(@diff_avgx, x(n), Xn(1), Xn(k), ...
+          SppXn, TppXn, Xn, s(n), t(n), x(n), d);
         [lb, ub] = fzero_guess_to_bounds(@diff_x0, x(n), Xn(1), Xn(k), ...
           SppXn, TppXn, Xn, rn, x(n), d);
         
         if ~isnan(lb)
           % A sign change was discovered, so a root exists in the interval.
           % Solve the nonlinear root-finding problem using Brent's method
-          %x(n) = fzero_brent(@diff_avgx, lb, ub, tolx, ...
-          %  SppXn, TppXn, Xn, s(n), t(n), x(n), d);  % DEV:  testing reference x = average of current and point-to-be
+          x(n) = fzero_brent(@diff_avgx, lb, ub, tolx, ...
+            SppXn, TppXn, Xn, s(n), t(n), x(n), d);
           x(n) = fzero_brent(@diff_x0, lb, ub, tolx, ...
             SppXn, TppXn, Xn, rn, x(n), d);
           
@@ -147,7 +147,7 @@ out =  eos(s, t, x0) + d - r0 ;
 
 end
 
-%{
+%
 function out = diff_avgx(x, SppX, TppX, X, s0, t0, x0, d)
 % Evaluate difference between (a) eos at location on the cast (S, T, X)
 % where the pressure or depth is x, and (b) d + eos of the bottle (s0, t0,

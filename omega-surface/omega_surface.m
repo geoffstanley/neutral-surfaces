@@ -13,7 +13,10 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 % its partial derivatives with respect to S and T are given by the
 % functions eos.m and eos_s_t.m in MATLAB's path.  Algorithmic parameters
 % are provided in OPTS (see "Options" below for further details).  For
-% units, see "Equation of State" below.
+% units, see "Equation of State" below.  The domain is assumed to be doubly
+% periodic; for non-periodic dimensions, pad the data in that dimension
+% with NaN (if this is not already the case). 
+%
 %
 % --- Input:
 %  S [nk, ni, nj]: practical / Absolute Salinity
@@ -127,10 +130,6 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 %   VERBOSE [scalar]: 0 for no output; 1 for summary of each iteration;
 %                     2 for detailed information on each iteration.
 %                     Default: 1.
-% * WRAP [2 element vector]: determines which dimensions are treated
-%       periodic. Set WRAP(1) to true when periodic in the 1st dimension of
-%       x (ni); set WRAP(2) to true when periodic in the 2nd dimension of x
-%       (nj).
 %
 %
 % --- References:
@@ -171,16 +170,13 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 % Lower case letters, e.g. x, denote 2D scalar fields    [ni,nj]
 % Developmental things are marked with a comment "DEV"
 
-%iter_tic = tic; % timer for the initialization and for each iterative loop
-
 %% Simple checks and preparations:
 S = double(S);
 T = double(T);
 X = double(X);
 x = double(x);
 
-% Process mandatory options
-assert(isstruct(OPTS) && isfield(OPTS, 'WRAP') && isvector(OPTS.WRAP) && length(OPTS.WRAP) == 2, 'OPTS.WRAP must be provided as a vector of length 2');
+WRAP = true;  % This code demands a periodic domain.  Add NaN walls for a non-periodic domain. 
 
 % Get size of 3D hydrography
 [nk,ni,nj] = size(S);
@@ -188,19 +184,17 @@ nij = nj * ni;
 
 % Setup anonymous functions:
 lead1 = @(x) reshape(x, [1 size(x)]);
+autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
 
 % Pre-calculate things for Breadth First Search
 qu = zeros(nij, 1); % queue storing linear indices to pixels
-A5 = grid_adjacency([ni,nj], 5, OPTS.WRAP); % all grid points that are adjacent to all grid points, using 5-connectivity
-A4 = A5([1,2,4,5],:); % all grid points that are adjacent to all grid points, using 4-connectivity
-%A = grid_adjacency([ni,nj], 4, OPTS.WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
+A4 = grid_adjacency([ni,nj], 4, WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
 
 % Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
 BotK = squeeze(sum(isfinite(S), 1));
 
-
-msg1 = 'Initial surface has ................................................   mean(x) %.2f; mean(eos) %.6e\n';
-msg2 = 'Iter %2d (%6.2f sec) log_10(|eps|_2) = %9.6f --> %9.6f by |phi''|_1 = %.6e; %03d regions; %4d casts freshly wet; |Delta_x|_2 = %.6e; mean(x) = %.2f; mean(eos) = %.6f\n';
+msg1 = 'Initial surface has  log_10(|eps|_2) == %9.6f ..................   mean(x) %.2f; mean(eos) %.6e\n';
+msg2 = 'Iter %2d (%6.2f sec) log_10(|eps|_2) == %9.6f by |phi''|_1 = %.6e; %03d regions; %4d casts freshly wet; |Delta_x|_2 = %.6e; mean(x) = %.2f; mean(eos) = %.6f\n';
 
 %% Process OPTS
 
@@ -214,15 +208,18 @@ ITER_MIN = OPTS.ITER_MIN;
 ITER_MAX = OPTS.ITER_MAX;
 ITER_START_WETTING = OPTS.ITER_START_WETTING;
 VERBOSE = OPTS.VERBOSE;
-WRAP = OPTS.WRAP;
 REF_IJ = OPTS.REF_IJ;
 POISSON = OPTS.POISSON; 
+TOL_X_CHANGE_L2 = OPTS.TOL_X_CHANGE_L2;
+TOL_X_UPDATE = OPTS.TOL_X_UPDATE; % tolerance in pressure [dbar] during vertical solve.
+
+DIAGS = (VERBOSE > 0) || (nargout > 3);
 
 PIN = ~isempty(REF_IJ);
 if PIN
-  I0 = sub2ind([ni, nj], REF_IJ(1), REF_IJ(2));
+  m_ref = sub2ind([ni, nj], REF_IJ(1), REF_IJ(2));
 else
-  I0 = [];
+  m_ref = [];
 end
 
 eos0 = eos(34.5, 3, 1000);
@@ -232,28 +229,41 @@ else
   TOL_LRPD_L1 = OPTS.TOL_LRPD_L1 * 1000^2; % Specific volume tolerance [m^3 kg^-1]
 end
 
-TOL_X_CHANGE_L2 = OPTS.TOL_X_CHANGE_L2;
+% Soft notation, similar to that in MOM6: i = I - 1/2, j = J - 1/2
+% AREA_iJ = OPTS.AREA_iJ;   % Area [m^2] centred at (I-1/2, J)
+% AREA_Ij = OPTS.AREA_Ij;   % Area [m^2] centred at (I, J-1/2)
+DIST1_iJ = OPTS.DIST1_iJ; % Distance [m] in 1st dimension centred at (I-1/2, J)
+DIST2_Ij = OPTS.DIST2_Ij; % Distance [m] in 2nd dimension centred at (I, J-1/2)
+DIST2_iJ = OPTS.DIST2_iJ; % Distance [m] in 2nd dimension centred at (I-1/2, J)
+DIST1_Ij = OPTS.DIST1_Ij; % Distance [m] in 1st dimension centred at (I, J-1/2)
+%DIST2_iJ = AREA_iJ ./ DIST1_iJ; % Distance [m] in 2nd dimension centred at (I-1/2, J)
+%DIST1_Ij = AREA_Ij ./ DIST2_Ij; % Distance [m] in 1st dimension centred at (I, J-1/2)
 
-TOL_X_UPDATE = OPTS.TOL_X_UPDATE; % tolerance in pressure [dbar] during vertical solve.
-
-DIAGS = (VERBOSE > 0) || (nargout > 3);
-
-DX = OPTS.DX;
-DY = OPTS.DY;
-
-if ~POISSON
-  % Set up indices used when building the matrix mat
-  shift_im1 = @(F) circshift(F, [+1, 0]); % if x is [lat x lon], this shifts south
-  shift_jm1 = @(F) circshift(F, [0, +1]); % if x is [lat x lon], this shifts west
-  idx = reshape(1:nij, ni, nj); % Linear index to each pixel on the full grid (ocean or not)
-  idx_im1 = shift_im1(idx);     % Linear index to the pixel above (^)   the local pixel
-  idx_jm1 = shift_jm1(idx);     % Linear index to the pixel left (<) of the local pixel
+if POISSON
+  DIST2on1_iJ = DIST2_iJ ./ DIST1_iJ;
+  DIST1on2_Ij = DIST1_Ij ./ DIST2_Ij;
+  %DIST2on1_iJ = AREA_iJ ./ (DIST1_iJ .* DIST1_iJ);
+  %DIST1on2_Ij = AREA_Ij ./ (DIST2_Ij .* DIST2_Ij);
+else
+  sqrtDIST2on1_iJ = sqrt(DIST2_iJ ./ DIST1_iJ);
+  sqrtDIST1on2_Ij = sqrt(DIST1_Ij ./ DIST2_Ij);
+  % sqrtDIST2on1_iJ = sqrt(AREA_iJ) ./ DIST1_iJ;
+  % sqrtDIST1on2_Ij = sqrt(AREA_Ij) ./ DIST2_Ij;
 end
+
+% auto expand to [ni,nj] sizes, for eps_norms()
+DIST1_iJ = autoexp(DIST1_iJ); % Distance [m] in 1st dimension centred at (I-1/2, J)
+DIST2_Ij = autoexp(DIST2_Ij); % Distance [m] in 2nd dimension centred at (I, J-1/2)
+DIST2_iJ = autoexp(DIST2_iJ); % Distance [m] in 2nd dimension centred at (I-1/2, J)
+DIST1_Ij = autoexp(DIST1_Ij); % Distance [m] in 1st dimension centred at (I, J-1/2)
+AREA_iJ = autoexp(DIST1_iJ .* DIST2_iJ);   % Area [m^2] centred at (I-1/2, J)
+AREA_Ij = autoexp(DIST1_Ij .* DIST2_Ij);   % Area [m^2] centred at (I, J-1/2)
+
 
 %% Just in time code generation
 Xvec = isvector(X);
-ni_ = max(ni, 2048); % using variable size code generation and avoiding
-nj_ = max(nj, 2048); % recompiling all the time
+ni_ = max(ni, 4096); % using variable size code generation and avoiding
+nj_ = max(nj, 4096); % recompiling all the time
 omega_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
 bfs_conncomp_codegen(nk, ni_, nj_, Xvec, false, OPTS);
 if ITER_START_WETTING <= ITER_MAX
@@ -299,6 +309,7 @@ if DIAGS
   diags = struct();
   diags.mean_x      = nan(ITER_MAX + 1, 1);
   diags.mean_eos    = nan(ITER_MAX + 1, 1);
+  diags.epsL1       = nan(ITER_MAX + 1, 1);
   diags.epsL2       = nan(ITER_MAX + 1, 1);
   
   diags.phiL1         = nan(ITER_MAX, 1);
@@ -308,26 +319,22 @@ if DIAGS
   diags.num_regions   = nan(ITER_MAX, 1);
   diags.freshly_wet   = nan(ITER_MAX, 1);
   diags.relaxation    = nan(ITER_MAX, 1);
-  diags.epsL2_before  = nan(ITER_MAX, 1);
   diags.clocktime     = nan(ITER_MAX, 1);
   
-  diags.timer_wetting   = nan(ITER_MAX, 1);
-  diags.timer_ntperrors = nan(ITER_MAX, 1);
   diags.timer_solver    = nan(ITER_MAX, 1);
   diags.timer_update    = nan(ITER_MAX, 1);
   
   % Diagnostics about state BEFORE this (first) iteration
-  [eps_i, eps_j] = ntp_errors(s, t, x, DX, DY, true, false, WRAP);
-  epsL2 = nanrms([eps_i(:); eps_j(:)]);
+  [epsL2, epsL1] = eps_norms(s, t, x, true, WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
   mean_x = nanmean(x(:));
   mean_eos = nanmean(eos(s(:), t(:), x(:)));
+  diags.epsL1(1) = epsL1;
   diags.epsL2(1) = epsL2;
   diags.mean_x(1) = mean_x;
   diags.mean_eos(1) = mean_eos;
-  %diags.clocktime(1) = toc(iter_tic);
   
   if VERBOSE > 0
-    fprintf(FILE_ID, msg1, mean_x, mean_eos);
+    fprintf(FILE_ID, msg1, log10(abs(epsL2)), mean_x, mean_eos);
   end
   
 end
@@ -344,7 +351,6 @@ for iter = 1 : ITER_MAX
   end
   
   % --- Wetting via Breadth First Search
-  mytic = tic;
   if iter >= ITER_START_WETTING
     [s, t, x, freshly_wet, qu] = bfs_wet_mex(SppX, TppX, X, s, t, x, TOL_X_UPDATE, A4, BotK, qu);
   else
@@ -352,33 +358,17 @@ for iter = 1 : ITER_MAX
   end
   
   % --- Accumulate regions via Breadth First Search
-  [qu, qts, ncc, ~, Lcc] = bfs_conncomp_all_mex(isfinite(x), A4, [], qu);
-  
-  if DIAGS
-    timer_wetting = toc(mytic);
-  end
+  [qu, qts, ncc, ~, Lcc] = bfs_conncomp_all_mex(isfinite(s), A4, [], qu);
   
   
-  
-  
-  % --- Build the compact representation of the matrix optimization problem
+  % --- Solve global matrix problem for ...
   mytic = tic;
   if POISSON
-    [D, L, epsL2] = omega_build_poisson(x, s, t);
+    % ... the exactly determined Poisson equation
+    phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qts, Lcc, m_ref);
   else
-    [eps_i, eps_j] = ntp_errors(s, t, x, 1, 1, true, false, WRAP);
-    epsL2 = nanrms([eps_i(:); eps_j(:)]);
-  end
-  if DIAGS
-    timer_ntperrors = toc(mytic);
-  end
-  
-  % --- Build and solve sparse matrix problem
-  mytic = tic;
-  if POISSON
-    [phi, D, L] = omega_matsolve_poisson(D, L, A5, Lcc, I0, qu, qts);
-  else
-    phi = omega_matsolve_grad(eps_i, eps_j, idx_im1, idx_jm1, Lcc, I0, qu, qts);
+    % ... the overdetermined gradient equations
+    phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4, qu, qts, Lcc, m_ref);
   end
   if DIAGS
     timer_solver = toc(mytic);
@@ -390,10 +380,10 @@ for iter = 1 : ITER_MAX
   x_old = x;      % Record old surface for pinning or diagnostic purposes.
   [x, s, t] = omega_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, TOL_X_UPDATE, phi);
   
-  if PIN && ~isnan(phi(I0))
-    % Force x(i0,j0) to stay constant at the reference column,
-    % identically. This avoids any intolerance from the vertical solver.
-    x(I0) = x_old(I0);
+  if PIN && ~isnan(phi(m_ref))
+    % Force x to stay constant at the reference column, identically. This
+    % avoids any intolerance from the vertical solver.
+    x(m_ref) = x_old(m_ref);
   end
   
   if DIAGS
@@ -414,14 +404,6 @@ for iter = 1 : ITER_MAX
     x_change_L1   = nanmean(abs(x_change(:)));
     x_change_Linf = max(abs(x_change(:)));
     
-    [eps_i, eps_j] = ntp_errors(s, t, x, DX, DY, true, false, WRAP);
-    epsL2_after = nanrms([eps_i(:); eps_j(:)]);
-    
-    mean_x = nanmean(x(:));
-    mean_eos = nanmean(eos(s(:),t(:),x(:)));
-    
-    % Diagnostics about state BEFORE this iteration, but AFTER wetting
-    diags.epsL2_before(iter) = epsL2; % <-- Taking advantage that epsilon had to be computed anyways
     
     % Diagnostics about what THIS iteration did
     diags.phiL1(iter)         = phiL1;
@@ -431,19 +413,21 @@ for iter = 1 : ITER_MAX
     diags.num_regions(iter)   = ncc;
     diags.freshly_wet(iter)   = freshly_wet;
     
-    diags.timer_wetting(iter)   = timer_wetting;
-    diags.timer_ntperrors(iter) = timer_ntperrors;
     diags.timer_solver(iter)    = timer_solver;
     diags.timer_update(iter)    = timer_update;
     
     % Diagnostics about the state AFTER this iteration
-    diags.epsL2(iter+1)     = epsL2_after;
+    [epsL2, epsL1] = eps_norms(s, t, x, true, WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
+    mean_x = nanmean(x(:));
+    mean_eos = nanmean(eos(s(:),t(:),x(:)));
+    diags.epsL1(iter+1) = epsL1;
+    diags.epsL2(iter+1) = epsL2;
     diags.mean_x(iter+1)    = mean_x;
     diags.mean_eos(iter+1)  = mean_eos;
     
     
     if VERBOSE > 0
-      fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), log10(epsL2_after), phiL1, ncc, freshly_wet, x_change_L2, mean_x, mean_eos);
+      fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), phiL1, ncc, freshly_wet, x_change_L2, mean_x, mean_eos);
     end
   end
   

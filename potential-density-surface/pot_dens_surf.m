@@ -48,7 +48,7 @@ function [x,s,t,d0,diags] = pot_dens_surf(S, T, X, xref, var, OPTS)
 %
 %
 % --- Options:
-% OPTS is a struct containing the following fields.
+% OPTS is a struct containing a subset of the following fields.
 %   FILE_ID [1, 1]: 1 to write any output to MATLAB terminal, or a file
 %       identifier as returned by fopen() to write to a file. Default: 1.
 %   INTERPFN [function handle]: vertical interpolation function, used to
@@ -64,6 +64,10 @@ function [x,s,t,d0,diags] = pot_dens_surf(S, T, X, xref, var, OPTS)
 %                     2 for detailed information on each iteration.
 %   X_TOL [1, 1]: error tolerance, in the same units as X [dbar] or [m], 
 %      when root-finding to update the surface.
+%   DIST1_iJ [ni, nj]: Distance [m] in 1st dimension centred at (I-1/2, J)
+%   DIST2_Ij [ni, nj]: Distance [m] in 2nd dimension centred at (I, J-1/2)
+%   DIST2_iJ [ni, nj]: Distance [m] in 2nd dimension centred at (I-1/2, J)
+%   DIST1_Ij [ni, nj]: Distance [m] in 1st dimension centred at (I, J-1/2)
 %
 %
 % --- Equation of State:
@@ -108,12 +112,14 @@ MX = nk * double(XN > 1);
 
 % Set up default options:
 DEFS = struct();
-DEFS.X_TOL = 1e-4;  % error tolerance in the vertical dimension
+DEFS.TOL_X_UPDATE = 1e-4;  % error tolerance in the vertical dimension
 DEFS.INTERPFN = @ppc_linterp;  % linear interpolation in the vertical
 DEFS.FILE_ID = 1;  % standard output to MATLAB terminal
 DEFS.VERBOSE = 1;  % show a moderate level of information
-DEFS.DX = 1;  %      Zonal grid distance [m]
-DEFS.DY = 1;  % Meridional grid distance [m]
+DEFS.DIST1_iJ = 1;   % Distance [m] in 1st dimension centred at (I-1/2, J)
+DEFS.DIST2_Ij = 1;   % Distance [m] in 2nd dimension centred at (I, J-1/2)
+DEFS.DIST2_iJ = 1;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
+DEFS.DIST1_Ij = 1;   % Distance [m] in 1st dimension centred at (I, J-1/2)
 
 % Override any options with user-specified OPTS
 if nargin < 6 || isempty(OPTS)
@@ -125,8 +131,8 @@ end
 DIAGS = nargout >= 5;
 
 % Run codegen to create MEX function handling the main computation
-ni_ = max(ni, 2048); % using variable size code generation and avoiding
-nj_ = max(nj, 2048); % recompiling all the time
+ni_ = max(ni, 4096); % using variable size code generation and avoiding
+nj_ = max(nj, 4096); % recompiling all the time
 pot_dens_surf_vertsolve_codegen(nk, ni_, nj_, isvector(X), OPTS);
 
 % Interpolate S and T as piecewise polynomials of X, or use pre-computed interpolants in OPTS.
@@ -189,11 +195,12 @@ x = interp1qn(d0, D, X);
 iter_tic = tic();
 
 % Solve non-linear root finding problem in each cast
-[x, s, t] = pot_dens_surf_vertsolve_mex(SppX, TppX, X, BotK, x, xref, d0, OPTS.X_TOL);
+[x, s, t] = pot_dens_surf_vertsolve_mex(SppX, TppX, X, BotK, x, xref, d0, OPTS.TOL_X_UPDATE);
 
 if DIAGS
     diags = struct();
     diags.clocktime = toc(iter_tic);
-    [eps_i, eps_j] = ntp_errors(s, t, x, OPTS.DX, OPTS.DY, true, false, OPTS.WRAP);
-    diags.epsL2 = nanrms([eps_i(:); eps_j(:)]);
+    [epsL2, epsL1] = eps_norms(s, t, x, true, OPTS.WRAP, OPTS.DIST1_iJ, OPTS.DIST2_Ij, OPTS.DIST2_iJ, OPTS.DIST1_Ij);
+    diags.epsL1 = epsL1;
+    diags.epsL2 = epsL2;
 end

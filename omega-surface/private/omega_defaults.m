@@ -34,8 +34,12 @@ function OPTS = omega_defaults()
 
 OPTS = struct();
 
-OPTS.DX = 1;  %      Zonal grid distance [m]
-OPTS.DY = 1;  % Meridional grid distance [m]
+%OPTS.AREA_iJ = 1;    % Area [m^2] centred at (I-1/2, J)
+%OPTS.AREA_Ij = 1;    % Area [m^2] centred at (I, J-1/2)
+OPTS.DIST1_iJ = 1;   % Distance [m] in 1st dimension centred at (I-1/2, J)
+OPTS.DIST2_Ij = 1;   % Distance [m] in 2nd dimension centred at (I, J-1/2)
+OPTS.DIST2_iJ = 1;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
+OPTS.DIST1_Ij = 1;   % Distance [m] in 1st dimension centred at (I, J-1/2)
 
 OPTS.MLX = []; % Do not remove the Mixed Layer
 

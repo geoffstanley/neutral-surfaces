@@ -1,12 +1,12 @@
-function [x,s,t,d0,s0,t0,diags] = delta_surf(S, T, X, s0, t0, var, OPTS)
+function [x,s,t,d0,s_ref,t_ref,diags] = delta_surf(S, T, X, s_ref, t_ref, var, OPTS)
 %DELTASURF Specific volume anomaly surface by nonlinear solution in each water column.
 %
 %
-% [x,s,t] = delta_surf(S, T, X, s0, t0, d0)
+% [x,s,t] = delta_surf(S, T, X, s_ref, t_ref, d0)
 % finds pressure or depth x -- and its salinity s and temperature t -- of
-% the isosurface d0 of delta = eos(S,T,X) - eos(s0,t0,X) with reference
-% practical / Absolute salinity s0 and reference potential / Conservative
-% temperature t0, in an ocean with practical / Absolute salinity S and
+% the isosurface d0 of delta = eos(S,T,X) - eos(s_ref,t_ref,X) with reference
+% practical / Absolute salinity s_ref and reference potential / Conservative
+% temperature t_ref, in an ocean with practical / Absolute salinity S and
 % potential / Conservative temperature T at data sites where the pressure
 % or depth is X.  The equation of state is given by eos.m in MATLAB's path,
 % which accepts S, T, and X as its 3 inputs.  For a non-Boussinesq ocean, x
@@ -14,13 +14,13 @@ function [x,s,t,d0,s0,t0,diags] = delta_surf(S, T, X, s0, t0, var, OPTS)
 % Boussinesq ocean, x and X are depth [m] positive and increasing down, and
 % eos gives the in-situ density.
 %
-% [x, s, t, d0] = delta_surf(S, T, X, s0, t0, [i0, j0, x0])
+% [x, s, t, d0] = delta_surf(S, T, X, s_ref, t_ref, [i0, j0, x0])
 % as above but finds the delta isosurface, delta = d0, that intersects the
 % reference cast at grid indices (i0,j0) at pressure or depth x0.
 %
-% [x, s, t, d0, s0, t0] = delta_surf(S, T, X, [], [], [i0, j0, x0])
-% as above but also chooses the reference practical / Absolute salinity s0
-% and reference potential / Conservative temperature t0 by interpolating S
+% [x, s, t, d0, s_ref, t_ref] = delta_surf(S, T, X, [], [], [i0, j0, x0])
+% as above but also chooses the reference practical / Absolute salinity s_ref
+% and reference potential / Conservative temperature t_ref by interpolating S
 % and T at the reference cast (i0,j0) to pressure or depth x0.
 %
 % ... = delta_surf(..., OPTS)
@@ -31,8 +31,8 @@ function [x,s,t,d0,s0,t0,diags] = delta_surf(S, T, X, s0, t0, var, OPTS)
 % S [nk, ni, nj]: practical / Absolute salinity
 % T [nk, ni, nj]: potential / Conservative temperature
 % X [nk, ni, nj] or [nk, 1]: pressure [dbar] or depth [m, positive]
-% s0 [1, 1] or []: reference S
-% t0 [1, 1] or []: reference T
+% s_ref [1, 1] or []: reference S
+% t_ref [1, 1] or []: reference T
 % var [1, 1] or [1, 3]: isovalue of delta, or location to intersect
 % OPTS [struct]: options (see below)
 %
@@ -40,7 +40,7 @@ function [x,s,t,d0,s0,t0,diags] = delta_surf(S, T, X, s0, t0, var, OPTS)
 %       ni is the number of data points in longitude,
 %       nj is the number of data points in latitude.
 %
-% Note: physical units for S, T, X, x, d0, s0, t0, x0 are determined by eos.m.
+% Note: physical units for S, T, X, x, d0, s_ref, t_ref, x0 are determined by eos.m.
 %
 % Note: X must increase monotonically along its first dimension.
 %
@@ -50,13 +50,13 @@ function [x,s,t,d0,s0,t0,diags] = delta_surf(S, T, X, s0, t0, var, OPTS)
 % s [ni, nj]: practical / Absolute salinity on the surface
 % t [ni, nj]: potential / Conservative temperature the surface
 % d0 [1, 1]: isovalue of the delta surface
-% s0 [1, 1]: reference S that defines delta
-% t0 [1, 1]: reference T that defines delta
+% s_ref [1, 1]: reference S that defines delta
+% t_ref [1, 1]: reference T that defines delta
 % diags [struct]: diagnostics of the solution and computation time
 %
 %
 % --- Options:
-% OPTS is a struct containing the following fields.
+% OPTS is a struct containing a subset of the following fields.
 %   FILE_ID [1, 1]: 1 to write any output to MATLAB terminal, or a file
 %       identifier as returned by fopen() to write to a file. Default: 1.
 %   INTERPFN [function handle]: vertical interpolation function, used to
@@ -72,6 +72,11 @@ function [x,s,t,d0,s0,t0,diags] = delta_surf(S, T, X, s0, t0, var, OPTS)
 %                     2 for detailed information on each iteration.
 %   X_TOL [1, 1]: error tolerance, in the same units as X [dbar] or [m], 
 %      when root-finding to update the surface.
+%   DIST1_iJ [ni, nj]: Distance [m] in 1st dimension centred at (I-1/2, J)
+%   DIST2_Ij [ni, nj]: Distance [m] in 2nd dimension centred at (I, J-1/2)
+%   DIST2_iJ [ni, nj]: Distance [m] in 2nd dimension centred at (I-1/2, J)
+%   DIST1_Ij [ni, nj]: Distance [m] in 1st dimension centred at (I, J-1/2)
+
 %
 %
 % --- Equation of State:
@@ -117,10 +122,14 @@ KX = nk * double(XN > 1);
 
 % Set up default options:
 DEFS = struct();
-DEFS.X_TOL = 1e-4;  % error tolerance in the vertical dimension
+DEFS.TOL_X_UPDATE = 1e-4;  % error tolerance in the vertical dimension
 DEFS.INTERPFN = @ppc_linterp;  % linear interpolation in the vertical
 DEFS.FILE_ID = 1;  % standard output to MATLAB terminal
 DEFS.VERBOSE = 1;  % show a moderate level of information
+DEFS.DIST1_iJ = 1;   % Distance [m] in 1st dimension centred at (I-1/2, J)
+DEFS.DIST2_Ij = 1;   % Distance [m] in 2nd dimension centred at (I, J-1/2)
+DEFS.DIST2_iJ = 1;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
+DEFS.DIST1_Ij = 1;   % Distance [m] in 1st dimension centred at (I, J-1/2)
 
 % Override any options with user-specified OPTS
 if nargin < 7 || isempty(OPTS)
@@ -133,8 +142,8 @@ DIAGS = nargout >= 7;
 
 
 % Run codegen to create MEX function handling the main computation
-ni_ = max(ni, 2048); % using variable size code generation and avoiding
-nj_ = max(nj, 2048); % recompiling all the time
+ni_ = max(ni, 4096); % using variable size code generation and avoiding
+nj_ = max(nj, 4096); % recompiling all the time
 delta_surf_vertsolve_codegen(nk, ni_, nj_, isvector(X), OPTS);
 
 % Interpolate S and T as functions of X, or use pre-computed interpolants in OPTS.
@@ -158,8 +167,8 @@ BotK = squeeze(sum(isfinite(S), 1));
 
 % Decide on the isosurface value
 if isscalar(var)
-    % s0 and t0 should be provided
-    assert(isscalar(s0) && isscalar(t0), 's0 and t0 must be provided as scalars if d0 is provided.');
+    % s_ref and t_ref should be provided
+    assert(isscalar(s_ref) && isscalar(t_ref), 's_ref and t_ref must be provided as scalars if d0 is provided.');
     d0 = var(1);
     
 else
@@ -174,20 +183,19 @@ else
     
     % Select the reference cast
     X0 = X((n+1:n+nk).');
-    S0 = S(1:nk,ij0);
-    T0 = T(1:nk,ij0);
     SppX0 = SppX(:,:,ij0);
     TppX0 = TppX(:,:,ij0);
     
-    % Get reference salinity and temperature at the chosen location
-    if isempty(s0) || isempty(t0)
-        [s0,t0] = ppc_val2(X0, SppX0, TppX0, x0);
+    % Evaluate salinity and temperature at the chosen location
+    [s0,t0] = ppc_val2(X0, SppX0, TppX0, x0);
+    if isempty(s_ref) || isempty(t_ref)
+        s_ref = s0;
+        t_ref = t0;
+        d0 = 0; % iso-value that will intersect (i0,j0,x0).
+    else
+        d0 = eos(s0, t0, x0) - eos(s_ref, t_ref, x0); % iso-value that will intersect (i0,j0,x0).
     end
     
-    % Choose iso-value that will intersect (i0,j0,x0).
-    D0 = eos(S0, T0, X0) - eos(s0, t0, X0);
-    d0 = ppc_linterp(X0, D0, x0);
-
 end
 
 % Calculate 3D field for vertical interpolation
@@ -196,7 +204,7 @@ if eos(34.5,3,1000) > 1
 else
     sortdir = 'descend'; % eos is specific volume, decreasing with 3rd argument
 end
-D = sort(eos(S, T, X) - eos(s0, t0, X), 1, sortdir);
+D = sort(eos(S, T, X) - eos(s_ref, t_ref, X), 1, sortdir);
 
 % Get started with the discrete version (and linear interpolation)
 x = interp1qn(d0, D, X);
@@ -205,12 +213,13 @@ x = interp1qn(d0, D, X);
 iter_tic = tic();
 
 % Solve non-linear root finding problem in each cast
-[x, s, t] = delta_surf_vertsolve_mex(SppX, TppX, X, BotK, x, s0, t0, d0, OPTS.X_TOL);
+[x, s, t] = delta_surf_vertsolve_mex(SppX, TppX, X, BotK, x, s_ref, t_ref, d0, OPTS.TOL_X_UPDATE);
 
 if DIAGS
     diags = struct();
     diags.clocktime = toc(iter_tic);
-    [eps_i, eps_j] = ntp_errors(s, t, x, OPTS.DX, OPTS.DY, true, false, OPTS.WRAP);
-    diags.epsL2 = nanrms([eps_i(:); eps_j(:)]);
+    [epsL2, epsL1] = eps_norms(s, t, x, true, OPTS.WRAP, OPTS.DIST1_iJ, OPTS.DIST2_Ij, OPTS.DIST2_iJ, OPTS.DIST1_Ij);
+    diags.epsL1 = epsL1;
+    diags.epsL2 = epsL2;
 end
 
