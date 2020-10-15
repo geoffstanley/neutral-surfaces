@@ -111,10 +111,13 @@ OPTS.ITER_START_WETTING = 1; % Start wetting immediately
 OPTS.TOL_X_CHANGE_L2 = 1e-3;
 
 
-% Grid distances used for calculating gradients, such as when calculating
-% epsilon errors
-OPTS.DX = 1;  %      Zonal grid distance [m]
-OPTS.DY = 1;  % Meridional grid distance [m]
+% Grid distances used for calculating gradients and area-weighting norms,
+% such as when calculating epsilon errors
+OPTS.DIST1_iJ = 1;   % Distance [m] in 1st dimension centred at (I-1/2, J)
+OPTS.DIST2_Ij = 1;   % Distance [m] in 2nd dimension centred at (I, J-1/2)
+OPTS.DIST2_iJ = 1;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
+OPTS.DIST1_Ij = 1;   % Distance [m] in 1st dimension centred at (I, J-1/2)
+
 
 % Verbosity level
 OPTS.VERBOSE = 1;

@@ -335,6 +335,7 @@ assert(is1D(X) || is3D(X), 'X must be a vector of length nk, or a matrix of size
 % Simple anonymous functions
 lead1 = @(x) reshape(x, [1 size(x)]); % augment with leading singleton dimension
 nanrms = @(x) sqrt(nanmean(x(:) .* conj(x(:)))); % root mean square, ignoring nans
+autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
 
 % Set up empty outputs to avoid error if OPTS.ITER_MAX < 1
 RG = struct();
@@ -357,12 +358,19 @@ ALL_VERTS = OPTS.DECOMP(1) == 'd' && OPTS.FILL_PIX == 0 && isempty(OPTS.FILL_IJ)
 assert(ALL_VERTS || OPTS.ITER_MAX < 1, ...
   'To empirically fit the multivalued function, must use ''diagonal'' simplical decomposition and fill no holes during pre-processing');
 
-DX = OPTS.DX;
-DY = OPTS.DY;
+% Soft notation, similar to that in MOM6: i = I - 1/2, j = J - 1/2
+DIST1_iJ = autoexp(OPTS.DIST1_iJ); % Distance [m] in 1st dimension centred at (I-1/2, J)
+DIST2_Ij = autoexp(OPTS.DIST2_Ij); % Distance [m] in 2nd dimension centred at (I, J-1/2)
+DIST2_iJ = autoexp(OPTS.DIST2_iJ); % Distance [m] in 2nd dimension centred at (I-1/2, J)
+DIST1_Ij = autoexp(OPTS.DIST1_Ij); % Distance [m] in 1st dimension centred at (I, J-1/2)
+AREA_iJ = DIST1_iJ .* DIST2_iJ;   % Area [m^2] centred at (I-1/2, J)
+AREA_Ij = DIST1_Ij .* DIST2_Ij;   % Area [m^2] centred at (I, J-1/2)
+
+
 
 %% Just In Time code generation
-ni_ = max(ni, 2048); % using variable size code generation and avoiding
-nj_ = max(nj, 2048); % recompiling all the time
+ni_ = max(ni, 4096); % using variable size code generation and avoiding
+nj_ = max(nj, 4096); % recompiling all the time
 if OPTS.REEB
   tbs_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
 else
@@ -419,15 +427,8 @@ diags.timer_reebgraph = nan(OPTS.ITER_MAX, 1);
 diags.timer_fitting   = nan(OPTS.ITER_MAX, 1);
 diags.timer_update    = nan(OPTS.ITER_MAX, 1);
 
-% Get neutrality errors using r and x differences on the U,V grid.
-[epsx, epsy] = ntp_errors(s, t, x, DX, DY, false, false, OPTS.WRAP);
-
 % Compute the L1 and L2 norms of the neutrality (epsilon) errors
-data = [epsx(:); epsy(:)];
-diags.epsL1(1) = nanmean(abs(data(:)));
-diags.epsL2(1) = nanrms(data(:));
-
-
+[diags.epsL2(1), diags.epsL1(1)] = eps_norms(s, t, x, false, OPTS.WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
 
 %% Process the reference cast:
 % Get linear index to reference cast
@@ -632,13 +633,8 @@ for iter = 1 : OPTS.ITER_MAX
     
     % Diagnostics about the state AFTER this iteration
     
-    % Get neutrality errors using r and x differences on the U,V grid.
-    [epsx, epsy] = ntp_errors(s, t, x, DX, DY, false, false, OPTS.WRAP);
-    
     % Compute the L1 and L2 norms of the neutrality (epsilon) errors
-    data = [epsx(:); epsy(:)];
-    diags.epsL1(iter+1) = nanmean(abs(data(:)));
-    diags.epsL2(iter+1) = nanrms(data(:));
+    [diags.epsL2(iter+1), diags.epsL1(iter+1)] = eps_norms(s, t, x, false, OPTS.WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
     
   end
   
