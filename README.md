@@ -122,7 +122,9 @@ Zhang, H.-M., Hogg, N.G., 1992. Circulation and water mass balance in the Brazil
 
 
 ## Copyright:
-This file is part of Neutral Surfaces. Copyright (C) 2019  Geoff Stanley
+This file is part of Neutral Surfaces. 
+
+Copyright (C) 2020  Geoff Stanley
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
