@@ -154,10 +154,7 @@ function [y,m] = hsap2(s, t, x, varargin)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 narginchk(3,8);
 

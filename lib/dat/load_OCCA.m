@@ -44,10 +44,7 @@ function [g, S, T, P, ETAN, ATMP, SAP, GAMMA] = load_OCCA(datafolder)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 V = filesep(); % /  or  \  depending on OS.
 if datafolder(end) ~= V

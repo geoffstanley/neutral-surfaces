@@ -91,10 +91,7 @@ function d1 = int_grad_lrpd(x0, d0, S, T, X, x1, s1, t1, dx, interpfn)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 k0 = discretize(x0, X);  % X(k0) <= x0 < X(k0+1);  but if x0 == X(end), then k0 = length(X) - 1;  else, k0 = NaN.

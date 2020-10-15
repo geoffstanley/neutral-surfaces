@@ -59,10 +59,7 @@ function MLX = mixed_layer(S, T, X, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 % Set defaults:

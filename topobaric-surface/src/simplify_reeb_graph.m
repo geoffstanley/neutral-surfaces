@@ -64,10 +64,7 @@ function                  [arc_from, arc_to, arc_segment, node_prev, node_next, 
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 WEIGHT_NUMPIX = 1 - WEIGHT_PERSIST;
 

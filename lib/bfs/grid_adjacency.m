@@ -56,10 +56,7 @@ function ADJ = grid_adjacency(SZ, CONN, WRAP)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 dim = length(SZ); % Number of dimensions in the grid
 assert(dim == 2, 'grid_adjacency currently only works for 2D grids.');

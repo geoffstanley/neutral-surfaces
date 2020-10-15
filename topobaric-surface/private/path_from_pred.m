@@ -53,10 +53,7 @@ function path = path_from_pred(pred,d,t)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 if d(t) < 0
     % target unreachable from source vertex

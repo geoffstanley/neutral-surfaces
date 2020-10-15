@@ -69,10 +69,7 @@ function [x, s, t, success] = ntp_bottle_to_cast(SppX, TppX, X, k, sB, tB, xB, t
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 if k > 1
 

@@ -23,10 +23,7 @@ function ns_add_to_path()
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 V = filesep(); % /  or  \  depending on OS
 

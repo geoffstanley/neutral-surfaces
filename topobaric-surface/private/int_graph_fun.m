@@ -67,10 +67,7 @@ function [F, F2] = int_graph_fun(f, arc_from, arc_to, node_fn, graph, bfs_parent
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 narginchk(4,8);
 

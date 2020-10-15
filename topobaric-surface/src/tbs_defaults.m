@@ -27,10 +27,7 @@ function OPTS = tbs_defaults(ni, nj)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % For topobaric surfaces, a multivalued function is fit to the surface
 % according to the Reeb graph. Set REEB to true.

@@ -52,10 +52,7 @@ function Y = hsap3(X, ATMP, ETAN, M, grav, varargin)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 narginchk(5,6);

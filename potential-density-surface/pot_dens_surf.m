@@ -100,10 +100,7 @@ function [x,s,t,d0,diags] = pot_dens_surf(S, T, X, xref, var, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 [nk, ni, nj] = size(S);
 [~,XN] = size(X);

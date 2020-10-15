@@ -35,10 +35,7 @@ function ntp_bottle_to_cast_codegen(nk, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % Set defaults
 VERBOSE = 1; % verbose mode

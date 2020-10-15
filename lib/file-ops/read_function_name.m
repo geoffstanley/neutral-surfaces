@@ -26,10 +26,7 @@ function fcn_name = read_function_name(file_name)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 fcn_name = '';
 fid = fopen(file_name);

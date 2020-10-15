@@ -95,10 +95,7 @@ function gsf = cunningham00(s, t, x, X, M, Y, x0, varargin)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 % Input checking

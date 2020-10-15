@@ -147,10 +147,7 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, x, X, M, Y, s0, t0, OPTS, vara
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 db2Pa = 1e4;
 

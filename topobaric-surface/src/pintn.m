@@ -72,10 +72,7 @@ function F = pintn(f,a,b)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % Np2-2 is the polynomial's order. (e.g. Np2==4 for linear)
 [Np2, M] = size(f);

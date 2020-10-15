@@ -69,10 +69,7 @@ function yfnx = branches_fit(x, y, arc_from, arc_to, arc_segment, node_fn, cb_ar
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 nArcs = length(arc_from);

@@ -33,10 +33,7 @@ function epsL2 = ntp_epsilon_L2(x, s, t, WRAP, DX, DY)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 if nargin < 4 || isempty(WRAP)

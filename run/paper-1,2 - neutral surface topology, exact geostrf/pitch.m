@@ -22,10 +22,7 @@
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 %% --- BEGIN SETUP --------------------------------------------------------
 warning('off', 'MATLAB:nargchk:deprecated')

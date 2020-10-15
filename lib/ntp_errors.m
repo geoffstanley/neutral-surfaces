@@ -139,10 +139,7 @@ function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % --- Input checks, set parameters
 narginchk(8,12)

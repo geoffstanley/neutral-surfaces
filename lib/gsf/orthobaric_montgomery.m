@@ -119,10 +119,7 @@ function gsf = orthobaric_montgomery(s, t, x, X, M, Y, s0, t0, OPTS, varargin)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 db2Pa = 1e4;  % Conversion from [dbar] to [Pa]
 

@@ -76,10 +76,7 @@ function [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, DIST1_iJ, DIST2_Ij, 
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 

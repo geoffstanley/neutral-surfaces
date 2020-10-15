@@ -156,10 +156,7 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 %
 % Acknowledgements: Adapted from 'analyze_surface' by Andreas Klocker, and
 %                subsequently modified by Paul Barker and Trevor McDougall.

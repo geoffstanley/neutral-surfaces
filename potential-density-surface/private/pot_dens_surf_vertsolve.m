@@ -27,10 +27,7 @@ function [x,s,t] = pot_dens_surf_vertsolve(SppX, TppX, X, BotK, x, xref, val, to
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 N = numel(x);
 Xmat = ~isvector(X);

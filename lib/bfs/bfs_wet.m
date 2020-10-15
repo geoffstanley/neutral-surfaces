@@ -73,10 +73,7 @@ function [s, t, x, freshly_wet, qu] = bfs_wet(SppX, TppX, X, s, t, x, X_TOL, A, 
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 [ni,nj] = size(x);
 nij = ni * nj;

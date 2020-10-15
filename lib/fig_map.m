@@ -60,10 +60,7 @@ function hf = fig_map(varargin)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 ax = axescheck(varargin{:});
 arg0 = double(~isempty(ax)); % 1 if no ax passed in, 0 otherwise

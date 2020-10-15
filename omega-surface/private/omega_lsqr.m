@@ -18,10 +18,7 @@ function [x,flag,relres] = omega_lsqr(A,b,tol)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 %LSQR   LSQR Method.
 %   X = LSQR(A,B) attempts to solve the system of linear equations A*X=B

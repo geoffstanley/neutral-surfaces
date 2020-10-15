@@ -35,10 +35,7 @@ function obs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % Set defaults
 VERBOSE = 1; % verbose mode

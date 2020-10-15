@@ -23,10 +23,7 @@ function ns_install()
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % Step 0: establish path things
 V = filesep(); % /  or  \  depending on OS

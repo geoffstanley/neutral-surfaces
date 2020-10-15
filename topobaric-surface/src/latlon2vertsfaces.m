@@ -93,10 +93,7 @@ function [v, f, Qmap, nV] = latlon2vertsfaces(Q, WRAP, X, Y, method, select)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % --- Setup and check arguments
 [ni,nj] = size(Q);

@@ -292,10 +292,7 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % --- Notes on the code:
 % 3D scalar fields [nk,ni,nj] are upper case letters, e.g. S

@@ -32,10 +32,7 @@ function eoscg_set_bsq_param(eos_in, eos_out, grav, rhob)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % Ensure the input file exists
 assert(exist(eos_in, 'file') > 0, ['Cannot locate ' eos_in]);

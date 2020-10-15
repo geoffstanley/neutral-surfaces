@@ -79,10 +79,7 @@ function [x, s, t] = obs_vertsolve(SppX, TppX, X, BotK, s, t, x, dfnb, dfnc, s0,
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 N = numel(x);
 Xmat = ~isvector(X);

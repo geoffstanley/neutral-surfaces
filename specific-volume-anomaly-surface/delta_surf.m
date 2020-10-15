@@ -110,10 +110,7 @@ function [x,s,t,d0,s_ref,t_ref,diags] = delta_surf(S, T, X, s_ref, t_ref, var, O
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 [nk, ni, nj] = size(S);
 [~,XN] = size(X);

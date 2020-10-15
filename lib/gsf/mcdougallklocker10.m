@@ -93,10 +93,7 @@ function gsf = mcdougallklocker10(s, t, x, X, M, Y, s0, t0, x0, varargin)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 Thermobaricity_div_rho = 2.7e-15; % K^-1 Pa^-2 m^2 s^-2
 

@@ -36,10 +36,7 @@ function [x, perturbed] = perturb_until_unique(x)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 perturbed = false;
 for rep = 0:100

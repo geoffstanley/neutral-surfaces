@@ -76,10 +76,7 @@ function [qu, qts, ncc, G, L] = bfs_conncomp(G, A, r, qu) %#codegen
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 N = numel(G);
 

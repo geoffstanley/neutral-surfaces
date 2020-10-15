@@ -27,10 +27,7 @@ function [x,s,t] = delta_surf_vertsolve(SppX, TppX, X, BotK, x, s_ref, t_ref, d0
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 N = numel(x);
 Xmat = ~isvector(X);

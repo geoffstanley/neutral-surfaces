@@ -29,10 +29,7 @@ function [S, T, P, g] = synthocean_rand(ni, nj, nk, args)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 defaults = struct();
 defaults.pbot = 4000; % pressure at bottom [dbar]

@@ -75,10 +75,7 @@ function [x, s, t] = omega_vertsolve(SppX, TppX, X, BotK, s, t, x, tolx, phi) %#
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 % Inputs s0, t0, and p0 are named s, t, x so operations are done in-place.

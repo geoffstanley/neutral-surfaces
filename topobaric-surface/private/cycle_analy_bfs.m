@@ -80,10 +80,7 @@ function [dup, G, bfs_dist, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 % --- Find duplicate arcs (between the same pair of nodes):
 [~, iA, iC] = unique([arc_from, arc_to], 'rows', 'stable');

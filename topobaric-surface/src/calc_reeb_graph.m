@@ -61,10 +61,7 @@ function [x, varargout] = calc_reeb_graph(x, OPTS)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 
 [ni,nj] = size(x);

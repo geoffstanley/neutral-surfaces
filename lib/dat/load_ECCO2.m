@@ -74,10 +74,7 @@ function varargout = load_ECCO2(datafolder, vars, timestep, zref)
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
-%
-% Modified by : --
-% Date        : --
-% Changes     : --
+
 
 V = filesep(); % /  or  \  depending on OS.
 if datafolder(end) ~= V
