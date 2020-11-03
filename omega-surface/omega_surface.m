@@ -172,7 +172,7 @@ T = double(T);
 X = double(X);
 x = double(x);
 
-WRAP = true;  % This code demands a periodic domain.  Add NaN walls for a non-periodic domain. 
+WRAP = [1; 1];  % This code demands a doubly periodic domain.  Add NaN walls for a non-periodic domain. 
 
 % Get size of 3D hydrography
 [nk,ni,nj] = size(S);
