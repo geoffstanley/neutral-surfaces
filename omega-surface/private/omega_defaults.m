@@ -50,6 +50,7 @@ OPTS.ITER_MIN = 1;  % minimum number of iterations
 OPTS.ITER_MAX = 10; % maximum number of iterations
 
 OPTS.ITER_START_WETTING = 1; % start wetting immediately
+OPTS.ITER_STOP_WETTING  = 5; % stop wetting after this many iterations (to avoid flip-flopping on adding then removing some nuisance casts)
 
 OPTS.TOL_LRPD_L1 = 1e-7; % Tolerance in Locally Referenced Potential Density [kg m^-3]
 
@@ -66,7 +67,5 @@ OPTS.VERBOSE = 1; % show a moderate level of information
 OPTS.INTEGRATING_FACTOR = [];  % No integrating factor
 
 OPTS.FILE_ID = 1; % standard output to MATLAB terminal
-
-OPTS.REF_IJ = []; % No reference water column at which the surface is pinned.  Instead, maintain the mean density. 
 
 OPTS.POISSON = true; % Whether to solve the square, symmetric Poisson matrix problem, or a rectangular gradient problem

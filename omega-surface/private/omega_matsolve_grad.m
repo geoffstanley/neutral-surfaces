@@ -1,15 +1,10 @@
-function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4, qu, qts, Lcc, m_ref)
+function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4, qu, qt, m_ref)
 % OMEGA_MATSOLVE_GRAD  Build & solve the sparse matrix gradient equations for omega surfaces
 %
 %
-% phi = omega_matsolve_grad(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qts)
+% phi = omega_matsolve_grad(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qt, m_ref)
 % builds and solves the sparse matrix problem for omega surfaces in
-% gradient equation form. In each connected component of the surface, phi
-% has zero arithmetic, unweighted mean.
-%
-% phi = omega_matsolve_grad(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qts, Lcc, m_ref)
-% as above, but makes phi be zero at m_ref.  Other connected components not
-% containing m_ref are as above, with mean phi = 0 in these regions.
+% gradient equation form, ensuring phi is zero at m_ref.
 %
 %
 % --- Input:
@@ -25,10 +20,8 @@ function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4
 %   this is the grid distance in first dimension divided by grid distance
 %   in second dimension, both centred at (I, J-1/2).
 % A4 [4, ni*nj]: adjacency matrix  (see grid_adjacency.m)
-% qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to qts(end) (see bfs_conncomp.m)
-% qts [ncc+1,1]: the queue tail indices for each connected component (see bfs_conncomp.m)
-% Lcc: [array with ni*nj elements]: label array, giving unique integer 
-%   labels to each connected component of isfinite(x) (see bfs_conncomp.m)
+% qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to qt (see bfs_conncomp1.m)
+% qt [1,1]: the last valid index of qu (see bfs_conncomp1.m)
 % m_ref [1,1]:  linear index to a reference cast at which phi will be zero.
 %
 %
@@ -128,92 +121,79 @@ end
 %% --- Build and solve sparse matrix problem
 phi = nan(ni, nj);     % solution to matrix problem
 remap = zeros(ni,nj);  % remap indices from 2D into linear indices for the current connected component
-PIN = ~isempty(m_ref); % whether to phi(m_ref) = 0 or not
-ncc = length(qts) - 1; % number connected components
-for icc = 1 : ncc % icc = index of region
-    
-  % Collect and sort linear indices to all pixels in this region
-  m = sort(qu(qts(icc) : qts(icc+1)-1));  % sorting here makes mat better structured; overall speedup.
-  
-  N = length(m);  % Number of water columns
-  if N <= 1  % There are definitely no equations to solve
-    phi(m) = 0; % Leave this isolated pixel at current pressure
-    continue
-  end
-  
-  % Label the water columns in this region alone by 1, 2, ...
-  % No need to reset other elements of remap to 0.
-  remap(m) = 1:N;
-  
-  
-  % Build the RHS of the matrix problem, containing neutrality errors
-  rhs = [eps_iJ(m); eps_Ij(m)];
-  good_eq = isfinite(rhs);
-  rhs = [rhs(good_eq); 0]; % Ignore equations where the east or the north water column is invalid.
-  E = length(rhs) - 1; % number of Equations, excluding density conserving equation.  Note E > 0 is guaranteed, because bfs_conncomp used 4-connectivity
-  
-  % Begin building the sparse matrix.  The k'th value is v(k) in row r(k)
-  % and column c(k).  For each k from 1 to E, there is a central grid point
-  % at (i, j), say. The first E entries of r,c,v are for the points (i-1,j)
-  % and then (i,j-1).  The second set of E entries are for the points (i,j)
-  % and (i,j) again.
-  
-  % Build indices for the rows of the sparse matrix.
+
+% Collect and sort linear indices to all pixels in this region
+m = sort(qu(1 : qt));  % sorting here makes mat better structured; overall speedup.
+
+N = length(m);  % Number of water columns
+if N <= 1  % There are definitely no equations to solve
+  phi(m) = 0; % Leave this isolated pixel at current pressure
+  return
+end
+
+% Label the water columns in this region alone by 1, 2, ...
+% No need to reset other elements of remap to 0.
+remap(m) = 1:N;
+
+
+% Build the RHS of the matrix problem, containing neutrality errors
+rhs = [eps_iJ(m); eps_Ij(m)];
+good_eq = isfinite(rhs);
+rhs = [rhs(good_eq); 0]; % Ignore equations where the east or the north water column is invalid.
+E = length(rhs) - 1; % number of Equations, excluding density conserving equation.  Note E > 0 is guaranteed, because bfs_conncomp used 4-connectivity
+
+% Begin building the sparse matrix.  The k'th value is v(k) in row r(k)
+% and column c(k).  For each k from 1 to E, there is a central grid point
+% at (i, j), say. The first E entries of r,c,v are for the points (i-1,j)
+% and then (i,j-1).  The second set of E entries are for the points (i,j)
+% and (i,j) again.
+
+% Build indices for the rows of the sparse matrix.
+if ZERO_MEAN
+  r = [flat(repelem((1:E), 1, 2)); repelem(E+1, N, 1)]; % [1; 1; 2; 2;, ...; E; E; ..., E; E+1; ...; E+1]
+else % PINNING
+  r = [flat(repelem((1:E), 1, 2)); E+1];                % [1; 1; 2; 2;, ...; E; E; ..., E; E+1;]
+end
+
+% Build indices for the columns of the sparse matrix
+c = [remap(A4(MJ,m)), remap(A4(IM,m)); 1:N, 1:N];
+if ZERO_MEAN
+  c = [flat(c(:,good_eq)); (1:N).']; % Augment with equation for the specific volume mean = 0
+else % PINNING
+  c = [flat(c(:,good_eq)); 1];       % Augment with equation for the specific volume at cast 1 = 0
+end
+
+
+% Build the values of the sparse matrix
+if UNIFORM_GRID
   if ZERO_MEAN
-    r = [flat(repelem((1:E), 1, 2)); repelem(E+1, N, 1)]; % [1; 1; 2; 2;, ...; E; E; ..., E; E+1; ...; E+1]
+    v = [flat(repelem([-1; 1], 1, E)); repelem(F, N, 1)];  % [-1; 1; -1; 1; ...; -1; 1; F; ...; F];
   else % PINNING
-    r = [flat(repelem((1:E), 1, 2)); E+1];                % [1; 1; 2; 2;, ...; E; E; ..., E; E+1;]
+    v = [flat(repelem([-1; 1], 1, E)); F ];                % [-1; 1; -1; 1; ...; -1; 1; F];
   end
-  
-  % Build indices for the columns of the sparse matrix
-  c = [remap(A4(MJ,m)), remap(A4(IM,m)); 1:N, 1:N];
+else
+  d = [sqrtDIST2on1_iJ(m).', sqrtDIST1on2_Ij(m).'];
+  d = d(good_eq);
   if ZERO_MEAN
-    c = [flat(c(:,good_eq)); (1:N).']; % Augment with equation for the specific volume mean = 0
+    v = [flat([-d; d]); repelem(F, N, 1)];
   else % PINNING
-    c = [flat(c(:,good_eq)); 1];       % Augment with equation for the specific volume at cast 1 = 0
+    v = [flat([-d; d]); F];
   end
-  
-  
-  % Build the values of the sparse matrix
-  if UNIFORM_GRID
-    if ZERO_MEAN
-      v = [flat(repelem([-1; 1], 1, E)); repelem(F, N, 1)];  % [-1; 1; -1; 1; ...; -1; 1; F; ...; F];
-    else % PINNING
-      v = [flat(repelem([-1; 1], 1, E)); F ];                % [-1; 1; -1; 1; ...; -1; 1; F];
-    end
-  else
-    d = [sqrtDIST2on1_iJ(m).', sqrtDIST1on2_Ij(m).'];
-    d = d(good_eq);
-    if ZERO_MEAN
-      v = [flat([-d; d]); repelem(F, N, 1)];
-    else % PINNING
-      v = [flat([-d; d]); F];
-    end
-  end
-  
-  % Build the sparse matrix, with E+1 rows and N columns
-  mat = sparse( r, c, v, E+1, N );
-  
-  % Solve the LSQR problem
-  [sol,flag] = omega_lsqr(mat, rhs, TOL_LSQR_REL);
-  if flag > 0
-    warning('omega_surface:lsqr did not converge in region %d', icc);
-  end
-  
-  
-  if PIN && icc == Lcc(m_ref)
-    % Force phi(m_ref) = 0 exactly.  This keeps the surface pinned at its
-    % initial depth in water column m_ref.  This does not affect other
-    % connected components.
-    sol = sol - sol(remap(m_ref));
-  else
-    % Force mean(sol) = 0 exactly.  This can be used even if using pinning
-    % in the matrix equation. 
-    sol = sol - mean(sol);
-  end
-  
-  
-  % Save solution
-  phi(m) = sol;
-  
-end % icc
+end
+
+% Build the sparse matrix, with E+1 rows and N columns
+mat = sparse( r, c, v, E+1, N );
+
+% Solve the LSQR problem
+[sol,flag] = omega_lsqr(mat, rhs, TOL_LSQR_REL);
+if flag > 0
+  warning('omega_surface:lsqr did not converge in region %d', icc);
+end
+
+% Force phi(m_ref) = 0 exactly.  This keeps the surface pinned at its
+% initial depth in water column m_ref.  This does not affect other
+% connected components.
+sol = sol - sol(remap(m_ref));
+
+% Save solution
+phi(m) = sol;

@@ -46,9 +46,6 @@ OPTS.SPLINE_ORDER = 4; % Cubic
 % Do not remove the Mixed Layer
 OPTS.MLX = [];
 
-% Pixel indices for reference water column. Trying to select (180E,0N)
-OPTS.REF_IJ = round([ni/2, nj/2]);
-
 % Reference pressure or depth.  If a scalar is provided, the pressure or
 % depth on the topobaric surface at the reference water column will be this
 % value (with precision of OPTS.TOL).
@@ -98,8 +95,8 @@ OPTS.TppX = [];
 OPTS.ITER_MIN = 6;  % minimum number of iterations
 OPTS.ITER_MAX = 6;  % maximum number of iterations
 
-% Iteration number at which to begin wetting (use inf for no wetting)
 OPTS.ITER_START_WETTING = 1; % Start wetting immediately
+OPTS.ITER_STOP_WETTING  = 5; % stop wetting after this many iterations (to avoid flip-flopping on adding then removing some nuisance casts)
 
 % quit when the L2 change of pressure on surface exceeds this value (set to
 % 0 to deactivate), in the same units as X [dbar] or [m].

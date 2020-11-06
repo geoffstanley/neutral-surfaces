@@ -1,21 +1,23 @@
-function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
+function [x, s, t, diags] = omega_surface(S, T, X, x, ref_cast, OPTS)
 % OMEGA_SURFACE  Create an omega surface, minimizing error from the neutral tangent plane.
 %
 %
-% [x, s, t] = omega_surface(S, T, X, x, OPTS)
+% [x, s, t] = omega_surface(S, T, X, x, ref_cast, OPTS)
 % returns the pressure or depth x, practical / Absolute salinity s, and
 % potential / Conservative temperature t on an omega surface, initialized
 % from an approximately neutral surface of (input) pressure or depth x, in
 % an ocean whose practical / Absolute salinity and potential / Conservative
 % temperature are S and T located at datasites where the pressure or depth
-% is X.  An omega surface attempts to minimize the L2 norm of the
-% neutrality error. The density or specific volume (either may be used) and
-% its partial derivatives with respect to S and T are given by the
-% functions eos.m and eos_s_t.m in MATLAB's path.  Algorithmic parameters
-% are provided in OPTS (see "Options" below for further details).  For
-% units, see "Equation of State" below.  The domain is assumed to be doubly
-% periodic; for non-periodic dimensions, pad the data in that dimension
-% with NaN (if this is not already the case). 
+% is X.  The depth or pressure of the omega surface is pinned, unchanging
+% through the iterations, at the reference cast indexed by ref_cast.  An
+% omega surface attempts to minimize the L2 norm of the neutrality error.
+% The density or specific volume (either may be used) and its partial
+% derivatives with respect to S and T are given by the functions eos.m and
+% eos_s_t.m in MATLAB's path. Algorithmic parameters are provided in OPTS
+% (see "Options" below for further details).  For units, see "Equation of
+% State" below.  The domain is assumed to be doubly periodic; for
+% non-periodic dimensions, pad the data in that dimension with NaN (if this
+% is not already the case).
 %
 %
 % --- Input:
@@ -23,6 +25,7 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 %  T [nk, ni, nj]: potential / Conservative Temperature
 %  X [nk, ni, nj] or [nk, 1]: pressure or depth
 %  x     [ni, nj]: pressure or depth on initial surface
+%  ref_cast [1, 1] or [2, 1] : linear index or 2D index to the reference cast
 % OPTS [struct]: options (see "Options" below)
 %
 %
@@ -73,41 +76,35 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 %
 %
 % --- Options:
-% OPTS is a struct containing the following fields. Those marked * are
-% required. See ./private/omega_defaults.m for default values.
+% OPTS is a struct containing the following fields. 
 %   FILE_ID [1, 1]: 1 to write any output to MATLAB terminal, or a file
 %       identifier as returned by fopen() to write to a file. Default: 1.
 %   FIGS_SHOW [scalar]: true to show figures of specific volume adjustment
 %       during computation. Default: false.
 %   FINAL_ROW_VALUES [scalar]: value with which to fill the final row of
-%       the sparse matrix for the purpose of maintaining the mean density
-%       on the surface. (The other values in the matrix have values of 1.)
-%       The matrix problem is perfectly (not over, not under) determined so
-%       this value doesn't matter in theory.  In practice, large values
-%       (e.g. 100) degrade the numerical solution.  Values in the range of
-%       1e-4 to 1 were tested on 1x1deg OCCA data, and all work well.
-%       Default: 1e-2.
+%       the sparse matrix for the purpose of selecting a unique solution
+%       for th density perturbation. This value doesn't matter in theory,
+%       but in practice, excessively large or small values may degrade the
+%       numerical solution.  Values in the range of 1e-4 to 1 were tested
+%       on 1x1deg OCCA data, and all work well. Default: 1e-2.
 %   INTEGRATING_FACTOR: use this [ni,nj] matrix of a pre-computed
 %       integrating factor (b) to modify the weights of the matrix problem.
 %       Use the regular weights when this is []. Default: [].
 %   ITER_MAX [1, 1]: maximum number of iterations. Default: 10
-%   ITER_START_WETTING [scalar]: Do wetting at this and subsequent
-%       iterations. Set to +inf to disable wetting. When wetting, outcrops
-%       and incrops of the surface that are adjacent to valid parts of the
-%       surface are added back into the surface if they are connected by a
-%       neutral trajectory. Default: 1.
+%   ITER_START_WETTING [scalar], ITER_STOP_WETTING [scalar]: Do wetting for
+%       iterations that are >= ITER_START_WETTING and <= ITER_STOP_WETTING.
+%       To disable wetting, set ITER_START_WETTING to +inf, or
+%       ITER_STOP_WETTING to 0.  When wetting, outcrops and incrops of the
+%       surface that are adjacent to valid parts of the surface are added
+%       back into the surface if they are connected by a neutral
+%       trajectory. Default ITER_START_WETTING: 1.  Default
+%       ITER_STOP_WETTING: 5.
 %   INTERPFN [function handle]: vertical interpolation function, used to
 %       evaluate SppX and TppX if those are not provided.  Default:
 %       INTERPFN = @ppc_linterp.
 %   MLX []: do not remove the mixed layer (default)
 %   MLX [struct]: calculate the mixed layer using these parameters in mixed_layer().
 %   MLX [ni, nj]: use a pre-computed mixed layer pressure [dbar] or depth [m]
-%   REF_IJ [1, 2]: pixel indices for reference water column. The surface
-%       will be pinned to the depth of the initial surface at this
-%       location. Regions that are disconnected from the region containing
-%       this location are instead controlled by maintaining their mean
-%       depth.  Pass [] to do no pinning, and hold all regions to their
-%       mean depth.
 %   SppX [O, nk-1, ni, nj]: Coefficients for piecewise polynomials, whose
 %       knots are X, that interpolate S as a function of X in each water
 %       column.  E.g. SppX = ppc_linterp(X, S);
@@ -130,11 +127,19 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, OPTS)
 %   VERBOSE [scalar]: 0 for no output; 1 for summary of each iteration;
 %                     2 for detailed information on each iteration.
 %                     Default: 1.
+%   WRAP [2, 1]: logical array.  WRAP(i) is true iff the domain is periodic 
+%       in the i'th dimension.  The current code requires WRAP = [1; 1],
+%       for a doubly periodic domain. Add NaN walls to achieve a
+%       non-periodic domain.
 %
 %
 % --- References:
-% Klocker et al 2009: A new method of forming approximately neutral
-%  surfaces,., Ocean Science, 5, 155-172.
+% Klocker, McDougall, Jackett 2009: A new method of forming approximately
+%  neutral surfaces, Ocean Science, 5, 155-172.
+%
+% Stanley, McDougall, Barker: Algorithmic improvements to finding
+%  approximately neutral surfaces, Journal of Advances in Earth System
+%  Modelling, submitted.
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -172,8 +177,6 @@ T = double(T);
 X = double(X);
 x = double(x);
 
-WRAP = [1; 1];  % This code demands a doubly periodic domain.  Add NaN walls for a non-periodic domain. 
-
 % Get size of 3D hydrography
 [nk,ni,nj] = size(S);
 nij = nj * ni;
@@ -182,15 +185,8 @@ nij = nj * ni;
 lead1 = @(x) reshape(x, [1 size(x)]);
 autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
 
-% Pre-calculate things for Breadth First Search
-qu = zeros(nij, 1); % queue storing linear indices to pixels
-A4 = grid_adjacency([ni,nj], 4, WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
-
-% Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
-BotK = squeeze(sum(isfinite(S), 1));
-
-msg1 = 'Initial surface has  log_10(|eps|_2) == %9.6f ..................   mean(x) %.2f; mean(eos) %.6e\n';
-msg2 = 'Iter %2d (%6.2f sec) log_10(|eps|_2) == %9.6f by |phi''|_1 = %.6e; %03d regions; %4d casts freshly wet; |Delta_x|_2 = %.6e; mean(x) = %.2f; mean(eos) = %.6f\n';
+msg1 = 'Initial surface has  log_10(|eps|_2) == %9.6f .................. \n';
+msg2 = 'Iter %2d (%6.2f sec) log_10(|eps|_2) == %9.6f by |phi''|_1 = %.6e; %4d casts freshly wet; |Delta_x|_2 = %.6e\n';
 
 %% Process OPTS
 
@@ -203,20 +199,32 @@ FILE_ID = OPTS.FILE_ID;
 ITER_MIN = OPTS.ITER_MIN;
 ITER_MAX = OPTS.ITER_MAX;
 ITER_START_WETTING = OPTS.ITER_START_WETTING;
+ITER_STOP_WETTING  = OPTS.ITER_STOP_WETTING ;
 VERBOSE = OPTS.VERBOSE;
-REF_IJ = OPTS.REF_IJ;
 POISSON = OPTS.POISSON; 
 TOL_X_CHANGE_L2 = OPTS.TOL_X_CHANGE_L2;
 TOL_X_UPDATE = OPTS.TOL_X_UPDATE; % tolerance in pressure [dbar] during vertical solve.
+WRAP = OPTS.WRAP(:);
 
 DIAGS = (VERBOSE > 0) || (nargout > 3);
 
-PIN = ~isempty(REF_IJ);
-if PIN
-  m_ref = sub2ind([ni, nj], REF_IJ(1), REF_IJ(2));
+assert(all(WRAP), 'Current code requires WRAP to be [1; 1], for a doubly periodic domain. Add NaN walls for a non-periodic domain.')
+
+if isscalar(ref_cast)
+  assert(ref_cast >= 1 && ref_cast <= nij, 'Out of bounds Linear index for ref_cast.');
+elseif numel(ref_cast) == 2
+  assert(all(ref_cast >= 1) && all(ref_cast <= [ni; nj]), 'ref_cast must index a cast within the domain.')
+  ref_cast = sub2ind([ni, nj], ref_cast(1), ref_cast(2)); % Convert into linear index to the reference cast
 else
-  m_ref = [];
+  assert(false, 'ref_cast must be a 1 or 2 element vector');
 end
+
+% Pre-calculate things for Breadth First Search
+qu = zeros(nij, 1); % queue storing linear indices to pixels
+A4 = grid_adjacency([ni,nj], 4, WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
+
+% Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
+BotK = squeeze(sum(isfinite(S), 1));
 
 eos0 = eos(34.5, 3, 1000);
 if eos0 > 1
@@ -261,9 +269,9 @@ Xvec = isvector(X);
 ni_ = max(ni, 4096); % using variable size code generation and avoiding
 nj_ = max(nj, 4096); % recompiling all the time
 omega_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
-bfs_conncomp_codegen(nk, ni_, nj_, Xvec, false, OPTS);
-if ITER_START_WETTING <= ITER_MAX
-  bfs_wet_codegen(nk, ni_, nj_, Xvec, OPTS);
+% bfs_conncomp1_codegen(nk, ni_, nj_, Xvec, OPTS);
+if ITER_START_WETTING <= ITER_MAX && ITER_STOP_WETTING > 0
+  bfs_conncomp1_wet_codegen(nk, ni_, nj_, Xvec, OPTS)
 end
 
 %% Get MLX: the pressure or depth of the mixed layer
@@ -303,8 +311,8 @@ end
 if DIAGS
   
   diags = struct();
-  diags.mean_x      = nan(ITER_MAX + 1, 1);
-  diags.mean_eos    = nan(ITER_MAX + 1, 1);
+  %diags.mean_x      = nan(ITER_MAX + 1, 1);
+  %diags.mean_eos    = nan(ITER_MAX + 1, 1);
   diags.epsL1       = nan(ITER_MAX + 1, 1);
   diags.epsL2       = nan(ITER_MAX + 1, 1);
   
@@ -312,7 +320,6 @@ if DIAGS
   diags.x_change_L1   = nan(ITER_MAX, 1);
   diags.x_change_L2   = nan(ITER_MAX, 1);
   diags.x_change_Linf = nan(ITER_MAX, 1);
-  diags.num_regions   = nan(ITER_MAX, 1);
   diags.freshly_wet   = nan(ITER_MAX, 1);
   diags.relaxation    = nan(ITER_MAX, 1);
   diags.clocktime     = nan(ITER_MAX, 1);
@@ -322,15 +329,16 @@ if DIAGS
   
   % Diagnostics about state BEFORE this (first) iteration
   [epsL2, epsL1] = eps_norms(s, t, x, true, WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
-  mean_x = nanmean(x(:));
-  mean_eos = nanmean(eos(s(:), t(:), x(:)));
+  %mean_x = nanmean(x(:));
+  %mean_eos = nanmean(eos(s(:), t(:), x(:)));
   diags.epsL1(1) = epsL1;
   diags.epsL2(1) = epsL2;
-  diags.mean_x(1) = mean_x;
-  diags.mean_eos(1) = mean_eos;
+  %diags.mean_x(1) = mean_x;
+  %diags.mean_eos(1) = mean_eos;
   
   if VERBOSE > 0
-    fprintf(FILE_ID, msg1, log10(abs(epsL2)), mean_x, mean_eos);
+    %fprintf(FILE_ID, msg1, log10(abs(epsL2)), mean_x, mean_eos);
+    fprintf(FILE_ID, msg1, log10(abs(epsL2)));
   end
   
 end
@@ -346,45 +354,43 @@ for iter = 1 : ITER_MAX
     x(x < MLX) = nan;
   end
   
-  % --- Wetting via Breadth First Search
-  if iter >= ITER_START_WETTING
-    [s, t, x, freshly_wet, qu] = bfs_wet_mex(SppX, TppX, X, s, t, x, TOL_X_UPDATE, A4, BotK, qu);
+  
+  % --- Determine the connected component containing the reference cast, via Breadth First Search
+  if iter >= ITER_START_WETTING && iter <= ITER_STOP_WETTING
+    [s, t, x, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(SppX, TppX, X, s, t, x, TOL_X_UPDATE, A4, BotK, ref_cast, qu);
   else
+    [qu, qt] = bfs_conncomp1(isfinite(s), A4, ref_cast, qu);
     freshly_wet = 0;
   end
-  
-  % --- Accumulate regions via Breadth First Search
-  [qu, qts, ncc, ~, Lcc] = bfs_conncomp_all_mex(isfinite(s), A4, [], qu);
   
   
   % --- Solve global matrix problem for ...
   mytic = tic;
   if POISSON
     % ... the exactly determined Poisson equation
-    phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qts, Lcc, m_ref);
+    phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qt, ref_cast);
   else
     % ... the overdetermined gradient equations
-    phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4, qu, qts, Lcc, m_ref);
+    phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4, qu, qt, ref_cast);
   end
   if DIAGS
     timer_solver = toc(mytic);
   end
   
-  
+
   % --- Update the surface
   mytic = tic();
   x_old = x;      % Record old surface for pinning or diagnostic purposes.
   [x, s, t] = omega_vertsolve_mex(SppX, TppX, X, BotK, s, t, x, TOL_X_UPDATE, phi);
   
-  if PIN && ~isnan(phi(m_ref))
-    % Force x to stay constant at the reference column, identically. This
-    % avoids any intolerance from the vertical solver.
-    x(m_ref) = x_old(m_ref);
-  end
-  
+  % Force x to stay constant at the reference column, identically. This
+  % avoids any intolerance from the vertical solver.
+  x(ref_cast) = x_old(ref_cast);
+
   if DIAGS
     timer_update = toc(mytic);
   end
+
   
   % --- Closing Remarks
   phiL1 = nanmean(abs(phi(:)));
@@ -406,7 +412,6 @@ for iter = 1 : ITER_MAX
     diags.x_change_L1(iter)   = x_change_L1;
     diags.x_change_L2(iter)   = x_change_L2;
     diags.x_change_Linf(iter) = x_change_Linf;
-    diags.num_regions(iter)   = ncc;
     diags.freshly_wet(iter)   = freshly_wet;
     
     diags.timer_solver(iter)    = timer_solver;
@@ -414,16 +419,17 @@ for iter = 1 : ITER_MAX
     
     % Diagnostics about the state AFTER this iteration
     [epsL2, epsL1] = eps_norms(s, t, x, true, WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
-    mean_x = nanmean(x(:));
-    mean_eos = nanmean(eos(s(:),t(:),x(:)));
+    %mean_x = nanmean(x(:));
+    %mean_eos = nanmean(eos(s(:),t(:),x(:)));
     diags.epsL1(iter+1) = epsL1;
     diags.epsL2(iter+1) = epsL2;
-    diags.mean_x(iter+1)    = mean_x;
-    diags.mean_eos(iter+1)  = mean_eos;
+    %diags.mean_x(iter+1)    = mean_x;
+    %diags.mean_eos(iter+1)  = mean_eos;
     
     
     if VERBOSE > 0
-      fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), phiL1, ncc, freshly_wet, x_change_L2, mean_x, mean_eos);
+      %fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), phiL1, freshly_wet, x_change_L2, mean_x, mean_eos);
+      fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), phiL1, freshly_wet, x_change_L2);
     end
   end
   

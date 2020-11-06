@@ -1,17 +1,19 @@
-function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS)
+function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, ref_cast, OPTS)
 %TOPOBARIC_SURFACE  Create a topobaric surface.
 %
 %
-% x = topobaric_surface(S, T, X, x, OPTS)
+% x = topobaric_surface(S, T, X, x, ref_cast, OPTS)
 % returns the pressure x (output) of a topobaric surface formed by an
 % iterative procedure, initialized from an approximately neutral surface on
 % which the pressure is x (input), in an ocean with practical / Absolute
 % salinity is S and potential / Conservative temperature is T at datasites
-% where the pressure is X. The equation of state for the specific volume
-% and its partial derivative with respect to pressure are given by eos.m
-% and eos_x.m in the path.  If topobaric_geostrf will not be called, eos.m
-% and eos_x.m can instead determine the in-situ density and its derivative
-% with respect to pressure. Only one connected component of the surface is
+% where the pressure is X.  The depth or pressure of the topobaric surface
+% is pinned, unchanging through the iterations, at the reference cast
+% indexed by ref_cast.  The equation of state for the specific volume and
+% its partial derivative with respect to pressure are given by eos.m and
+% eos_x.m in the path.  If topobaric_geostrf will not be called, eos.m and
+% eos_x.m can instead determine the in-situ density and its derivative with
+% respect to pressure. Only one connected component of the surface is
 % processed.  Algorithmic options are given by OPTS (see below).  For
 % physical units, see "Equation of State" below.
 %
@@ -36,13 +38,14 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 % The smaller OPTS.TOL_X_UPDATE, the smaller OPTS.ITER_L2_CHANGE, and the larger
 % OPTS.ITER_MAX, the closer (d_fn_at_x - d) will be to zero.
 %
-% [x, s, t, RG, s0, t0, d_fn1] = topobaric_surface(S, T, X, x, OPTS)
+% [x, s, t, RG, s0, t0, d_fn1] = topobaric_surface(S, T, X, x, ref_cast, OPTS)
 % with OPTS.REEB == false instead calculates an "orthobaric" surface, in
 % which d is a single-valued function of the pressure or depth, d_fn1. This
 % is done in just one connected ReGion of the surface, namely the true
-% pixels in RG.wet. delta is the specific volume anomaly or in-situ density anomaly,
-% and delta on the surface will (less-so, relative to with OPTS.REEB == true) closely
-% match the delta values evaluated by d_fn1 on the surface, as follows:
+% pixels in RG.wet. delta is the specific volume anomaly or in-situ density
+% anomaly, and delta on the surface will (less-so, relative to with
+% OPTS.REEB == true) closely match the delta values evaluated by d_fn1 on
+% the surface, as follows:
 % >> lead1 = @(x) reshape(x, [1, size(x)]);              % add leading singleton dimension
 % >> SppX = ppc_linterp(X, S);                           % Interpolant for S in terms of X
 % >> TppX = ppc_linterp(X, T);                           % Interpolant for T in terms of X
@@ -69,6 +72,7 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 % X [nk, ni, nj] or [nk, 1]: pressure [dbar] or depth [m, positive]
 % x [ni, nj]: pressure [dbar] or depth [m, positive] on approximately
 %             neutral surface
+% ref_cast [1, 1] or [2, 1] : linear index or 2D index to the reference cast
 % OPTS [struct]: options (see "Options" below)
 %
 % Note: X must increase monotonically along the first dimension.
@@ -116,7 +120,6 @@ function [x, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, X, x, OPTS
 %   MLX []: do not remove the mixed layer
 %   MLX [struct]: calculate the mixed layer using these parameters in mixed_layer().
 %   MLX [ni, nj]: use a pre-computed mixed layer pressure [dbar] or depth [m]
-%   REF_IJ [1, 2]: pixel indices for reference water column.
 %   REF_X [1, 1]: override the pressure [dbar] or depth [m] at which the
 %       topobaric surface intersects the reference water column
 %   REF_S [1, 1]: override the reference practical / Absolute salinity.
@@ -339,7 +342,7 @@ d_fn = [];
 
 % Pre-calculate things for Breadth First Search
 qu = zeros(nij, 1); % queue storing linear indices to pixels
-A = grid_adjacency([ni,nj], 4, OPTS.WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
+A4 = grid_adjacency([ni,nj], 4, OPTS.WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
 
 % Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
 BotK = squeeze(sum(isfinite(S), 1));
@@ -372,9 +375,9 @@ if OPTS.REEB
 else
   obs_vertsolve_codegen(nk, ni_, nj_, Xvec, OPTS);
 end
-bfs_conncomp_codegen(nk, ni_, nj_, Xvec, true, OPTS);
-if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX
-  bfs_wet_codegen(nk, ni_, nj_, Xvec, OPTS);
+% bfs_conncomp1_codegen(nk, ni_, nj_, Xvec, OPTS);
+if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX && ITER_STOP_WETTING > 0
+  bfs_conncomp1_wet_codegen(nk, ni_, nj_, Xvec, OPTS)
 end
 
 %% Get MLX: the pressure or depth of the mixed layer
@@ -428,19 +431,26 @@ diags.timer_update    = nan(OPTS.ITER_MAX, 1);
 
 %% Process the reference cast:
 % Get linear index to reference cast
-assert(numel(OPTS.REF_IJ) == 2, 'OPTS.REF_IJ must be a vector of length 2');
-I0 = sub2ind([ni,nj], OPTS.REF_IJ(1), OPTS.REF_IJ(2));
+
+if isscalar(ref_cast)
+  assert(ref_cast >= 1 && ref_cast <= nij, 'Out of bounds Linear index for ref_cast.');
+elseif numel(ref_cast) == 2
+  assert(all(ref_cast >= 1) && all(ref_cast <= [ni; nj]), 'ref_cast must index a cast within the domain.')
+  ref_cast = sub2ind([ni, nj], ref_cast(1), ref_cast(2)); % Convert into linear index to the reference cast
+else
+  assert(false, 'ref_cast must be a 1 or 2 element vector');
+end
 
 % Set x0: the x value the surface will be pinned to at this ref cast
 if isscalar(OPTS.REF_X)
   x0 = OPTS.REF_X;
 else
-  x0 = x(I0);
+  x0 = x(ref_cast);
 end
 
 % Get (s0,t0): (S,T) values at the reference cast at the reference x.
-s0 = s(I0);
-t0 = t(I0);
+s0 = s(ref_cast);
+t0 = t(ref_cast);
 d0 = eos(s0, t0, x0); % temporary, will be over-written
 
 % Overwrite with reference values if provided
@@ -468,18 +478,17 @@ for iter = 1 : OPTS.ITER_MAX
   end
   
   
-  % --- Wetting via Breadth First Search
+  % --- Determine the connected component containing the reference cast,
+  % via Breadth First Search, and do wetting while at it
   mytic = tic();
-  if iter >= OPTS.ITER_START_WETTING
-    [s, t, x, freshly_wet, qu] = bfs_wet_mex(SppX, TppX, X, s, t, x, OPTS.TOL_X_UPDATE, A, BotK, qu);
+  if iter >= OPTS.ITER_START_WETTING && iter <= OPTS.ITER_STOP_WETTING
+    [s, t, x, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(SppX, TppX, X, s, t, x, OPTS.TOL_X_UPDATE, A4, BotK, ref_cast, qu);
   else
+    [qu, qt] = bfs_conncomp1(isfinite(s), A4, ref_cast, qu);
     freshly_wet = 0;
   end
   
-  % --- Breadth First Search to find connected region
-  [qu, qts] = bfs_conncomp_one_mex(isfinite(x), A, I0, qu);
-  qt = qts(2)-1;
-  
+
   % Keep only the component of the surface connected to the reference cast
   wet = false(ni,nj);
   wet(qu(1:qt)) = true;
@@ -546,8 +555,8 @@ for iter = 1 : OPTS.ITER_MAX
     d_fn = int_graph_fun(dx_fn, arc_from, arc_to, node_fn, graph, bfs_parent_node, bfs_topo_order, bfs_missing_arc);
     
     % Adjust d_fn so that the new surface coincides with the old one on the starting water column
-    % i.e. force d_fn(:,arc(I0)) evaluated at x0 to equal d0.
-    d_fn(end,:) = d_fn(end,:) + (d0 - pvallin(d_fn(:,arc(I0)), x0));
+    % i.e. force d_fn(:,arc(ref_cast)) evaluated at x0 to equal d0.
+    d_fn(end,:) = d_fn(end,:) + (d0 - pvallin(d_fn(:,arc(ref_cast)), x0));
     
     % Double check matching conditions at nodes of the Reeb Graph.
     %{
@@ -577,7 +586,7 @@ for iter = 1 : OPTS.ITER_MAX
     d_fn = ppint(dx_fn);
     
     % Adjust d_fn so that the new surface coincides with the old one on the starting water column
-    % i.e. force d_fn(:,arc(I0)) evaluated at x0 to equal d0.
+    % i.e. force d_fn(:,arc(ref_cast)) evaluated at x0 to equal d0.
     d_fn.coefs(:,end) = d_fn.coefs(:,end) + ( d0 - ppval(d_fn, x0) );
   end
   clear dx_fn dx_

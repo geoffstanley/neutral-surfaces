@@ -153,7 +153,7 @@ while qt > qh
   for d = 1 : D
     n = A(d,m); % neighbour node
     if n && G(n)
-      % n is on the surface, and undiscovered
+      % n is good, and undiscovered
       qt = qt + 1;  % Add n to queue
       qu(qt) = n;
       G(n) = false; % mark n as discovered

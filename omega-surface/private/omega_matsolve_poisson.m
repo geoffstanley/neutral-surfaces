@@ -1,4 +1,4 @@
-function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qts, Lcc, m_ref)
+function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qt, mr)
 % OMEGA_MATSOLVE_POISSON  Build & solve the sparse matrix Poisson problem for omega surfaces
 %
 %
@@ -161,78 +161,59 @@ L(IJ, L(IJ,:,:) == 0) = 1;
 %% Build and solve sparse matrix problem
 phi = nan(ni, nj);     % solution to matrix problem
 remap = zeros(ni,nj);  % remap indices from 2D into linear indices for the current connected component
-PIN = ~isempty(m_ref); % whether to phi(pin_idx) = 0 or not
-ncc = length(qts) - 1; % number connected components
-for icc = 1 : ncc % icc = index of region
-  
-  % Collect and sort linear indices to all pixels in this region
-  m = sort(qu(qts(icc) : qts(icc+1)-1));  % sorting here makes matrix better structured; overall speedup.
-  
-  N = length(m);  % Number of water columns
-  if N <= 1  % There are definitely no equations to solve
-    phi(m) = 0; % Leave this isolated pixel at current pressure
-    continue
-  end
-  
-  % Label the water columns in this region alone by 1, 2, ... N
-  % No need to reset other elements of remap to 0.
-  remap(m) = 1:N;
-  
-  %PIN_HERE = PIN && m(binsrchleft(m_ref, m)) == m_ref;  % Alternative test option
-  PIN_HERE = PIN && icc == Lcc(m_ref);
-  if PIN_HERE
-    % m_ref is in this region.
-    mr = m_ref;
-  else
-    % m_ref is not in this region.  Pin the first cast we see, and adjust later
-    mr = m(1);
-  end
-  
-  % Pin surface at idx1 by changing the idx1'th equation to be 1 * phi[idx1] = 0.
-  D(mr) = 0;
-  L(:,mr) = 0;
-  L(IJ,mr) = 1;
-  
-  % The above change renders the idx1'th column on all rows irrelevant,
-  % since phi[idx1] will be zero.  So, we may also set this column to 0,
-  % which we do here by setting the appropriate links in L to 0. This
-  % maintains symmetry of the matrix, and speeds up solution by a
-  % factor of about 2.
-  L(IM,A4(IP,mr)) = 0;
-  L(MJ,A4(PJ,mr)) = 0;
-  L(PJ,A4(MJ,mr)) = 0;
-  L(IP,A4(IM,mr)) = 0;
-  
-  % Build the RHS of the matrix problem
-  rhs = D(m);
-  
-  % Build indices for the rows of the sparse matrix
-  r = repmat(1:N, 5, 1);
-  
-  % Build indices for the columns of the sparse matrix
-  % remap() changes global indices to local indices for this region, numbered 1, 2, ... N
-  c = [remap(A4(IM,m)); remap(A4(MJ,m)); remap(A4(PJ,m)); remap(A4(IP,m)); 1:N];
 
-  % Build the values of the sparse matrix
-  v = L(:,m);
-  
-  % Pin surface at mr = m_ref or mr = m(1), by adding a 1 to (mr, mr) entry
-  % v(IJ, remap(mr)) = v(IJ, remap(mr)) + 1;
-  
-  % Build the sparse matrix, with N rows and N columns
-  good = c > 0; % Ignore connections to dry pixels (though they should have zero J anyway, this is faster)
-  mat = sparse( r(good), c(good), v(good), N, N );
-  
-  
-  % Solve the matrix problem
-  sol = mat \ rhs;
-  
-  if ~PIN_HERE
-    % Adjust solution, not in the region containing the reference cast, to have zero mean.
-    sol = sol - mean(sol);
-  end
-  
-  % Save solution
-  phi(m) = sol;
-  
-end % icc
+% Collect and sort linear indices to all pixels in this region
+m = sort(qu(1:qt));  % sorting here makes matrix better structured; overall speedup.
+
+N = length(m);  % Number of water columns
+if N <= 1  % There are definitely no equations to solve
+  phi(m) = 0; % Leave this isolated pixel at current pressure
+  return
+end
+
+% Label the water columns in this region alone by 1, 2, ... N
+% No need to reset other elements of remap to 0.
+remap(m) = 1:N;
+
+% Pin surface at idx1 by changing the idx1'th equation to be 1 * phi[idx1] = 0.
+D(mr) = 0;
+L(:,mr) = 0;
+L(IJ,mr) = 1;
+
+% The above change renders the idx1'th column on all rows irrelevant,
+% since phi[idx1] will be zero.  So, we may also set this column to 0,
+% which we do here by setting the appropriate links in L to 0. This
+% maintains symmetry of the matrix, and speeds up solution by a
+% factor of about 2.
+L(IM,A4(IP,mr)) = 0;
+L(MJ,A4(PJ,mr)) = 0;
+L(PJ,A4(MJ,mr)) = 0;
+L(IP,A4(IM,mr)) = 0;
+
+% Build the RHS of the matrix problem
+rhs = D(m);
+
+% Build indices for the rows of the sparse matrix
+r = repmat(1:N, 5, 1);
+
+% Build indices for the columns of the sparse matrix
+% remap() changes global indices to local indices for this region, numbered 1, 2, ... N
+c = [remap(A4(IM,m)); remap(A4(MJ,m)); remap(A4(PJ,m)); remap(A4(IP,m)); 1:N];
+
+% Build the values of the sparse matrix
+v = L(:,m);
+
+% Pin surface at mr = m_ref or mr = m(1), by adding a 1 to (mr, mr) entry
+% v(IJ, remap(mr)) = v(IJ, remap(mr)) + 1;
+
+% Build the sparse matrix, with N rows and N columns
+good = c > 0; % Ignore connections to dry pixels (though they should have zero J anyway, this is faster)
+mat = sparse( r(good), c(good), v(good), N, N );
+
+
+% Solve the matrix problem
+sol = mat \ rhs;
+
+% Save solution
+phi(m) = sol;
+

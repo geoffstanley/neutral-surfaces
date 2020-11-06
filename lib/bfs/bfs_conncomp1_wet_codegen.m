@@ -1,4 +1,6 @@
-function bfs_wet_codegen(nk, ni, nj, Xvec, OPTS)
+function bfs_conncomp1_wet_codegen(nk, ni, nj, Xvec, OPTS)
+
+
 %BFS_WET_CODEGEN  Create MEX function for bfs_wet
 %
 %
@@ -54,7 +56,7 @@ end
 V = filesep();
 
 % Get info about which functions are on the path
-name = 'bfs_wet';
+name = 'bfs_conncomp1_wet';
 name_mex = [name '_mex'];
 file_mex = dir(which(name_mex));
 file_mat = dir(which(name));
@@ -101,7 +103,7 @@ if isempty(file_mex) ... % No mex file yet
     t_BotK = coder.typeof(0, [ni, nj], [vs, vs]);
     t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
     
-    args = {t_SppX, t_SppX, t_X, t_x, t_x, t_x, 0, t_A, t_BotK, t_q};
+    args = {t_SppX, t_SppX, t_X, t_x, t_x, t_x, 0, t_A, t_BotK, 0, t_q};
     
     % Configure MEX for speed.
     mexconfig = coder.config('mex');
