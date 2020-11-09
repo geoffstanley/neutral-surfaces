@@ -122,6 +122,11 @@ for n = 1:N
           t(n) = nan;
         end
         
+    else
+      % phi is nan, or only one grid cell so cannot interpolate.
+      x(n) = nan;
+      s(n) = nan;
+      t(n) = nan;
     end
     
 end
