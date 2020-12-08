@@ -150,9 +150,9 @@ E = length(rhs) - 1; % number of Equations, excluding density conserving equatio
 
 % Build indices for the rows of the sparse matrix.
 if ZERO_MEAN
-  r = [flat(repelem((1:E), 1, 2)); repelem(E+1, N, 1)]; % [1; 1; 2; 2;, ...; E; E; ..., E; E+1; ...; E+1]
+  r = [flat(repelem((1:E), 1, 2)); repelem(E+1, N, 1)]; % [1; 1; 2; 2; ...; E; E; E+1; ...; E+1]
 else % PINNING
-  r = [flat(repelem((1:E), 1, 2)); E+1];                % [1; 1; 2; 2;, ...; E; E; ..., E; E+1;]
+  r = [flat(repelem((1:E), 1, 2)); E+1];                % [1; 1; 2; 2; ...; E; E; E+1;]
 end
 
 % Build indices for the columns of the sparse matrix
