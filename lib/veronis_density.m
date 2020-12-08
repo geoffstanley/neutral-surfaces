@@ -1,4 +1,4 @@
-function d1 = veronis_density(x_ref, S, T, X, x0, x1, s1, t1, dx, interpfn)
+function d1 = veronis_density(x_ref, S, T, X, x0, x1, dx, interpfn)
 % VERONIS_DENSITY  The surface density plus the integrated vertical 
 %                  gradient of Locally Referenced Potential Density.
 %
@@ -15,17 +15,8 @@ function d1 = veronis_density(x_ref, S, T, X, x0, x1, s1, t1, dx, interpfn)
 % and T, and dS/dX and dT/dX are the derivatives of S and T with respect to
 % X.  The equation of state for density is given by eos.m in the PATH, and
 % its partial derivatives with respect to S and T are given by eos_s_t.m in
-% the PATH. It is assumed here that S and T are piecewise linear
-% interpolants in X.
+% the PATH.  If x0 or x1 are outside the range of X, d1 is returned as NaN.
 % 
-% d1 = veronis_density(x_ref, S, T, X, x0, x1, s1, t1)
-% first finds the pressure or depth x2 at which a (discrete) neutral
-% trajectory from the bottle (s1,t1,x1) intersects the cast (S,T,X), then
-% returns veronis_density(x_ref, S, T, X, x0, x2).  This form allows the cast
-% (S,T,X) to not necessarily be from the same dataset as the bottle (s1,
-% t1, x1).  If it is, i.e. if (x1,s1,t1) is a point on the (S,T,X) cast,
-% then x2 = x1.
-%
 % d1 = veronis_density(..., dx)
 % specifies the maximum interval size used in the trapezoidal numerical
 % integration.  If omitted, the default size is 1 unit of X (1m or 1 dbar).
@@ -42,13 +33,11 @@ function d1 = veronis_density(x_ref, S, T, X, x0, x1, s1, t1, dx, interpfn)
 %
 % --- Input:
 % x_ref [1,1]: reference pressure / depth to evaluate potential density at x0
-%  S [nk, 1]: practical / Absolute Salinity values on a cast
-%  T [nk, 1]: potential / Conservative Temperature values on a cast
-%  X [nk, 1]: pressure / depth values on a cast
+%  S [nk, nt]: practical / Absolute Salinity values on a cast
+%  T [nk, nt]: potential / Conservative Temperature values on a cast
+%  X [nk, nt]: pressure / depth values on a cast
 %  x0 [1, 1]: pressure / depth that starts the integral
-%  x1 [1, 1]: pressure / depth of point on surface
-%  s1 [1, 1]: practical / Absolute Salinity value of point on surface
-%  t1 [1, 1]: potential / Conservative Temperature value of point on surface
+%  x1 [1, 1]: pressure / depth that ends the integral
 %  dx [1, 1]: maximum interval of pressure / depth in numerical integration
 %  interpfn [function handle]: function to calcualte piecewise polynomial coefficients
 %
@@ -77,7 +66,7 @@ function d1 = veronis_density(x_ref, S, T, X, x0, x1, s1, t1, dx, interpfn)
 % Veronis, G. (1972). On properties of seawater defined by temperature,
 % salinity, and pressure. Journal of Marine Research, 30(2), 227.
 %
-% Stanley, G. J., McDougall, T. J., & Barker, P. M. (2020). Algorithmic
+% Stanley, G. J., McDougall, T. J., & Barker, P. M. (2021). Algorithmic
 % improvements to finding approximately neutral surfaces. Journal of
 % Advances in Modeling Earth Systems, submitted.
 
@@ -102,43 +91,40 @@ function d1 = veronis_density(x_ref, S, T, X, x0, x1, s1, t1, dx, interpfn)
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
 
+assert(all(size(T) == size(S)), 'T must be same size as S')
+assert(all(size(X) == size(S)), 'X must be same size as S')
+assert(isvector(S), 'S, T, X must be 1D. (Veronis density is only useful for one water column at a time!)');
+assert(isscalar(x0), 'x0 must be a scalar');
+assert(isscalar(x1), 'x1 must be a scalar');
 
-
-k0 = discretize(x0, X);  % X(k0) <= x0 < X(k0+1);  but if x0 == X(end), then k0 = length(X) - 1;  else, k0 = NaN.
-k1 = discretize(x1, X);  % X(k1) <= x1 < X(k1+1);  but if x1 == X(end), then k1 = length(X) - 1;  else, k1 = NaN.
-
-assert(~isnan(k0), 'x0 must be in the range of X');
-assert(~isnan(k1), 'x1 must be in the range of X');
-
-if nargin < 10 
-  % Piecewise linear interpolation, by default
-  interpfn = @ppc_linterp;
+if nargin < 7 || isempty(dx)
+  dx = 1; % default: 1m or 1dbar step size for trapezoidal integration
 end
+
+if nargin < 8 || isempty(interpfn)
+  interpfn = @ppc_linterp; % default: piecewise linear interpolation
+end
+
 
 % Interpolate S and T as piecewise polynomials of X
 SppX = interpfn(X, S);
 TppX = interpfn(X, T);
+
+% Evaluate the derivatives of these piecewise polynomials as functions of X
 SxppX = ppc_deriv(X, SppX);
 TxppX = ppc_deriv(X, TppX);
 
-
-if nargin >= 8 && isscalar(s1) && isscalar(t1)
-  % Make a neutral connection from (s1,t1,x1) on the approximately neutral
-  % surface to the cast (S,T,X), which need not be from the same oceanic
-  % dataset as the approximately neutral surface lives in.
-  K = sum(isfinite(S));
-
-  x1 = ntp_bottle_to_cast(SppX, TppX, X, K, s1, t1, x1, 1e-6);
-end
-
-
-if nargin < 9 || isempty(dx)
-  dx = 1;  % Upper limit for numerical integration step size
-end
-
-% Calculate ipotential density, referenced to x_ref, at x0
+% Calculate potential density, referenced to x_ref, at x0
 [s0, t0] = ppc_val2(X, SppX, TppX, x0);
 d0 = eos(s0, t0, x_ref);
+
+% Find indices at which x0 and x1 sit within X
+k0 = discretize(x0, X);  % X(k0) <= x0 < X(k0+1);  but if x0 == X(end), then k0 = length(X) - 1;  else, k0 = NaN.
+k1 = discretize(x1, X);  % X(k1) <= x1 < X(k1+1);  but if x1 == X(end), then k1 = length(X) - 1;  else, k1 = NaN.
+if isnan(k0) || isnan(k1)
+  d1 = nan;
+  return
+end
 
 % Integrate from x0 to X(k0+1)
 d1 =   d0 + int_x_kp1(X, x0, k0, dx, SppX, TppX, SxppX, TxppX);
