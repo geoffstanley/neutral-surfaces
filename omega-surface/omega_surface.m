@@ -213,7 +213,7 @@ assert(all(WRAP), 'Current code requires WRAP to be [1; 1], for a doubly periodi
 if isscalar(ref_cast)
   assert(ref_cast >= 1 && ref_cast <= nij, 'Out of bounds Linear index for ref_cast.');
 elseif numel(ref_cast) == 2
-  assert(all(ref_cast >= 1) && all(ref_cast <= [ni; nj]), 'ref_cast must index a cast within the domain.')
+  assert(all(ref_cast >= 1) && all(ref_cast(:) <= [ni; nj]), 'ref_cast must index a cast within the domain.')
   ref_cast = sub2ind([ni, nj], ref_cast(1), ref_cast(2)); % Convert into linear index to the reference cast
 else
   assert(false, 'ref_cast must be a 1 or 2 element vector');

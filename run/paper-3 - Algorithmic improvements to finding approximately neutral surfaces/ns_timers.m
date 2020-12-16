@@ -242,6 +242,7 @@ for iDATA = 1 : nDATA
   OPTS.DIST2_iJ = g.DYG;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
   OPTS.DIST1_Ij = g.DXG;   % Distance [m] in 1st dimension centred at (I, J-1/2)
   
+  % Testing sensitivity to non-uniform grid distances
   %   OPTS.DIST1_iJ = 1;   % Distance [m] in 1st dimension centred at (I-1/2, J)
   %   OPTS.DIST2_Ij = 1;   % Distance [m] in 2nd dimension centred at (I, J-1/2)
   %   OPTS.DIST2_iJ = 1;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
