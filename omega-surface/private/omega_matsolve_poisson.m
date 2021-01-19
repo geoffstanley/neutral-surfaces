@@ -175,13 +175,13 @@ end
 % No need to reset other elements of remap to 0.
 remap(m) = 1:N;
 
-% Pin surface at idx1 by changing the idx1'th equation to be 1 * phi[idx1] = 0.
+% Pin surface at mr by changing the mr'th equation to be 1 * phi[mr] = 0.
 D(mr) = 0;
 L(:,mr) = 0;
 L(IJ,mr) = 1;
 
-% The above change renders the idx1'th column on all rows irrelevant,
-% since phi[idx1] will be zero.  So, we may also set this column to 0,
+% The above change renders the mr'th column on all rows irrelevant,
+% since phi[mr] will be zero.  So, we may also set this column to 0,
 % which we do here by setting the appropriate links in L to 0. This
 % maintains symmetry of the matrix, and speeds up solution by a
 % factor of about 2.
@@ -212,7 +212,7 @@ mat = sparse( r(good), c(good), v(good), N, N );
 
 
 % Solve the matrix problem
-sol = mat \ rhs;
+sol = mat \ rhs;  % Cholesky direct solver
 
 % Save solution
 phi(m) = sol;
