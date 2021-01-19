@@ -143,8 +143,6 @@ function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav
 
 % --- Input checks, set parameters
 narginchk(8,12)
-assert(~isempty(which('eos')), 'Cannot find eos.m in the path or current directory.');
-assert(~isempty(which('eos_x')), 'Cannot find eos_x.m in the path or current directory.');
 assert(nargout <= 2 || nargin == 12, 'If sx, sy are requested, must provide S, T, X');
 
 [nx,ny] = size(s);
@@ -194,6 +192,7 @@ else
 end
     
 if ~use_s_t || nargout >= 3
+  assert(~isempty(which('eos')), 'Cannot find eos.m in the path or current directory.');
   r = eos(s, t, x); % in-situ density (or specific volume)
 end
 
@@ -202,9 +201,11 @@ sa = A_X(s);
 ta = A_X(t);
 xa = A_X(x);
 if use_s_t
+    assert(~isempty(which('eos_s_t')), 'Cannot find eos_s_t.m in the path or current directory.');
     [rsa,rta] = eos_s_t(sa,ta,xa);
     ex = (rsa .* D_X(s) + rta .* D_X(t)) ./ dx;
 else
+    assert(~isempty(which('eos_x')), 'Cannot find eos_x.m in the path or current directory.');
     rxa = eos_x(sa, ta, xa);
     ex = (D_X(r) - rxa .* D_X(x)) ./ dx;
 end

@@ -77,7 +77,7 @@ function [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, DIST1_iJ, DIST2_Ij, 
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
 
-
+flag = @(F) F(:);
 
 
 % Compute epsilon neutrality errors without handling grid distances
@@ -95,8 +95,8 @@ end
 %     AREA_iJ ./ DIST1_iJ.^2 = DIST2_iJ ./ DIST1_iJ , 
 % and AREA_Ij ./ DIST2_Ij.^2 = DIST1_Ij ./ DIST2_Ij .
 epsL2 = sqrt( ...
-  (sum( DIST2_iJ(:) ./ DIST1_iJ(:) .* eps_iJ(:).^2, 'omitnan') + sum( DIST1_Ij(:) ./ DIST2_Ij(:) .* eps_Ij(:).^2, 'omitnan')) ./ ...
-  (sum( AREA_iJ(:) .* isfinite(eps_iJ(:)) )                    + sum( AREA_Ij(:) .* isfinite(eps_Ij(:)) )) ...
+  (sum(flat( DIST2_iJ ./ DIST1_iJ .* eps_iJ.^2), 'omitnan') + sum(flat( DIST1_Ij ./ DIST2_Ij .* eps_Ij.^2 ), 'omitnan')) ./ ...
+  (sum(flat(  AREA_iJ .* isfinite(eps_iJ) ))                + sum(flat(  AREA_Ij .* isfinite(eps_Ij))     ) ) ...
   );
 
 if nargout < 2; return; end
@@ -108,5 +108,5 @@ if nargout < 2; return; end
 %     AREA_iJ ./ DIST1_iJ = DIST2_iJ , 
 % and AREA_Ij ./ DIST2_Ij = DIST1_Ij .
 epsL1 =  ...
-  (sum( DIST2_iJ(:) .* abs(eps_iJ(:)), 'omitnan' ) + sum( DIST1_Ij(:) .* abs(eps_Ij(:)), 'omitnan' )) ./ ...
-  (sum(  AREA_iJ(:) .* isfinite(eps_iJ(:)) )       + sum(  AREA_Ij(:) .* isfinite(eps_Ij(:)) ) ) ;
+  (sum(flat( DIST2_iJ .* abs(eps_iJ) ), 'omitnan' ) + sum(flat( DIST1_Ij .* abs(eps_Ij) ), 'omitnan' )) ./ ...
+  (sum(flat(  AREA_iJ .* isfinite(eps_iJ) ))        + sum(flat(  AREA_Ij .* isfinite(eps_Ij) ) ) ) ;

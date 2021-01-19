@@ -1,9 +1,6 @@
 **/codegen
 *.mex*
-*info.txt
-run*.txt
-PATH_ECCO2.txt
-PATH_OCCA.txt
+*.txt
 eos.m
 eos_x.m
 eos_s_t.m
