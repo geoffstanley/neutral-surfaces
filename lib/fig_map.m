@@ -174,7 +174,7 @@ if ~isempty(mask)
     C(mask,3) = maskcol(3);
     C = reshape(C, [ny nx 3]);
     C = [C, zeros(ny,1,3); zeros(1,nx+1,3)];
-    hm = surf(ax, [X; Inf], [Y; Inf], zeros(ny+1,nx+1), C);
+    hm = surf(ax, [X; Inf], [Y; Inf], ones(ny+1,nx+1), C);
     hm.EdgeColor = 'none';
     view(ax,0,90);
 end
