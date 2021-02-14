@@ -82,7 +82,7 @@ flat = @(F) F(:);
 % Compute epsilon neutrality errors without handling grid distances
 [eps_iJ, eps_Ij] = ntp_errors(s, t, x, 1, 1, use_s_t, false, wrap);
 
-if nargin < 11
+if nargin < 10
   AREA_iJ = DIST1_iJ .* DIST2_iJ;   % Area [m^2] centred at (I-1/2, J)
   AREA_Ij = DIST1_Ij .* DIST2_Ij;   % Area [m^2] centred at (I, J-1/2)
 end
