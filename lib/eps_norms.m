@@ -77,8 +77,7 @@ function [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, DIST1_iJ, DIST2_Ij, 
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
 
-flag = @(F) F(:);
-
+flat = @(F) F(:);
 
 % Compute epsilon neutrality errors without handling grid distances
 [eps_iJ, eps_Ij] = ntp_errors(s, t, x, 1, 1, use_s_t, false, wrap);
