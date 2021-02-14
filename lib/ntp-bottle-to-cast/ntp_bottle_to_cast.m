@@ -107,7 +107,7 @@ function out = myfcn(x, SppX, TppX, X, sB, tB, xB)
 % Evaluate difference between (a) eos at location on the cast (S, T, X)
 % where the pressure or depth is x, and (b) eos of the bottle (sB, tB, xB);
 % here, eos is always evaluated at the average pressure or depth, (x +
-% x0)/2.
+% xB)/2.
 [s,t] = ppc_val2(X, SppX, TppX, x);
 x_avg = (xB + x) / 2;
 out = eos(sB, tB, x_avg) - eos(s, t, x_avg);
