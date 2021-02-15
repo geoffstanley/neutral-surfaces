@@ -58,7 +58,7 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, x, X, M, Y, s0, t0, OPTS, vara
 % - replace P with Z, the depth of the R and Y data;
 % - replace p with z, the depth of the surface;
 % - both z and Z must be positive and increase downwards;
-% - provide two additional parameters, grav and rho_c;
+% - provide two additional parameters after OPTS, grav and rho_c;
 % - replace A with R, the in-situ density, pre-computed as
 %   R = eos(S, T, Z);
 % - pre-compute Y as Y = hsap3(Z, ATMP, ETAN, R, grav, rho_c);
