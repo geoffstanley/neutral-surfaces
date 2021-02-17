@@ -305,7 +305,7 @@ else
 end
 
 [s, t] = ppc_val2(X, SppX, TppX, lead1(x));
-
+x(isnan(s)) = nan; % ensure same nan structure between s, t, and x. Just in case user gives, e.g., repmat(1000,ni,nj) for a 1000dbar isobaric surface
 
 %% Prepare diagnostics
 if DIAGS
