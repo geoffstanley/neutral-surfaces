@@ -79,7 +79,7 @@ elseif strcmpi(wrap, 'long')
   WRAP = [0 1];
 end
 
-[diags.epsL2(1), diags.epsL1(1)] = eps_norms(squeeze(sns).', squeeze(ctns).', squeeze(pns).', true, WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij); % GJS
+[diags.epsL2(1), diags.epsL1(1)] = eps_norms(squeeze(sns).', squeeze(ctns).', squeeze(pns).', true, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij); % GJS
     
 %% get size of 3-dim hydrography
 
@@ -656,7 +656,7 @@ for it = 1:nit
     
     diags.clocktime(it) = toc(iter_tic); % GJS
     
-    [diags.epsL2(it+1), diags.epsL1(it+1)] = eps_norms(squeeze(sns_i).', squeeze(ctns_i).', squeeze(pns_i).', true, WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij); % GJS
+    [diags.epsL2(it+1), diags.epsL1(it+1)] = eps_norms(squeeze(sns_i).', squeeze(ctns_i).', squeeze(pns_i).', true, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij); % GJS
 
     
     %phiL1 = nanmean(abs(depth_change_e(:)));  % GJS

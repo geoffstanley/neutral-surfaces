@@ -196,7 +196,7 @@ iter_tic = tic();
 if DIAGS
     diags = struct();
     diags.clocktime = toc(iter_tic);
-    [epsL2, epsL1] = eps_norms(s, t, x, true, OPTS.WRAP, OPTS.DIST1_iJ, OPTS.DIST2_Ij, OPTS.DIST2_iJ, OPTS.DIST1_Ij);
+    [epsL2, epsL1] = eps_norms(s, t, x, true, OPTS.WRAP, {}, OPTS.DIST1_iJ, OPTS.DIST2_Ij, OPTS.DIST2_iJ, OPTS.DIST1_Ij);
     diags.epsL1 = epsL1;
     diags.epsL2 = epsL2;
 end

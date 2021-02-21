@@ -1,8 +1,8 @@
-function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav, S, T, X)
+function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, eoses, grav, S, T, X)
 %NTP_ERRORS  The epsilon neutrality error and slope error from the neutral tangent plane
 %
 %
-% [ex,ey] = ntp_errors(s,t,x,dx,dy,use_s_t,centre,wrap)
+% [ex,ey] = ntp_errors(s,t,x,dx,dy,use_s_t,centre,wrap,eoses)
 % computes the zonal and meridional neutrality errors, ex and ey, for an
 % approximately neutral surface on which the practical / Absolute salinity
 % is s, the potential / Conservative temperature is t, and the pressure or
@@ -21,18 +21,27 @@ function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav
 % Data is treated periodic in the i'th (i=1 or 2) dimension of x if and
 % only if wrap(i) is true.
 %
-% [ex,ey,sx,sy] = ntp_errors(s,t,x,dx,dy,use_s_t,centre,wrap,grav,S,T,X)
+% If eoses is empty, then the equation of state for the in-situ density is
+% given by eos.m in the path.  If use_s_t is true, eos_s_t.m must also
+% exist in the path and return the partial derivatives of in-situ density
+% w.r.t s and t; otherwise, eos_x.m must also exist in the path and return
+% the partial derivative of in-situ density w.r.t x. The inputs to these
+% eos*.m functions must be (s, t, x).  Note, eos*.m can involve specific
+% volume instead of in-situ density, which merely changes the units of
+% [ex,ey].
+%
+% Otherwise, eoses must be a 2 element cell array that allows overriding
+% eos.m and eos_s_t.m / eos_x.m on MATLAB's path. eoses{1} is a function
+% handle to the equation of state, and eoses{2} is a function handle to the
+% necessary partial derivative(s) of the equation of state in its second
+% entry.
+%
+% [ex,ey,sx,sy] = ntp_errors(s,t,x,dx,dy,use_s_t,centre,wrap,eoses,grav,S,T,X)
 % also computes the zonal and meridional slope errors, sx and sy, for an
 % ocean of practical / Absolute salinity S and potential / Conservative
 % temperature T at datasites where the pressure or depth is X.
+% Provide {} for eoses if the default files on MATLAB's path are desired.
 %
-% The equation of state for the in-situ density is given by eos.m in the
-% path.  If use_s_t is true, eos_s_t.m must also exist in the path and
-% return the partial derivatives of in-situ density w.r.t s and t;
-% otherwise, eos_x.m must also exist in the path and return the partial
-% derivative of in-situ density w.r.t x. The inputs to these eos*.m
-% functions must be (s, t, x).  Note, eos*.m can involve specific volume
-% instead of in-situ density, which merely changes the units of [ex,ey].
 %
 % For a non-Boussinesq ocean, X and x are pressure [dbar].  When sx, sy are
 % requested, the gravitational acceleration grav must be given.
@@ -49,10 +58,12 @@ function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav
 % dy    [ni, nj]: Meridional grid distance [m] between S(:,i,j) and S(:,i,j-1)
 % use_s_t [1, 1]: true to compute ex,ey using s and t differences,
 %                 false to use eos(s,t,x) and x differences.
-% centre  [1, 1]: true to compute outputs on the central grid, 
+% centre  [1, 1]: true to compute outputs on the central grid,
 %                 false on the half grids
 % wrap    [2, 1]: wrap(i) is true when the data is periodic in i'th
 %                 dimension of x
+% eoses   {2, 1}: cell array of function handles to eos.m and eos_s_t.m (if
+%                 use_s_t == true) or eos_x.m (if use_s_t == false).
 % grav    [1, 1]: gravitational acceleration [m s^-2]
 % S [nk, ni, nj]: practical / Absolute salinity
 % T [nk, ni, nj]: potential / Conservative temperature
@@ -86,7 +97,7 @@ function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav
 %   [ex,ey] = rs grad s + rt grad t
 % when use_s_t is true, or
 %   [ex,ey] = grad r - rx grad x
-% when use_s_t is false.  
+% when use_s_t is false.
 % Here, the pressure or depth of the surface is x; s and t are the values
 % of S and T on the surface projected onto a sphere; r = eos(s,t,x) is the
 % in-situ density on the surface; rs, rt, and rx are the partial
@@ -142,8 +153,7 @@ function [ex,ey,sx,sy] = ntp_errors(s, t, x, dx, dy, use_s_t, centre, wrap, grav
 
 
 % --- Input checks, set parameters
-narginchk(8,12)
-assert(nargout <= 2 || nargin == 12, 'If sx, sy are requested, must provide S, T, X');
+narginchk(8,13)
 
 [nx,ny] = size(s);
 is2D = @(F) ismatrix(F) && all(size(F) == [nx,ny]);
@@ -157,18 +167,42 @@ assert(isscalar(use_s_t), 'use_s_t must be a (logical) scalar');
 assert(isscalar(centre), 'centre must be a (logical) scalar');
 assert(numel(wrap) == 2, 'wrap must be a 2 element (logical) vector');
 
-nonBOUSSINESQ = (nargin >= 9) && ~isempty(grav); % grav is given.
+nonBOUSSINESQ = (nargin >= 10) && ~isempty(grav); % grav is given.
 if nonBOUSSINESQ
-    assert(isscalar(grav), 'grav, if non-empty, must be a scalar');
+  assert(isscalar(grav), 'grav, if non-empty, must be a scalar');
 end
 
 if nargout > 2
-    assert(nargin == 12, 'If sx, sy are requested, must provide grav, S, T, X');
-    assert(isscalar(grav), 'grav must be a scalar.');
-    assert(is3Ds(S), 'The last two dimensions of S must match those of s (or be singletons).')
-    assert(is3Ds(T), 'The last two dimensions of T must match those of s (or be singletons).')
-    assert(is3Ds(X), 'The last two dimensions of X must match those of s (or be singletons).')
-    assert(size(T,1) == size(S,1) && size(S,1) == size(X,1), 'The first dimensions of S and T and X must match.');
+  assert(nargin == 13, 'If sx, sy are requested, must provide grav, S, T, X');
+  assert(isscalar(grav), 'grav must be a scalar.');
+  assert(is3Ds(S), 'The last two dimensions of S must match those of s (or be singletons).')
+  assert(is3Ds(T), 'The last two dimensions of T must match those of s (or be singletons).')
+  assert(is3Ds(X), 'The last two dimensions of X must match those of s (or be singletons).')
+  assert(size(T,1) == size(S,1) && size(S,1) == size(X,1), 'The first dimensions of S and T and X must match.');
+end
+
+if isempty(eoses)
+  % Get eos functions from MATLAB path
+  assert(~isempty(which('eos')), 'Cannot find eos.m in the path or current directory.');
+  eos = @eos;
+  if use_s_t
+    assert(~isempty(which('eos_s_t')), 'Cannot find eos_s_t.m in the path or current directory.');
+    eos_s_t = @eos_s_t;
+  else
+    assert(~isempty(which('eos_x')), 'Cannot find eos_x.m in the path or current directory.');
+    eos_x = @eos_x;
+  end
+else
+  % Load eos functions from input cell array
+  assert(iscell(eoses) && numel(eoses) == 2, 'eoses, if provided, must be a cell array of length 2');
+  assert(isa(eoses{1},'function_handle'), 'eoses{1} must be a function handle.')
+  assert(isa(eoses{2},'function_handle'), 'eoses{2} must be a function handle.')
+  eos = eoses{1};
+  if use_s_t
+    eos_s_t = eoses{2};
+  else
+    eos_x = eoses{2};
+  end
 end
 
 eos_is_dens = (eos(34.5, 3, 1000) > 1);
@@ -176,23 +210,22 @@ lead1 = @(x) reshape(x, [1 size(x)]);
 Pa2db = 1e-4;
 
 if centre
-    % Get errors by centred differences on the T grid
-    dx = dx * 2;
-    dy = dy * 2;
-    A_X = @(F) (im1(F) + ip1(F)) / 2;
-    D_X = @(F)  ip1(F) - im1(F);
-    A_Y = @(F) (jm1(F) + jp1(F)) / 2;
-    D_Y = @(F)  jp1(F) - jm1(F);
+  % Get errors by centred differences on the T grid
+  dx = dx * 2;
+  dy = dy * 2;
+  A_X = @(F) (im1(F) + ip1(F)) / 2;
+  D_X = @(F)  ip1(F) - im1(F);
+  A_Y = @(F) (jm1(F) + jp1(F)) / 2;
+  D_Y = @(F)  jp1(F) - jm1(F);
 else
-    % Get errors by backward differences, and leave on the U, V grid.
-    A_X = @(F) (F + im1(F)) / 2;
-    D_X = @(F)  F - im1(F);
-    A_Y = @(F) (F + jm1(F)) / 2;
-    D_Y = @(F)  F - jm1(F);
+  % Get errors by backward differences, and leave on the U, V grid.
+  A_X = @(F) (F + im1(F)) / 2;
+  D_X = @(F)  F - im1(F);
+  A_Y = @(F) (F + jm1(F)) / 2;
+  D_Y = @(F)  F - jm1(F);
 end
-    
+
 if ~use_s_t || nargout >= 3
-  assert(~isempty(which('eos')), 'Cannot find eos.m in the path or current directory.');
   r = eos(s, t, x); % in-situ density (or specific volume)
 end
 
@@ -201,13 +234,11 @@ sa = A_X(s);
 ta = A_X(t);
 xa = A_X(x);
 if use_s_t
-    assert(~isempty(which('eos_s_t')), 'Cannot find eos_s_t.m in the path or current directory.');
-    [rsa,rta] = eos_s_t(sa,ta,xa);
-    ex = (rsa .* D_X(s) + rta .* D_X(t)) ./ dx;
+  [rsa,rta] = eos_s_t(sa,ta,xa);
+  ex = (rsa .* D_X(s) + rta .* D_X(t)) ./ dx;
 else
-    assert(~isempty(which('eos_x')), 'Cannot find eos_x.m in the path or current directory.');
-    rxa = eos_x(sa, ta, xa);
-    ex = (D_X(r) - rxa .* D_X(x)) ./ dx;
+  rxa = eos_x(sa, ta, xa);
+  ex = (D_X(r) - rxa .* D_X(x)) ./ dx;
 end
 % Note, the s & t vs r & x forms of ex above are virtually identical: this
 % equivalence is accurate to third order. In particular, note that for
@@ -220,11 +251,11 @@ sa = A_Y(s);
 ta = A_Y(t);
 xa = A_Y(x);
 if use_s_t
-    [rsa,rta] = eos_s_t(sa,ta,xa);
-    ey = (rsa .* D_Y(s) + rta .* D_Y(t)) ./ dy;
+  [rsa,rta] = eos_s_t(sa,ta,xa);
+  ey = (rsa .* D_Y(s) + rta .* D_Y(t)) ./ dy;
 else
-    rxa = eos_x(sa, ta, xa);
-    ey = (D_Y(r) - rxa .* D_Y(x)) ./ dy;
+  rxa = eos_x(sa, ta, xa);
+  ey = (D_Y(r) - rxa .* D_Y(x)) ./ dy;
 end
 if nargout < 3; return; end
 
@@ -243,22 +274,22 @@ sigma = eos(S, T, lead1(x));
 % Take derivative of sigma w.r.t pressure or depth (as a SPATIAL coordinate)
 [~, dsigmadz] = pchipdqn(lead1(x), X, sigma);
 if nonBOUSSINESQ
-    % X is pressure, not depth.
-    % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
-    if eos_is_dens
-        dsigmadz = dsigmadz .* (Pa2db * grav * r);
-    else
-        dsigmadz = dsigmadz .* (Pa2db * grav ./ r);
-    end
+  % X is pressure, not depth.
+  % Convert d(sigma)/dp into d(sigma)/d|z| using hydrostatic balance
+  if eos_is_dens
+    dsigmadz = dsigmadz .* (Pa2db * grav * r);
+  else
+    dsigmadz = dsigmadz .* (Pa2db * grav ./ r);
+  end
 end
 % Now dsigmadz is d(sigma)/d|z| whether P is pressure or inverted depth
 % N.B. don't multiply by -1, because P increases downwards even if it is depth.
 
 % Apply threshold:
 if eos_is_dens
-    dsigmadz(dsigmadz < thresh) = thresh;
+  dsigmadz(dsigmadz < thresh) = thresh;
 else
-    dsigmadz(dsigmadz > -thresh) = -thresh;
+  dsigmadz(dsigmadz > -thresh) = -thresh;
 end
 
 % Slope error in x direction
@@ -269,32 +300,32 @@ sx = ex ./ A_X(dsigmadz);
 sy = ey ./ A_Y(dsigmadz);
 
 
-    function out = im1(in)
-        out = circshift(in, [+1 0]);
-        if ~wrap(1)
-            out(1,:) = nan;
-        end
+  function out = im1(in)
+    out = circshift(in, [+1 0]);
+    if ~wrap(1)
+      out(1,:) = nan;
     end
+  end
 
-    function out = jm1(in)
-        out = circshift(in, [0 +1]);
-        if ~wrap(2)
-            out(:,1) = nan;
-        end
+  function out = jm1(in)
+    out = circshift(in, [0 +1]);
+    if ~wrap(2)
+      out(:,1) = nan;
     end
+  end
 
-    function out = ip1(in)
-        out = circshift(in, [-1 0]);
-        if ~wrap(1)
-            out(end,:) = nan;
-        end
+  function out = ip1(in)
+    out = circshift(in, [-1 0]);
+    if ~wrap(1)
+      out(end,:) = nan;
     end
+  end
 
-    function out = jp1(in)
-        out = circshift(in, [0 -1]);
-        if ~wrap(2)
-            out(:,end) = nan;
-        end
+  function out = jp1(in)
+    out = circshift(in, [0 -1]);
+    if ~wrap(2)
+      out(:,end) = nan;
     end
+  end
 
 end

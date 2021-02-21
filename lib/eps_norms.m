@@ -1,8 +1,8 @@
-function [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij)
+function [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, eoses, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij)
 %EPS_NORMS  The L1 and L2 norms of the epsilon neutrality error
 %
 %
-% [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij)
+% [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, eoses, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij)
 % computes the L2 and L1 norms of the neutrality error vector, which itself
 % is calculated by ntp_errors.m, on approximately neutral surface on which
 % the practical / Absolute salinity is s, the potential / Conservative
@@ -16,13 +16,20 @@ function [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, DIST1_iJ, DIST2_Ij, 
 % used to weight the neutrality errors when calculating its norm.  See
 % Input section for details.
 %
-% The equation of state for the in-situ density is given by eos.m in the
-% path.  If use_s_t is true, eos_s_t.m must also exist in the path and
-% return the partial derivatives of in-situ density w.r.t s and t;
-% otherwise, eos_x.m must also exist in the path and return the partial
-% derivative of in-situ density w.r.t x. The inputs to these eos*.m
-% functions must be (s, t, x).  Note, eos*.m can involve specific volume
-% instead of in-situ density, which merely changes the units of [ex,ey].
+% If eoses is empty, then the equation of state for the in-situ density is
+% given by eos.m in the path.  If use_s_t is true, eos_s_t.m must also
+% exist in the path and return the partial derivatives of in-situ density
+% w.r.t s and t; otherwise, eos_x.m must also exist in the path and return
+% the partial derivative of in-situ density w.r.t x. The inputs to these
+% eos*.m functions must be (s, t, x).  Note, eos*.m can involve specific
+% volume instead of in-situ density, which merely changes the units of
+% [ex,ey].
+%
+% Otherwise, eoses must be a 2 element cell array that allows overriding
+% eos.m and eos_s_t.m / eos_x.m on MATLAB's path. eoses{1} is a function
+% handle to the equation of state, and eoses{2} is a function handle to the
+% necessary partial derivative(s) of the equation of state in its second
+% entry.
 %
 %
 % For a non-Boussinesq ocean, x is pressure [dbar].  
@@ -80,9 +87,9 @@ function [epsL2, epsL1] = eps_norms(s, t, x, use_s_t, wrap, DIST1_iJ, DIST2_Ij, 
 flat = @(F) F(:);
 
 % Compute epsilon neutrality errors without handling grid distances
-[eps_iJ, eps_Ij] = ntp_errors(s, t, x, 1, 1, use_s_t, false, wrap);
+[eps_iJ, eps_Ij] = ntp_errors(s, t, x, 1, 1, use_s_t, false, wrap, eoses);
 
-if nargin < 10
+if nargin < 11
   AREA_iJ = DIST1_iJ .* DIST2_iJ;   % Area [m^2] centred at (I-1/2, J)
   AREA_Ij = DIST1_Ij .* DIST2_Ij;   % Area [m^2] centred at (I, J-1/2)
 end

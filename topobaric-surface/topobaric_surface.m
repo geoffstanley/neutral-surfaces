@@ -427,7 +427,7 @@ diags.timer_fitting   = nan(OPTS.ITER_MAX, 1);
 diags.timer_update    = nan(OPTS.ITER_MAX, 1);
 
 % Compute the L1 and L2 norms of the neutrality (epsilon) errors
-[diags.epsL2(1), diags.epsL1(1)] = eps_norms(s, t, x, false, OPTS.WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
+[diags.epsL2(1), diags.epsL1(1)] = eps_norms(s, t, x, false, OPTS.WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
 
 %% Process the reference cast:
 % Get linear index to reference cast
@@ -639,7 +639,7 @@ for iter = 1 : OPTS.ITER_MAX
     % Diagnostics about the state AFTER this iteration
     
     % Compute the L1 and L2 norms of the neutrality (epsilon) errors
-    [diags.epsL2(iter+1), diags.epsL1(iter+1)] = eps_norms(s, t, x, false, OPTS.WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
+    [diags.epsL2(iter+1), diags.epsL1(iter+1)] = eps_norms(s, t, x, false, OPTS.WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
     
   end
   

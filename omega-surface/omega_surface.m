@@ -328,7 +328,7 @@ if DIAGS
   diags.timer_update    = nan(ITER_MAX, 1);
   
   % Diagnostics about state BEFORE this (first) iteration
-  [epsL2, epsL1] = eps_norms(s, t, x, true, WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
+  [epsL2, epsL1] = eps_norms(s, t, x, true, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
   %mean_x = nanmean(x(:));
   %mean_eos = nanmean(eos(s(:), t(:), x(:)));
   diags.epsL1(1) = epsL1;
@@ -418,7 +418,7 @@ for iter = 1 : ITER_MAX
     diags.timer_update(iter)    = timer_update;
     
     % Diagnostics about the state AFTER this iteration
-    [epsL2, epsL1] = eps_norms(s, t, x, true, WRAP, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
+    [epsL2, epsL1] = eps_norms(s, t, x, true, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
     %mean_x = nanmean(x(:));
     %mean_eos = nanmean(eos(s(:),t(:),x(:)));
     diags.epsL1(iter+1) = epsL1;
