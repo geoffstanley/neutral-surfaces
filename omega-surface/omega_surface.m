@@ -87,9 +87,6 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, ref_cast, OPTS)
 %       but in practice, excessively large or small values may degrade the
 %       numerical solution.  Values in the range of 1e-4 to 1 were tested
 %       on 1x1deg OCCA data, and all work well. Default: 1e-2.
-%   INTEGRATING_FACTOR: use this [ni,nj] matrix of a pre-computed
-%       integrating factor (b) to modify the weights of the matrix problem.
-%       Use the regular weights when this is []. Default: [].
 %   ITER_MAX [1, 1]: maximum number of iterations. Default: 10
 %   ITER_START_WETTING [scalar], ITER_STOP_WETTING [scalar]: Do wetting for
 %       iterations that are >= ITER_START_WETTING and <= ITER_STOP_WETTING.

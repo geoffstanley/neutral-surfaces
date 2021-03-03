@@ -64,8 +64,6 @@ OPTS.TOL_X_UPDATE = 1e-4;
 
 OPTS.VERBOSE = 1; % show a moderate level of information
 
-OPTS.INTEGRATING_FACTOR = [];  % No integrating factor
-
 OPTS.FILE_ID = 1; % standard output to MATLAB terminal
 
 OPTS.POISSON = true; % Whether to solve the square, symmetric Poisson matrix problem, or a rectangular gradient problem
