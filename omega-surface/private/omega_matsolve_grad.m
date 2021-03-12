@@ -187,7 +187,7 @@ mat = sparse( r, c, v, E+1, N );
 % Solve the LSQR problem
 [sol,flag] = omega_lsqr(mat, rhs, TOL_LSQR_REL);
 if flag > 0
-  warning('omega_surface:lsqr did not converge in region %d', icc);
+  warning('omega_surface:lsqr did not converge.');
 end
 
 % Force phi(m_ref) = 0 exactly.  This keeps the surface pinned at its
