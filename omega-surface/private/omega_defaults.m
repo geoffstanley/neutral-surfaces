@@ -56,7 +56,7 @@ OPTS.TOL_LRPD_L1 = 1e-7; % Tolerance in Locally Referenced Potential Density [kg
 
 % quit when the L2 change of pressure on surface exceeds this value (set to
 % 0 to deactivate), in the same units as X [dbar] or [m].
-OPTS.TOL_X_CHANGE_L2 = inf;
+OPTS.TOL_X_CHANGE_L2 = 0;
 
 % Error tolerance when root-finding to update surface, in the same units as
 % X [dbar] or [m].
