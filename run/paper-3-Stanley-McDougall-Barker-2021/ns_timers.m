@@ -29,15 +29,24 @@ warning('off', 'MATLAB:nargchk:deprecated')
 set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 
 %PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/paper-3 - Algorithmic improvements to finding approximately neutral surfaces/'; % Manually set path to this file.
+PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/paper-3-Stanley-McDougall-Barker-2021/'; % Manually set path to this file.
 cd(PATH_LOCAL);
 
 PATH_OMEGA_KMJ = [PATH_LOCAL 'omega-kmj/'];
 addpath(genpath(PATH_OMEGA_KMJ));
 
+% Add gamma_n() and nsfcs() MATLAB functions for Jackett and McDougall (1997) neutral density software.
+% Obtain from: http://www.teos-10.org/preteos10_software/neutral_density.html
+PATH_GAMMA_N = '~/work/MATLAB_notloaded/oceanography_tools/neutral_density/gamma1/'; % adjust as needed.
+addpath(PATH_GAMMA_N);
+
 % Add Neutral Surfaces to MATLAB's path
 PATH_NS = '~/work/projects-gfd/neutral-surfaces/';
 run([PATH_NS 'ns_add_to_path.m']);
+
+% Note: The non-Boussinesq functions densjmd95 and densjmd95_s_t are
+% necessary for gamma_n neutrality error calculations and are included in
+% PATH_LOCAL alongside this file. 
 
 % Folder containing the functions eos.m, eos_x.m, and eos_s_t.m
 PATH_EOS = '~/work/MATLAB/eos/eos/';
@@ -84,8 +93,8 @@ INTERPFN = @ppc_linterp;
 
 
 % Selecting surfaces and depths
-list_surf = {'\sigma', '\delta', '\omega_{KMJ}', '\omega_{\nabla}', '\omega_+', '\tau'};
-LIST_SURF = {'SIGMA', 'DELTA', 'KMJ', 'OMEGAGRAD', 'OMEGA', 'TOPOB'};
+list_surf = {'\sigma', '\delta', '\gamma^n', '\omega_{KMJ}', '\omega_{\nabla}', '\omega_+', '\tau'};
+LIST_SURF = {'SIGMA', 'DELTA', 'GAMMA', 'KMJ', 'OMEGAGRAD', 'OMEGA', 'TOPOB'};
 
 nS = length(list_surf);
 iSURF = containers.Map(LIST_SURF, 1:nS);
@@ -95,21 +104,10 @@ zs    = cell(nDATA, nS);
 diags = cell(nDATA, nS);
 timer = nan( nDATA, nS);
 
-% Stuff for figures:
-cm = [ ... % Colormap for lines
-  0.0       0.0       0.0 % black
-  0.85      0.6       0.0 % orange
-  0.0       0.0       1.0 % blue
-  0.5       0.2       0.7 % purple
-  1.0       0.0       0.0 % red
-  0.0       0.5       0.0 % dark green
-  0.85      0.6       0.0 % gold
-  ];
-markers = 'ox^v+d';
 
 %% Set alias functions
 % Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_x.m
-if true  % <-- Can change to false... only need to do this once!  Doing every time makes codegen run every time
+if false % <-- Can change to false... only need to do this once!  Doing every time makes codegen run every time
   eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], grav, rho_c);
   eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_x.m'], grav, rho_c);
   eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_s_t.m'], [PATH_EOS 'eos_s_t.m'], grav, rho_c);
@@ -182,6 +180,8 @@ for iDATA = 1 : nDATA
     x0 = 180; y0 = 0;
     i0 = x_to_i(x0);
     j0 = y_to_j(y0);
+    x0 = g.XCvec(i0);
+    y0 = g.YCvec(j0);
     
   end
   
@@ -259,9 +259,14 @@ for iDATA = 1 : nDATA
   
   fprintf(1, 'Loaded %s (%d,%d)\n', DATA_SOURCE, ni, nj);
   
+  if iDATA == nDATA
+    g_ECCO = g;
+  end
   
   
-  %% Labels for the surface, from neutral density value of the bottle at either (180,0) or (188,-4)  and z0 depth.
+  %% Labels for the surface:
+  % (a) the Veronis Density, by integrating down a reference cast at (188,-4)
+  % (b) from 1997 neutral density value of the bottle at (188,-4) and z0 depth.
   if iDATA > nSYNTH  % either OCCA or ECCO2
     
     i1 = x_to_i(188);  % index closest to 188 deg E
@@ -280,20 +285,21 @@ for iDATA = 1 : nDATA
       P1 = Pa2db * grav * (Z(1) * R1(1) + cumtrapz(Z, R1));
     end
     
-    % Evaluate (S,T,P) at (i1,j1,z0)
-    s1 = ppc_linterp(Z, S(:,i1,j1), z1);
+    % Calculate Jackett and McDougall (1997) gamma^n neutral density
+    s1 = ppc_linterp(Z, S(:,i1,j1), z1); % Evaluate (S,T,P) at (i1,j1,z1)
     t1 = ppc_linterp(Z, T(:,i1,j1), z1);
     p1 = ppc_linterp(Z, P1, z1);
-    
-    % Calculate Jackett and McDougall (1997) gamma^n neutral density
-    t1 = eos80_legacy_pt(s1,t1,0,p1);  % convert t1 from potential temperature to in-situ temperature at pressure p1
+    t1 = eos80_legacy_pt(s1,t1,0,p1);  % convert t1 from potential temperature to in-situ temperature at pressure p1.  Note eos80_legacy_pt is same as sw_ptmp, to machine precision.
     label_gn = eos80_legacy_gamma_n(s1, t1, p1, x1, y1);
     fprintf(fileID, '%s gamma^n label at (188E,4S,%dm): %.16f\n', DATA_SOURCE, z1, label_gn);
     
     % Caclulate Veronis Density. Only internally consistent with this dataset
     z_ref = 0;  % reference depth for potential density
-    label_veronis = veronis_density(z_ref, S(:,i1,j1), T(:,i1,j1), Z, Z(1), z1);
-    fprintf(fileID, '%s Veronis Density at (%.4f,%.4f,%dm): %.16f\n', DATA_SOURCE, x1, y1, z1, label_veronis);
+    label_veronis1 = veronis_density(z_ref, S(:,i1,j1), T(:,i1,j1), Z, Z(1), z1);
+    fprintf(fileID, '%s Veronis Density at (%.4f,%.4f,%dm): %.16f\n', DATA_SOURCE, x1, y1, z1, label_veronis1);
+    
+    label_veronis0 = veronis_density(z_ref, S(:,i0,j0), T(:,i0,j0), Z, Z(1), z1);
+    fprintf(fileID, '%s Veronis Density at (%.4f,%.4f,%dm): %.16f\n', DATA_SOURCE, x0, y0, z0, label_veronis0);
     
     % For Veronis Density, if using a 4D (with time) ocean dataset, then a reference cast must be selected
     % not just in space but also in time.  A Boussinesq example is as follows.
@@ -313,6 +319,89 @@ for iDATA = 1 : nDATA
     %}
   end
   
+  %% gamma^n Neutral Density surface
+  
+  % Step 1: Convert the model's potential temperature to in-situ temperature,
+  % Step 2: Calculate 3D gamma^n
+  % Step 3: Calculate gamma^n surface.
+  
+  % Note: sw_ptmp was updated to now output in ITS-90.
+  %   Units for sw_ptmp are as follows:
+  %   S  = salinity    [psu      (PSS-78) ]
+  %   T  = temperature [degree C (ITS-90)]
+  %   P  = pressure    [db]
+  %   PR = Reference pressure  [db]
+  % OUTPUT:
+  %   ptmp = Potential temperature relative to PR [degree C (ITS-90)]
+  % THETAj [ITS-90] * 1.00024 -> THETAj [IPTS-68]
+  
+  % gamma_n call:
+  %%%	UNITS:		salinity	psu (IPSS-78)
+  %%%			temperature	degrees C (IPTS-68)
+  %%%			pressure	db
+  %%%			gamma_n		kg m-3
+  
+  if iDATA > nSYNTH  % either OCCA or ECCO2
+    
+    d = struct();
+    
+    % Prepare pressure on cast at (i1,j1)
+    if ~strcmp(DATA_SOURCE, 'OCCA')
+      % trapezoidal integration of hydrostatic balance to get in-situ pressure
+      R = eos(S, T, Z);
+      P = (Pa2db * grav) * (Z(1) * R(1,:,:) + cumtrapz(Z, R));
+    end
+    
+    % Evaluate S,T,P at (i0, j0, z0)
+    s0 = ppc_linterp(Z, S(:,i0,j0), z0);
+    t0 = ppc_linterp(Z, T(:,i0,j0), z0);
+    p0 = ppc_linterp(Z, P(:,i0,j0), z0);
+    t0 = eos80_legacy_pt(s0, t0, 0, p0) * 1.00024 ; % [deg C IPTS-68]
+    
+    % Evaluate gamma_n at (i0, j0, p0)
+    g0 = gamma_n(s0, t0, p0, g.XCvec(i0), g.YCvec(j0));
+    
+    mytic = tic;
+    s_gamma = nan(ni,nj);
+    t_gamma = nan(ni,nj);
+    p_gamma = nan(ni,nj);
+    for j = 1 : find(g.YCvec <= 64, 1, 'last') % prevent going beyond 64N, or gamma_n() errors
+      Sj = S(:,:,j);
+      Tj = T(:,:,j);
+      Pj = P(:,:,j);
+      Tj = eos80_legacy_pt(Sj, Tj, zeros(size(Sj)), Pj) * 1.00024 ; % Convert to in-situ temperature. [deg C IPTS-68]
+      XCj = g.XCvec(:);
+      YCj = repmat(g.YCvec(j), ni, 1);
+      if all(isnan(Sj(:))) % otherwise gamma_n() errors
+        continue
+      end
+      Gj = gamma_n_gjs(Sj, Tj, Pj, XCj, YCj);
+      
+      % Set any -99 gamma_n values to NaN.  Normally not necessary, but sometimes nsfcs() crashes without this.
+      bad = (Gj < 0);
+      Sj(bad) = nan;
+      Tj(bad) = nan;
+      Pj(bad) = nan;
+      Gj(bad) = nan;
+      
+      [s_gamma(:,j), t_gamma(:,j), p_gamma(:,j)] = nsfcs(Sj, Tj, Pj, Gj, g0);
+      fprintf(1, 'j=%03d done, time %.2fsec\n', j, toc(mytic));
+    end
+    s_gamma(s_gamma == -99) = nan;
+    t_gamma(t_gamma == -99) = nan;
+    p_gamma(p_gamma == -99) = nan;
+    t_gamma = eos80_legacy_pt(s_gamma, t_gamma, p_gamma, zeros(size(s_gamma))) / 1.00024 ; % Convert to potential temperature. [deg C ITS-90]
+    d.clocktime = toc(mytic);
+    
+    % Calculate neutrality errors using non-Boussinesq equation of state, and pressure as input. 
+    [d.epsL2, d.epsL1] = eps_norms(s_gamma, t_gamma, p_gamma, true, [1 0], {@densjmd95, @densjmd95_s_t}, OPTS.DIST1_iJ, OPTS.DIST2_Ij, OPTS.DIST2_iJ, OPTS.DIST1_Ij);
+    
+    z_gamma = ppc_linterp(P, Z, lead1(p_gamma)); % Interpolate Pressure to Depth. 
+    
+    zs{iDATA, iSURF('GAMMA')} = z_gamma;
+    diags{iDATA, iSURF('GAMMA')} = d;
+    timer(iDATA, iSURF('GAMMA')) = d.clocktime;
+  end
   
   %% Potential Density Surface
   if 1
@@ -499,9 +588,9 @@ for iDATA = 1 : nDATA
       i0, j0, z0, mytime / nrep);
   end
   
-  %end % iZ
 end % iDATA
 
+%%
 % Extract # of Surface Points per surface
 NSP = nan(nDATA, nS);
 for iDATA = 1 : nDATA
@@ -509,29 +598,45 @@ for iDATA = 1 : nDATA
     NSP(iDATA, iS) = sum(isfinite(flat(zs{iDATA, iS})));
   end
 end
-%return
 
 %% Save data
-% fn = sprintf('results FULL WORKSPACE %s - %s.mat', datestr(now, 'yy-mm-dd hh-MM-ss'), num2str(RES-1));
-% save(fn); % save all variables
 
 % fn = sprintf('results ZS %s - %s.mat', datestr(now, 'yy-mm-dd hh-MM-ss'), num2str(RES-1));
 % save(fn, 'zs');
 fn = sprintf('results DIAGS %s - %s.mat', datestr(now, 'yy-mm-dd hh-MM-ss'), num2str(RES-1));
 save(fn, 'diags', 'timer', 'RES', 'nSYNTH', 'nDATA', 'nS', 'iSURF', 'NSP', 'NWC', 'list_surf', 'MODELS');
-%return
+return
 
 
 %% Diagnostics plot: CPU time vs. Resolution
 
-hf = figure('Position', [1920-800, 1080-480, 800, 600]);
+cm = [ ... % Colormap for lines
+  0.0       0.0       0.0 % black
+  0.85      0.6       0.0 % orange
+  0.15      0.85      0.9 % cyan
+  0.0       0.0       0.9 % blue
+  0.5       0.2       0.7 % purple
+  1.0       0.0       0.0 % red
+  0.0       0.5       0.0 % dark green
+  ];
+markers = 'ooooooo';
+
+hf = figure('Position', [1920-800, 1080-700, 800, 600]);
 ax = axes('Position', [.1, .11, .74, .8]);
 hold on; grid on; box on;
 fn = @log2;
 
-markersize = [8, 11, 8, 8, 11, 8];
+%markersize = [8, 11, 8, 8, 8, 11, 8];
+markersize = repmat(6, nS, 1);
 
-surf_order = [ iSURF('SIGMA'), iSURF('DELTA'), iSURF('KMJ'), iSURF('OMEGAGRAD'), iSURF('TOPOB'), iSURF('OMEGA')];  % to make small omega + markers on top of big topobaric diamond markers
+surf_order = [ iSURF('SIGMA'), iSURF('DELTA'), iSURF('GAMMA'), iSURF('KMJ'), iSURF('OMEGAGRAD'), iSURF('TOPOB'), iSURF('OMEGA')];  % to make small omega + markers on top of big topobaric diamond markers
+
+
+% Make markers outside the bounds of the plot, just to set of the first legend
+for iS = surf_order
+  plot(ax, 0, 0, 's', 'color', cm(iS,:), 'MarkerFace', cm(iS,:), 'MarkerSize', 8);
+end
+
 
 % Extract # of iterations per
 iters = nan(nDATA, nS);
@@ -598,7 +703,6 @@ for iS = iSURF('TOPOB')
   y2 = fn(timer(i,iS));
   C = y2 - x2 - log2(x2);
   ln = @(x) C + x + log2(x);
-  %plot(ax, xx, ln(xx), '--', 'Color', cm(iS,:)/2);  % constant slope line
   plot(ax, xx, ln(xx), '--', 'Color', slope_color);  % constant slope line
   
   txt = 'N logN';
@@ -614,7 +718,7 @@ ax.XLabel.String = 'log_2({\itN})';
 ax.YLabel.String = 'log_2(CPU time / 1s)';
 ax.XLabel.Interpreter = 'tex';
 ax.YLabel.Interpreter = 'tex';
-legend(ax, list_surf(surf_order), 'Position', [.115 .71 .12 .18]);
+leg = legend(ax, list_surf(surf_order), 'Position', [.115 .71 .12 .18]);
 
 % Write # of iterations.  skip SIGMA and DELTA
 for iDATA = 1 : nDATA
@@ -631,7 +735,7 @@ for iDATA = 1 : nDATA
 end
 
 
-%% Add second axes that show non-logged values,  and MODEL data with separate legend
+% Add second axes that show non-logged values,  and MODEL data with separate legend
 ax2 = axes('Position', [.1, .11, .74, .8]);
 hold on;
 ax2.Color = 'none';
@@ -684,15 +788,24 @@ ax2.YTickLabel = {...
 ax2.YLabel.String = '\approx CPU time';
 ax2.YLabel.Interpreter = 'tex';
 
+% Make markers outside the bounds of the plot, just to set up the second legend
+model_marker = 'o^p';
+for i = 1 : length(model_marker)
+  plot(ax2, 0, 0, model_marker(i), 'color', 'k', 'MarkerFace', 'k', 'MarkerSize', 8);
+end
+
 % MODEL data
-model_marker = 'ph';
-for iS = [ iSURF('SIGMA'), iSURF('DELTA'), iSURF('KMJ'), iSURF('OMEGAGRAD'), iSURF('TOPOB'), iSURF('OMEGA')]
+model_marker = '^p';
+model_marker_area = [60, 100];
+for iS = [ iSURF('SIGMA'), iSURF('DELTA'), iSURF('GAMMA'), iSURF('KMJ'), iSURF('OMEGAGRAD'), iSURF('TOPOB'), iSURF('OMEGA')]
   for iDATA = nSYNTH + 1 : nDATA
-    scatter(ax2, fn(NSP(iDATA,iS)), fn(timer(iDATA,iS)), 120, cm(iS,:)*.8, model_marker(iDATA-nSYNTH), 'MarkerFaceColor', cm(iS,:)*.8);
+    iMODEL = iDATA - nSYNTH;
+    scatter(ax2, fn(NSP(iDATA,iS)), fn(timer(iDATA,iS)), model_marker_area(iMODEL), cm(iS,:)*.8, model_marker(iMODEL), 'MarkerFaceColor', cm(iS,:)*.8);
   end
 end
-legend(ax2, MODELS, 'Position', [.26, .824, .08, .07]);
 
+leg = legend(ax2, {'Aquaplanet', 'OCCA', 'ECCO2'}, 'Position', [.28, .824, .08, .07]);
+leg.String = leg.String(1:3);
 
 %%  Save Figure
 filename = sprintf('cpu-vs-gridres__log2__%s', datestr(now, 'yy-mm-dd hh-MM-ss'));
@@ -702,12 +815,25 @@ savefig(hf, [PATH_OUT filename])
 
 %% Diagnostics plot:  eps L2 norm vs CPU time
 
+cm = [ ... % Colormap for lines
+  0.0       0.0       0.0 % black
+  0.85      0.6       0.0 % orange
+  0.15      0.85      0.9 % cyan
+  0.0       0.0       0.9 % blue
+  0.5       0.2       0.7 % purple
+  1.0       0.0       0.0 % red
+  0.0       0.5       0.0 % dark green
+  ];
+markers = 'ooooooo';
+horzlinestyle = repmat({'--'}, nS, 1);
+horzlinestyle{iSURF('GAMMA')} = '-';
+
 hf = figure('Position', [0 0 800 800]);
 fs = 12;
 clear ax;
 timefac = ones(nS,1);
 timefacstr = repmat('sec', nS, 1);
-markersize = [8, 11, 8, 8, 11, 8] - 2;
+markersize = repmat(6, nS, 1);
 
 for i = 1 : 2
   
@@ -718,26 +844,26 @@ for i = 1 : 2
   hold(ax, 'on');
   grid(ax, 'on');
   box(ax, 'on');
-  %text(ax, -.05, 1.05, ['(' char('a' + i-1) ')'], 'fontsize', fs, 'units', 'normalized');
   
   if i == 1
     iDATA = find(RES == 128+1);  DATA_SOURCE = 'SYNTHRAND';  % Select data source for this plot
+    timefac(iSURF('GAMMA')) = 60; % measure GAMMA in minutes not seconds
+    timefacstr(iSURF('GAMMA'),:) = 'min';
     timefac(iSURF('KMJ')) = 60; % measure KMJ in minutes not seconds
     timefacstr(iSURF('KMJ'),:) = 'min';
     yl = [1e-11 6e-9];
     xtick = 0 : 0.25 : 2.5;
     ni = RES(iDATA); nj = RES(iDATA);
-    %title(ax, 'Aquaplanet [128 x 128]')
     text(ax, -.05, 1.05, '(a)    Aquaplanet [128 x 128]', 'fontsize', fs+2, 'units', 'normalized');
   else
     iDATA = find(RES == 240);  DATA_SOURCE = 'OCCA';  % Select data source for this plot
+    timefac(iSURF('GAMMA')) = 60; % measure GAMMA in minutes not seconds
+    timefacstr(iSURF('GAMMA'),:) = 'min';
     timefac(iSURF('KMJ')) = 60;  % measure KMJ in minutes not seconds
     timefacstr(iSURF('KMJ'),:) = 'min';
     yl = [1e-10 5e-8];
     xtick = 0 : 1 : 15;
-    %markersize(iSURF('KMJ')) = 5;
     ni = 360; nj = 160;
-    %title(ax, 'OCCA [360 x 160]')
     text(ax, -.05, 1.05, '(b)    OCCA [360 x 160]', 'fontsize', fs+2, 'units', 'normalized');
   end
   
@@ -757,21 +883,34 @@ for iS = 1:nS
 end
 
 epsL2 = nan(nDATA, nS);
-for iS = [iSURF('SIGMA'), iSURF('DELTA'), iSURF('TOPOB'), iSURF('KMJ'), iSURF('OMEGAGRAD'), iSURF('OMEGA')]
+for iS = [iSURF('SIGMA'), iSURF('DELTA'), iSURF('GAMMA'), iSURF('KMJ'), iSURF('TOPOB'), iSURF('OMEGAGRAD'), iSURF('OMEGA')]
   d = diags{iDATA, iS};
   if ~isempty(d)
-    semilogy(ax, clocktime{iS}, d.epsL2, '-', 'Color', cm(iS,:), 'LineWidth', 2, 'Marker', markers(iS), 'MarkerSize', markersize(iS), 'MarkerFace', cm(iS,:));
-    semilogy(ax, [0 maxtime], [1 1] * d.epsL2(end), '--', 'Color', cm(iS,:), 'LineWidth', 1);
-    epsL2(iDATA, iS) = d.epsL2(end);
+    j = 1; % for SIGMA, DELTA, GAMMA
+    if iS == iSURF('KMJ')
+      j = length(d.epsL2);
+    elseif iS == iSURF('OMEGAGRAD') || iS == iSURF('OMEGA') || iS == iSURF('TOPOB')
+      % Find iteration at which algorithm actually deemed converged, which may be less than OPTS.ITER_MIN
+      % +1 epsL2 has one extra element, giving epsL2 on the initial surface (corresponding with clocktime(1) == 0). 
+      j = 1 + find(d.x_change_L2 <= OPTS.TOL_X_CHANGE_L2, 1, 'first');
+    end
+    
+    semilogy(ax, clocktime{iS}(1:j), d.epsL2(1:j), '-', 'Color', cm(iS,:), 'LineWidth', 2, 'Marker', markers(iS), 'MarkerSize', markersize(iS), 'MarkerFace', cm(iS,:));
+    semilogy(ax, [0 maxtime], [1 1] * d.epsL2(j), horzlinestyle{iS}, 'Color', cm(iS,:), 'LineWidth', 1);
+    epsL2(iDATA, iS) = d.epsL2(j);
     
     ha = 'right';
     vertalign = 'top';
     x = maxtime * .99;
     y = 10^(log10(epsL2(iDATA,iS)) + 0.003 * log10(diff(ax.YLim)));
-    txt = sprintf('$%s$: %.2e kg m$^{-3}$, %.2f %s', list_surf{iS}, epsL2(iDATA,iS), clocktime{iS}(end), timefacstr(iS,:));
+    txt = sprintf('$%s$: %.2e kg m$^{-4}$, %.2f %s', list_surf{iS}, epsL2(iDATA,iS), clocktime{iS}(j), timefacstr(iS,:));
     
-    if iS == iSURF('KMJ')
-      y = 10^(log10(epsL2(iDATA,iS)) + 0.008 * log10(diff(ax.YLim)));
+    if iS == iSURF('GAMMA')
+      x = clocktime{iS}(j);
+      ha = 'left';
+      y = 10^(log10(epsL2(iDATA,iS)) + 0.005 * log10(diff(ax.YLim)));
+    elseif iS == iSURF('KMJ')
+      y = 10^(log10(epsL2(iDATA,iS)) + 0.005 * log10(diff(ax.YLim)));
     elseif iS == iSURF('OMEGAGRAD')
       y = 10^(log10(epsL2(iDATA,iS)) - 0.008 * log10(diff(ax.YLim)));
       vertalign = 'bottom';
@@ -808,4 +947,150 @@ filename = sprintf('rms_dens_error_vs_cputime_SYNTHRAND128x128__OCCA360x160_%s',
 export_fig(hf, [PATH_OUT filename], '-pdf');
 savefig(hf, [PATH_OUT filename])
 % close(hf);
+
+%% Maps showing depth of omega surface, depth difference with other surfaces, and gamma^n on on the omega surface
+
+iECCO = nDATA;
+assert(g.nx == ni && ni == 1440 && all(size(S) == [50, 1440, 720]), 'The currently loaded data is not for ECCO2');
+land = squeeze(isnan(S(1,:,:)));
+
+% --- Compute gamma^n on the omega surface
+DO_GAMMAN_ON_OMEGA = false;
+if DO_GAMMAN_ON_OMEGA
+  
+  % Prepare pressure on casts
+  % trapezoidal integration of hydrostatic balance to get in-situ pressure
+  R = eos(S, T, Z);
+  P = (Pa2db * grav) * (Z(1) * R(1,:,:) + cumtrapz(Z, R));
+  
+  % evaluate S, T, P on the omega surface
+  z_omega = zs{iECCO, iSURF('OMEGA')};
+  s = ppc_linterp(Z, S, lead1(z_omega));
+  t = ppc_linterp(Z, T, lead1(z_omega));
+  p = ppc_linterp(Z, P, lead1(z_omega));
+  
+  % convert to in-situ temperature
+  t = eos80_legacy_pt(s, t, 0, p) * 1.00024 ; % Convert to in-situ temperature. [deg C IPTS-68]
+  
+  x = repmat(g.XCvec, 1, nj);
+  y = repmat(g.YCvec, ni, 1);
+  good = (y >= -80 & y <= 64) & isfinite(s);
+  gamma_on_omega = nan(ni,nj);
+  gamma_on_omega(good) = gamma_n_gjs(s(good).', t(good).', p(good).', x(good).', y(good).');  % 35 seconds
+end
+
+% --- Make figure: 
+fs = 12;
+
+hf = figure('Position', [0 0 800 800]);
+
+margin_v = .05;
+margin_l = .07;
+margin_r = .03;
+spacing_v = 0.06;
+spacing_h = 0.02;
+subaxopts = {'MarginLeft',margin_l,'MarginRight', margin_r, 'MarginTop', margin_v, 'MarginBottom', margin_v, ...
+  'SpacingVertical', spacing_v, 'SpacingHorizontal', spacing_h};
+
+nR = 3;
+nC = 2;
+
+for iAX = 1 : (5 + DO_GAMMAN_ON_OMEGA)
+  
+  ax = subaxis(nR,nC,iAX,subaxopts{:});
+  
+  if iAX == 1
+    dat = zs{iECCO,iSURF('OMEGA')};
+    txt1 = 'z[\omega \! = \! \rho_V]';
+    clim = [0, max(dat(:))];
+    cm = flipud(parula(128));
+    
+  elseif iAX == 2
+    dat = zs{iECCO,iSURF('SIGMA')} - zs{iECCO,iSURF('OMEGA')};
+    txt1 = 'z[\sigma \! = \! \rho_V] - z[\omega \! = \! \rho_V]';
+    clim = [-200, 200] ;
+    cm = bluewhitered(128, clim);
+    
+  elseif iAX == 3
+    dat = zs{iECCO,iSURF('DELTA')} - zs{iECCO,iSURF('OMEGA')};
+    txt1 = 'z[\delta \! = \! \rho_V] - z[\omega \! = \! \rho_V]';
+    clim = [-300, 100] ;
+    cm = bluewhitered(128, clim);
+    
+  elseif iAX == 4
+    dat = zs{iECCO,iSURF('TOPOB')} - zs{iECCO,iSURF('OMEGA')};
+    txt1 = 'z[\tau \! = \! \rho_V] - z[\omega \! = \! \rho_V]';
+    clim = [-1 1]*10 ;
+    cm = bluewhitered(128, clim);
+    
+  elseif iAX == 5
+    dat = zs{iECCO,iSURF('GAMMA')} - zs{iECCO,iSURF('OMEGA')};
+    txt1 = 'z[\gamma \! = \! \rho_V] - z[\omega \! = \! \rho_V]';
+    clim = [-80, 80] ;
+    cm = bluewhitered(128, clim);
+    
+  elseif iAX == 6 && DO_GAMMAN_ON_OMEGA
+    dat = gamma_on_omega;
+    txt1 = '\gamma^n [\omega \! = \! \rho_V]';
+    clim = [min(dat(:)), max(dat(:))];
+    cm = parula(128);
+    
+  end
+  
+  fig_map(ax,g.XCvec, g.YCvec, dat, land);
+  if diff(clim) > 0
+    ax.CLim = clim;
+  end
+  hcb = colorbar(ax);
+  colormap(ax,cm);
+  
+  if iAX <= nR*nC - 2
+    ax.XTickLabel = {};
+  end
+  if mod(iAX,2) == 0
+    ax.YTickLabel = {};
+  end
+  
+  
+  text(ax, 0, 1.06, ...
+    sprintf('$(%s) \\; %s$', char('a' + iAX-1), txt1), ...
+    'Units', 'normalized', 'HorizontalAlignment', 'left', 'FontSize', fs, 'Interpreter', 'latex');
+  
+  if iAX == 1
+    
+    text(ax, 1.1, 1.06, ...
+      sprintf('$\\rho_V = %.4f$ kg m$^{-3}$', label_veronis0), ...
+      'Units', 'norm', 'HorizontalAlignment', 'right', 'FontSize', fs, 'Interpreter', 'latex');
+    
+  elseif iAX >= 2 && iAX <= 5
+    
+    datL2 = sqrt(nanmean(dat(:) .* dat(:)));
+    
+    text(ax, 1.1, 1.06, ...
+      sprintf('$||\\cdot||_2=$ %.1f m', datL2), ...
+      'Units', 'norm', 'HorizontalAlignment', 'right', 'FontSize', fs, 'Interpreter', 'latex');
+    
+  elseif iAX == 6 && DO_GAMMAN_ON_OMEGA
+    
+    resid = dat(:) - nanmean(dat(:));
+    dat_std = sqrt(nanmean(resid .* resid));
+    
+    text(ax, 1.1, 1.06, ...
+      sprintf('SD($\\cdot$)= %.2f g m$^{-3}$', 1000 * dat_std), ...
+      'Units', 'norm', 'HorizontalAlignment', 'right', 'FontSize', fs, 'Interpreter', 'latex');
+    
+    hcb.Ticks = 27.78 : 0.01 : 27.83;
+    
+  end
+  
+  
+end
+
+%% Save figure
+fn = sprintf('omega_surface_comparisons_ECCO2_(%d,%d,%.4fm)_%s', i0, j0, z0, datestr(now, 'yy-mm-dd hh-MM-ss'));
+export_fig(hf, [PATH_OUT fn], '-jpg', '-m3');
+close(hf);
+
+
+
 
