@@ -1,10 +1,15 @@
-function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, mr)
+function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qt, mr)
 % OMEGA_MATSOLVE_POISSON  Build & solve the sparse matrix Poisson problem for omega surfaces
 %
 %
-% phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
+% phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qt)
 % builds and solves the sparse matrix problem for omega surfaces in Poisson
-% form. 
+% form. In each connected component of the surface, phi has zero
+% arithmetic, unweighted mean.
+%
+% phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qts, Lcc, m_ref)
+% as above, but makes phi be zero at m_ref.  Other connected components not
+% containing m_ref are as above, with mean phi = 0 in these regions.
 %
 %
 % --- Input:
@@ -19,8 +24,6 @@ function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 %   divided by the distance, squared, from (I,J-1) to (I,J).  Equivalently,
 %   this is the grid distance in first dimension divided by grid distance
 %   in second dimension, both centred at (I, J-1/2).
-% WRAP [2 element array]: WRAP(i) is true iff the domain is periodic in the
-%                         i'th lateral dimension.  
 % A4 [4, ni*nj]: adjacency matrix  (see grid_adjacency.m)
 % qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to qt (see bfs_conncomp1.m)
 % qt [1,1]: the last valid index of qu (see bfs_conncomp1.m)
@@ -56,7 +59,7 @@ function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 
 
 [ni,nj] = size(x);
-WALL = ni * nj + 1; % a flag values used by A4 to index neighbours that would go across a non-periodic boundary
+WALL = ni * nj + 1; % For a non-periodic boundary, A4 uses this value for neighbours that would go across that boundary
 
 autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
 

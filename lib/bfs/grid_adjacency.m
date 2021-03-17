@@ -10,7 +10,8 @@ function ADJ = grid_adjacency(SZ, CONN, WRAP)
 % grid point whose linear index is n.  The maximum number of neighbours of
 % any grid point is CONN, which is the number of rows of ADJ.  If grid
 % point n has fewer neighbours than CONN, due to being near a non-periodic
-% boundary, ADJ(:,n) will contain some 0's.
+% boundary, ADJ(:,n) will contain some flag values.  The flag value is
+% ni*nj+1, which can be used to index some special value.
 %
 % The connectivity CONN specifies the number of neighbours to a central grid
 % point, possibly including itself.  For i between 1 and CONN, the i'th
@@ -65,6 +66,8 @@ assert(length(WRAP) == dim, 'WRAP must be a vector the same length as SZ.');
 ni = SZ(1);
 nj = SZ(2);
 
+WALLVAL = ni * nj + 1;
+
 
 % Build adjacency matrix and handle periodicity
 if CONN == 4
@@ -75,12 +78,12 @@ if CONN == 4
   ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
-    ADJ(2, 1 , :) = 0; % i-1 hits a wall when i = 1
-    ADJ(3, ni, :) = 0; % i+1 hits a wall when i = ni
+    ADJ(2, 1 , :) = WALLVAL; % i-1 hits a wall when i = 1
+    ADJ(3, ni, :) = WALLVAL; % i+1 hits a wall when i = ni
   end
   if ~WRAP(2)
-    ADJ(1, :, 1 ) = 0; % j-1 hits a wall when j = 1
-    ADJ(4, :, nj) = 0; % j+1 hits a wall when j = nj
+    ADJ(1, :, 1 ) = WALLVAL; % j-1 hits a wall when j = 1
+    ADJ(4, :, nj) = WALLVAL; % j+1 hits a wall when j = nj
   end
   
 elseif CONN == 5
@@ -91,12 +94,12 @@ elseif CONN == 5
   ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
-    ADJ(2, 1 , :) = 0; % i-1 hits a wall when i = 1
-    ADJ(4, ni, :) = 0; % i+1 hits a wall when i = ni
+    ADJ(2, 1 , :) = WALLVAL; % i-1 hits a wall when i = 1
+    ADJ(4, ni, :) = WALLVAL; % i+1 hits a wall when i = ni
   end
   if ~WRAP(2)
-    ADJ(1, :, 1 ) = 0; % j-1 hits a wall when j = 1
-    ADJ(5, :, nj) = 0; % j+1 hits a wall when j = nj
+    ADJ(1, :, 1 ) = WALLVAL; % j-1 hits a wall when j = 1
+    ADJ(5, :, nj) = WALLVAL; % j+1 hits a wall when j = nj
   end
   
 elseif CONN == 8
@@ -107,12 +110,12 @@ elseif CONN == 8
   ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
-    ADJ([2,5,6], 1 , :) = 0; % i-1 hits a wall when i = 1
-    ADJ([3,7,8], ni, :) = 0; % i+1 hits a wall when i = ni
+    ADJ([2,5,6], 1 , :) = WALLVAL; % i-1 hits a wall when i = 1
+    ADJ([3,7,8], ni, :) = WALLVAL; % i+1 hits a wall when i = ni
   end
   if ~WRAP(2)
-    ADJ([1,5,7], :, 1 ) = 0; % j-1 hits a wall when j = 1
-    ADJ([4,6,8], :, nj) = 0; % j+1 hits a wall when j = nj
+    ADJ([1,5,7], :, 1 ) = WALLVAL; % j-1 hits a wall when j = 1
+    ADJ([4,6,8], :, nj) = WALLVAL; % j+1 hits a wall when j = nj
   end
   
 elseif CONN == 9
@@ -123,12 +126,12 @@ elseif CONN == 9
   ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
-    ADJ([1 4 7], 1 , :) = 0; % i-1 hits a wall when i = 1
-    ADJ([3 6 9], ni, :) = 0; % i+1 hits a wall when i = ni
+    ADJ([1 4 7], 1 , :) = WALLVAL; % i-1 hits a wall when i = 1
+    ADJ([3 6 9], ni, :) = WALLVAL; % i+1 hits a wall when i = ni
   end
   if ~WRAP(2)
-    ADJ([1 2 3], :, 1 ) = 0; % j-1 hits a wall when j = 1
-    ADJ([7 8 9], :, nj) = 0; % j+1 hits a wall when j = nj
+    ADJ([1 2 3], :, 1 ) = WALLVAL; % j-1 hits a wall when j = 1
+    ADJ([7 8 9], :, nj) = WALLVAL; % j+1 hits a wall when j = nj
   end
   
 else

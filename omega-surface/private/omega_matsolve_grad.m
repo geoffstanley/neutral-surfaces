@@ -1,8 +1,8 @@
-function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4, qu, qt, m_ref)
+function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
 % OMEGA_MATSOLVE_GRAD  Build & solve the sparse matrix gradient equations for omega surfaces
 %
 %
-% phi = omega_matsolve_grad(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qt, m_ref)
+% phi = omega_matsolve_grad(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
 % builds and solves the sparse matrix problem for omega surfaces in
 % gradient equation form, ensuring phi is zero at m_ref.
 %
@@ -19,6 +19,8 @@ function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4
 %   divided by the distance, squared, from (I,J-1) to (I,J).  Equivalently,
 %   this is the grid distance in first dimension divided by grid distance
 %   in second dimension, both centred at (I, J-1/2).
+% WRAP [2 element array]: WRAP(i) is true iff the domain is periodic in the
+%                         i'th lateral dimension.  
 % A4 [4, ni*nj]: adjacency matrix  (see grid_adjacency.m)
 % qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to qt (see bfs_conncomp1.m)
 % qt [1,1]: the last valid index of qu (see bfs_conncomp1.m)
@@ -81,6 +83,7 @@ MJ = 2; % (I-1,J  )
 
 %% Process Inputs
 [ni,nj] = size(x);
+WALL = ni * nj + 1; % a flag values used by A4 to index neighbours that would go across a non-periodic boundary
 
 % If both gridding variables are 1, then grid is uniform
 UNIFORM_GRID = ...
@@ -93,7 +96,7 @@ sm = s;
 tm = t;
 xm = x;
 
-% Anonymous functions for shifting data.  (Faster than indexing with A5.)
+% Anonymous functions for shifting data.  (Faster than indexing with A4.)
 im1 = @(D) circshift(D, [+1 0]);
 jm1 = @(D) circshift(D, [0 +1]);
 flat = @(F) F(:);
@@ -102,6 +105,9 @@ flat = @(F) F(:);
 sn = im1(sm);
 tn = im1(tm);
 xn = im1(xm);
+if ~WRAP(1)
+  sn(1,:) = nan;
+end
 [vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (xm + xn) );
 eps_iJ = vs .* (sm - sn) + vt .* (tm - tn);
 if ~UNIFORM_GRID
@@ -112,6 +118,9 @@ end
 sn = jm1(sm);
 tn = jm1(tm);
 xn = jm1(xm);
+if ~WRAP(2)
+  sn(:,1) = nan;
+end
 [vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (xm + xn) );
 eps_Ij = vs .* (sm - sn) + vt .* (tm - tn);
 if ~UNIFORM_GRID
@@ -120,7 +129,6 @@ end
 
 %% --- Build and solve sparse matrix problem
 phi = nan(ni, nj);     % solution to matrix problem
-remap = zeros(ni,nj);  % remap indices from 2D into linear indices for the current connected component
 
 % Collect and sort linear indices to all pixels in this region
 m = sort(qu(1 : qt));  % sorting here makes mat better structured; overall speedup.
@@ -131,9 +139,16 @@ if N <= 1  % There are definitely no equations to solve
   return
 end
 
-% Label the water columns in this region alone by 1, 2, ...
-% No need to reset other elements of remap to 0.
-remap(m) = 1:N;
+% remap changes from linear indices for the entire 2D space into linear
+% indices for the current connected component.  
+% If the domain were doubly periodic, we would want remap to be a 2D array
+% of size [ni,nj]. However, with a potentially non-periodic domain, we need
+% one more value for A4 to index into, hence use a vector with ni*nj+1
+% elements.
+% All other water columns are left with remap values of 0,
+% including the "water column" corresponding to non-periodic boundaries.
+remap = zeros(1, WALL);  % pre-alloc space and leave land as 0.
+remap(m) = 1:N;          % Label the water columns in this region alone by 1, 2, ... N.
 
 
 % Build the RHS of the matrix problem, containing neutrality errors

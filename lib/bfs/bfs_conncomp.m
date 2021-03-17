@@ -142,6 +142,7 @@ end
 
 function [G, qu, qh, qt] = bfs(r, G, A, qu, qh, qt)
 D = size(A,1); % maximal degree
+N = numel(G);
 
 qt = qt + 1; % Add r to queue
 qu(qt) = r;
@@ -152,7 +153,7 @@ while qt > qh
   m = qu(qh);  % me node; pop from head of queue
   for d = 1 : D
     n = A(d,m); % neighbour node
-    if n && G(n)
+    if n <= N && G(n) % First condition checks n is not a neighbour across a non-periodic boundary
       % n is good, and undiscovered
       qt = qt + 1;  % Add n to queue
       qu(qt) = n;

@@ -74,7 +74,6 @@ REPEAT = true; % for paper
 % RES = 2.^(4:8); MODELS = {'OCCA'};  % for quicker tests
 RES = 2.^(4:11); MODELS = {'OCCA', 'ECCO2'};  % Everything. For paper
 
-RES = RES + 1; % Add 1 for the wall in each dimension... so # ocean grid points is a power of 2
 nSYNTH = length(RES);
 nMODELS = length(MODELS);
 nDATA = nSYNTH + nMODELS;
@@ -119,15 +118,19 @@ for iDATA = 1 : nDATA
   %% Load grid and hydrographic data
   fprintf(1, '--- Starting grid # %d\n', iDATA);
   
+  OPTS = struct();
+  
   if iDATA <= nSYNTH
-    % do Synthetic data first
+    
     DATA_SOURCE = 'SYNTHRAND';
+    OPTS.WRAP = [false; false]; % non-periodic in both dimensions
+    
     
     ni = RES(iDATA);
     nj = ni;
     nk = 50;
     
-    [S, T, Z, g] = synthocean_rand(ni, nj, nk);
+    [S, T, Z, g] = synthocean_rand(ni, nj, nk, OPTS.WRAP);
     g.DXC = repmat(g.DXCvec, ni, 1);
     g.DYC = repmat(g.DYCsc, ni, nj);
     g.DXG = repmat(g.DXGvec, ni, 1);
@@ -141,6 +144,7 @@ for iDATA = 1 : nDATA
   else
     
     DATA_SOURCE = MODELS{iDATA - nSYNTH};
+    OPTS.WRAP = [true; false]; % periodic in longitude, non-periodic in latitude
     
     if DATA_SOURCE(1) == 'O'
       [g, S, T, P, ETAN, ATMP] = load_OCCA(PATH_OCCA);
@@ -214,8 +218,6 @@ for iDATA = 1 : nDATA
   
   
   % --- Setup options neutral surfaces
-  OPTS = struct();
-  OPTS.WRAP = [1; 1];       % omega's Poisson code now requires doubly periodic domain; we have nan walls to prevent wrapping though, as needed.
   OPTS.TOL_X_CHANGE_L2 = 1e-3; % Stop iterations when the L2 change of pressure on the surface is less than this
   OPTS.ITER_MIN = 5;      % .. but do at least 5 iterations
   OPTS.ITER_MAX = 30;     % The maximum number of iterations
@@ -247,8 +249,7 @@ for iDATA = 1 : nDATA
   %   OPTS.DIST2_Ij = 1;   % Distance [m] in 2nd dimension centred at (I, J-1/2)
   %   OPTS.DIST2_iJ = 1;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
   %   OPTS.DIST1_Ij = 1;   % Distance [m] in 1st dimension centred at (I, J-1/2)
-  
-  
+    
   % Call eos() functions to do Just-in-Time Compilation, so that it's not done in one or another function later
   s = squeeze(S(1,:,:));
   t = squeeze(T(1,:,:));
@@ -493,7 +494,7 @@ for iDATA = 1 : nDATA
       if iDATA <= nSYNTH
         nit = 200; % max iterations
       else
-        nit = 50;  % premature stop to KMJ algorithm, about as many iters as it takes on SYNTHETIC data
+        nit = 50;  % premature stop to KMJ algorithm, about as many iters as it actually takes on SYNTHETIC data
       end
       
       [s, t, z, d] = optimize_surface(Szyx, Tzyx, Zzyx, repmat(grav,nj,ni), n2, lead1(s_delta'), lead1(t_delta'), lead1(z_delta'), e1t, e2t, nit, 'epsilon', 'long', Z2P, e1g, e2g);
@@ -853,7 +854,6 @@ for i = 1 : 2
     timefacstr(iSURF('KMJ'),:) = 'min';
     yl = [1e-11 6e-9];
     xtick = 0 : 0.25 : 2.5;
-    ni = RES(iDATA); nj = RES(iDATA);
     text(ax, -.05, 1.05, '(a)    Aquaplanet [128 x 128]', 'fontsize', fs+2, 'units', 'normalized');
   else
     iDATA = find(RES == 240);  DATA_SOURCE = 'OCCA';  % Select data source for this plot
@@ -863,7 +863,6 @@ for i = 1 : 2
     timefacstr(iSURF('KMJ'),:) = 'min';
     yl = [1e-10 5e-8];
     xtick = 0 : 1 : 15;
-    ni = 360; nj = 160;
     text(ax, -.05, 1.05, '(b)    OCCA [360 x 160]', 'fontsize', fs+2, 'units', 'normalized');
   end
   

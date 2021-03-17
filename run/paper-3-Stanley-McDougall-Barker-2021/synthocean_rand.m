@@ -1,13 +1,17 @@
-function [S, T, P, g] = synthocean_rand(ni, nj, nk, args)
+function [S, T, P, g] = synthocean_rand(ni, nj, nk, wrap, pbot, std)
 % SYNTHOCAEN_RAND   Synthetic ocean of eddies
 %
 %
-% [S, T, P, g] = synthocean(ni, nj, nk, args)
+% [S, T, P, g] = synthocean(ni, nj, nk)
 % constructs a synthetic ocean of practical / Absolute salinity S,
 % potential / Conservative temperature T, pressure P, having ni, nj, nk
 % data points in the longitude, latitude depth directions, respectively.
-% The grid data is contained in the struct g.Extra tuneable parameters are
-% provided by args.  See code for further details.
+% The grid data is contained in the output struct g.  
+%
+% [S, T, P, g] = synthocean(ni, nj, nk, wrap, pbot, std)
+% also provides additional options determining the periodic nature of the domain, the bottom pressure, 
+% and the scale of smoothing.  See code for further details.
+
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -30,23 +34,23 @@ function [S, T, P, g] = synthocean_rand(ni, nj, nk, args)
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
 
-
-defaults = struct();
-defaults.pbot = 4000; % pressure at bottom [dbar]
-defaults.std = 6;  % roughly 200km for the 1024x1024 grid, zonally anyways. 
-if nargin < 4 || ~isstruct(args)
-  args = struct();
+% Set default parameters, and override as specified
+if nargin < 4 || isempty(wrap)
+  wrap = [false; false]; % non-periodic in both horizontal dimensions, by default
 end
-args = catstruct(defaults, args);  % load input arguments, resorting to defaults for any not provided
+if nargin < 5 || isempty(pbot)
+  pbot = 4000; % pressure at bottom [dbar]
+end
+if nargin < 6 || isempty(std)
+  std = 6;  % roughly 200km for the 1024x1024 grid, zonally anyways. 
+end
 
-std = args.std;
 
 X = linspace(-1, 1, ni)';   % scaled longitude
 Y = linspace(-80, 80, nj);  % latitude
 
-
 % Set surface T
-Ts = smooth2a(2 * randn(ni,nj), 8*std, std); % 8*std is large enough that the smoothing window is effectively the whole domain
+Ts = smooth2a(2 * randn(ni,nj), 8*std, std, [], wrap); % 8*std is large enough that the smoothing window is effectively the whole domain
 Tmin = 10;
 Tmax = 20;
 Ts = (Ts - min(Ts(:))) / (max(Ts(:)) - min(Ts(:))) * (Tmax - Tmin) + Tmin;
@@ -62,7 +66,7 @@ Smin = 34;
 Smax = 36;
 Ss = Ts;
 Ss = (Ss - min(Ss(:))) / (max(Ss(:)) - min(Ss(:))) * (Smax - Smin) + Smin;
-Ss = Ss + smooth2a(.1 * randn(ni,nj), 8*std, std); % ... + extra random field to surface S, to produce helicity
+Ss = Ss + smooth2a(.1 * randn(ni,nj), 8*std, std, [], wrap); % ... + extra random field to surface S, to produce helicity
 
 % Set bottom S: same as T but different range
 Sb = Tb;
@@ -76,17 +80,12 @@ S = reshape(linspace(0,1,nk), [1,1,nk]) .* (Sb - Ss) + Ss;
 
 
 % Nonlinear spacing of pressure means dTdp and dSdp will be non-uniform
-P = linspace(0,1,nk).'.^3 * args.pbot;
+P = linspace(0,1,nk).'.^3 * pbot;
 
 
 % Re-order data so water-columns are contiguous data:
 S = permute(S, [3 1 2]); % [nk,ni,nj]. depth  by  long  by  lat
 T = permute(T, [3 1 2]);
-
-% Add walls
-S(:,1,:) = nan;
-S(:,:,1) = nan;
-T(isnan(S)) = nan;
 
 if nargout >= 4
   X = (X+1) * 180;  % change longitude, to be [0, 360].

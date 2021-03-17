@@ -125,9 +125,7 @@ function [x, s, t, diags] = omega_surface(S, T, X, x, ref_cast, OPTS)
 %                     2 for detailed information on each iteration.
 %                     Default: 1.
 %   WRAP [2, 1]: logical array.  WRAP(i) is true iff the domain is periodic 
-%       in the i'th dimension.  The current code requires WRAP = [1; 1],
-%       for a doubly periodic domain. Add NaN walls to achieve a
-%       non-periodic domain.
+%       in the i'th lateral dimension.  
 %
 %
 % --- References:
@@ -204,8 +202,6 @@ TOL_X_UPDATE = OPTS.TOL_X_UPDATE; % tolerance in pressure [dbar] during vertical
 WRAP = OPTS.WRAP(:);
 
 DIAGS = (VERBOSE > 0) || (nargout > 3);
-
-assert(all(WRAP), 'Current code requires WRAP to be [1; 1], for a doubly periodic domain. Add NaN walls for a non-periodic domain.')
 
 if isscalar(ref_cast)
   assert(ref_cast >= 1 && ref_cast <= nij, 'Out of bounds Linear index for ref_cast.');
@@ -365,10 +361,10 @@ for iter = 1 : ITER_MAX
   mytic = tic;
   if POISSON
     % ... the exactly determined Poisson equation
-    phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, A4, qu, qt, ref_cast);
+    phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, ref_cast);
   else
     % ... the overdetermined gradient equations
-    phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, A4, qu, qt, ref_cast);
+    phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WRAP, A4, qu, qt, ref_cast);
   end
   if DIAGS
     timer_solver = toc(mytic);

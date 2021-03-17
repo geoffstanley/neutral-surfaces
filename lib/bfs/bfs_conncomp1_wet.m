@@ -1,5 +1,5 @@
 function [s, t, x, freshly_wet, qu, qt] = bfs_conncomp1_wet(SppX, TppX, X, s, t, x, X_TOL, A, BotK, r, qu) %#codegen
-%BFS_CONNCOMP1_WET  Find one connected component using Breadth First Search, 
+%BFS_CONNCOMP1_WET  Find one connected component using Breadth First Search,
 %                   and test neutral tangent plane connections from the perimeter
 %
 %
@@ -19,9 +19,9 @@ function [s, t, x, freshly_wet, qu, qt] = bfs_conncomp1_wet(SppX, TppX, X, s, t,
 %
 %
 % --- Input:
-% SppX [O,K-1,ni,nj]: coefficients for piecewise polynomial for practical 
+% SppX [O,K-1,ni,nj]: coefficients for piecewise polynomial for practical
 %                   / Absolute Salinity in terms of X
-% TppX [O,K-1,ni,nj]: coefficients for piecewise polynomial for potential 
+% TppX [O,K-1,ni,nj]: coefficients for piecewise polynomial for potential
 %                   / Conservative Temperature in terms of X
 % X [K,ni,nj]: knots for the pressure or depth of the casts
 % s [ni,nj]: practical / Absolute salinity on the surface
@@ -98,34 +98,32 @@ while qt > qh
   
   for d = 1 : D
     n = A(d,m); % neighbour node
-    if n  % Ensure n is not 0, as for a non-periodic boundary
-      if G(n)
-        % n is good, and undiscovered
+    if n <= N && G(n) % First condition checks n is not a neighbour across a non-periodic boundary
+      % n is good, and undiscovered
+      
+      qt = qt + 1;  % Add n to queue
+      qu(qt) = n;
+      G(n) = false; % mark n as discovered
+      
+    elseif dry(n)
+      % n is "dry".  Try wetting.
+      
+      if Xmat
+        Xn = X(:,n);
+      end
+      x(n) = ntp_bottle_to_cast(SppX(:,:,n), TppX(:,:,n), Xn, BotK(n), s(m), t(m), x(m), X_TOL);
+      if isfinite(x(n))
+        % The NTP connection was successful
+        
+        [s(n), t(n)] = ppc_val2(Xn, SppX(:,:,n), TppX(:,:,n), x(n));
         
         qt = qt + 1;  % Add n to queue
         qu(qt) = n;
         G(n) = false; % mark n as discovered
+        dry(n) = false;
         
-      elseif dry(n)
-        % n is "dry".  Try wetting.
+        freshly_wet = freshly_wet + 1;  % augment counter of freshly wet casts
         
-        if Xmat
-          Xn = X(:,n);
-        end
-        x(n) = ntp_bottle_to_cast(SppX(:,:,n), TppX(:,:,n), Xn, BotK(n), s(m), t(m), x(m), X_TOL);
-        if isfinite(x(n))
-          % The NTP connection was successful
-          
-          [s(n), t(n)] = ppc_val2(Xn, SppX(:,:,n), TppX(:,:,n), x(n));
-          
-          qt = qt + 1;  % Add n to queue
-          qu(qt) = n;
-          G(n) = false; % mark n as discovered
-          dry(n) = false;
-          
-          freshly_wet = freshly_wet + 1;  % augment counter of freshly wet casts
-          
-        end
       end
     end
   end

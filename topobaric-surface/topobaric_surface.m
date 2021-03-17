@@ -482,7 +482,7 @@ for iter = 1 : OPTS.ITER_MAX
   % via Breadth First Search, and do wetting while at it
   mytic = tic();
   if iter >= OPTS.ITER_START_WETTING && iter <= OPTS.ITER_STOP_WETTING
-    [s, t, x, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(SppX, TppX, X, s, t, x, OPTS.TOL_X_UPDATE, A4, BotK, ref_cast, qu);
+    [s, t, x, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(SppX, TppX, X, s, t, x, OPTS.TOL_X_UPDATE, WRAP, A4, BotK, ref_cast, qu);
   else
     [qu, qt] = bfs_conncomp1(isfinite(s), A4, ref_cast, qu);
     freshly_wet = 0;
