@@ -15,7 +15,7 @@ The specific volume anomaly (Montgomery 1937) is the difference between the  in-
 
 #### Omega surfaces
 
-Omega surfaces (Klocker et al., 2009;  Stanley et al. 2020) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
+Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
 
 #### Topobaric surfaces
 
@@ -46,7 +46,7 @@ McDougall (1989) proved that an exact GSF does exist, at least locally, on a tru
 - `./potential-density-surface/       `- create potential density surfaces
 - `./specific-volume-anomaly-surface/ `- create specific volume anomaly surfaces
 - `./topobaric-surface/               `- create topobaric surfaces, modified topobaric surfaces, and orthobaric surfaces
-- `./LICENSE                          `- GNU general public license
+- `./LICENSE                          `- license
 - `./ns_add_to_path.m                 `- function to add relevant subfolders to MATLAB's path
 - `./ns_install.m                     `- function to install this package
 - `./README.md                        `- this file
@@ -60,7 +60,7 @@ In addition, the following functions calculate geostrophic streamfunctions:
 
 
 ## Requirements:
-MATLAB 2016b or higher (tested on 2017b and 2018b) with the Optimization Toolbox
+MATLAB 2016b or higher (tested on 2017b, 2018b, and 2020a) with the Optimization Toolbox
 
 
 ## Installation:
@@ -68,7 +68,7 @@ Run the following command in MATLAB, replacing `~/work/neutral-surfaces/` with t
 ```
 >> run('~/work/neutral-surfaces/ns_install.m')
 ```
-If this does not work, see manual_install.md. 
+If this does not succeed, see manual_install.md. 
 
 
 ## Usage:
@@ -88,7 +88,7 @@ http://vgl.serc.iisc.ernet.in/software/software.php?pid=003
 For more information on ReCon, see
 Doraiswamy, H. & Natarajan, V. Computing Reeb Graphs as a Union of Contour Trees. IEEE Transactions on Visualization and Computer Graphics 19, 249–262 (2013).
 
-The ReCon code included with Topobaric Surface has been modified to work with double precision and to allow the input and output to be from memory rather than files on the hard disk.
+The ReCon code included with Topobaric Surface has been modified to work with double precision and to allow the input and output to be from memory rather than files on the hard disk.  This portion of the Neutral Surfaces toolbox is licensed under the GNU Lesser General Public License (LGPL).
 
 Note that ReCon requires Java 1.5 or higher, though it must be built for the version of the Java Runtime Environment that is packaged with MATLAB.
 
@@ -114,7 +114,7 @@ Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling 138, 88–106. h
 
 Stanley, G.J., 2019b. The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling 138, 107–121. https://doi.org/10.1016/j.ocemod.2019.04.002
 
-Stanley, G.J., McDougall, T.J., Barker, P.M., 2020. Algorithmic improvements to finding approximately neutral surfaces. J. Adv. Model. Earth Syst. submitted.
+Stanley, G.J., McDougall, T.J., Barker, P.M., 2021. Algorithmic improvements to finding approximately neutral surfaces. J. Adv. Model. Earth Syst. submitted.
 
 Wüst, G., 1935. The stratosphere of the Atlantic ocean. Scientific Results of the German Atlantic Expedition of the Research Vessel “Meteor” 1925–27 6.
 
@@ -122,15 +122,15 @@ Zhang, H.-M., Hogg, N.G., 1992. Circulation and water mass balance in the Brazil
 
 
 ## Copyright:
-This file is part of Neutral Surfaces. 
+MIT License
 
-Copyright (C) 2020  Geoff Stanley
+Copyright (c) 2021 Geoff Stanley
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:  
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. 
 
-You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  
 
 Author(s) : Geoff Stanley
 

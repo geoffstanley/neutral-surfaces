@@ -28,7 +28,7 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % >> Sppc = ppc_linterp(P, S);                           % Interpolant for S in terms of P
 % >> Tppc = ppc_linterp(P, T);                           % Interpolant for T in terms of P
 % >> [s,t] = ppc_val2(P, Sppc, Tppc, lead1(p));          % get S and T on the surface
-% >> d = eos(s, t, p) - eos(s0, t0, p);                  % get delta on the surface
+% >> d = eos(s, t, p) - eos(s0, t0, p);                  % gegeoffstanley@gmail.com"t delta on the surface
 % >> p_ = p(RG.wet);                                     % get p just on the valid surface
 % >> d_fn_at_p = nan(size(p));                           % prepare to build a 2D map of evaluations of the delta function
 % >> for e = 1 : RG.nArcs                                % loop over all arcs of the Reeb graph
@@ -277,23 +277,6 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling 138,
 % 88–106. https://doi.org/10.1016/j.ocemod.2019.01.008
 
-% --- Copyright:
-% This file is part of Neutral Surfaces.
-% Copyright (C) 2020  Geoff Stanley
-%
-% This program is free software: you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation, either version 3 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program.  If not, see <https://www.gnu.org/licenses/>.
-%
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
