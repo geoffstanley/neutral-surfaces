@@ -10,38 +10,37 @@
 warning('off', 'MATLAB:nargchk:deprecated')
 set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 
-%PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/paper-3-Stanley-McDougall-Barker-2021/'; % Manually set path to this file.
-cd(PATH_LOCAL);
-
-PATH_OMEGA_KMJ = [PATH_LOCAL 'omega-kmj/'];
-addpath(genpath(PATH_OMEGA_KMJ));
-
-% Add gamma_n() and nsfcs() MATLAB functions for Jackett and McDougall (1997) neutral density software.
-% Obtain from: http://www.teos-10.org/preteos10_software/neutral_density.html
-PATH_GAMMA_N = '~/work/MATLAB_notloaded/oceanography_tools/neutral_density/gamma1/'; % adjust as needed.
-addpath(PATH_GAMMA_N);
-
 % Add Neutral Surfaces to MATLAB's path
-PATH_NS = '~/work/projects-gfd/neutral-surfaces/';
+PATH_NS = '~/work/projects-gfd/neutral-surfaces/'; % << ADJUST AS NEEDED >>
 run([PATH_NS 'ns_add_to_path.m']);
 
 % Note: The non-Boussinesq functions densjmd95 and densjmd95_s_t are
 % necessary for gamma_n neutrality error calculations and are included in
 % PATH_LOCAL alongside this file. 
 
+% Add gamma_n() and nsfcs() MATLAB functions for Jackett and McDougall (1997) neutral density software.
+% Obtain from: http://www.teos-10.org/preteos10_software/neutral_density.html
+PATH_GAMMA_N = '~/work/MATLAB_notloaded/oceanography_tools/neutral_density/gamma1/'; % << ADJUST AS NEEDED >>
+addpath(PATH_GAMMA_N);
+
+%PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
+PATH_LOCAL = [PATH_NS 'run/paper-3-Stanley-McDougall-Barker-2021/']; % Manually set path to this file.
+cd(PATH_LOCAL);
+
+PATH_OMEGA_KMJ = [PATH_LOCAL 'omega-kmj/'];
+addpath(genpath(PATH_OMEGA_KMJ));
+
 % Folder containing the functions eos.m, eos_p.m, and eos_s_t.m
-PATH_EOS = '~/work/MATLAB/eos/eos/';
+PATH_EOS = '~/work/MATLAB/eos/eos/'; % << ADJUST AS NEEDED >>
 addpath(PATH_EOS);  % Doing this last to ensure at top of MATLAB's path, above eos fcns in other dirs
 
 % Folder containing .nc data files
 PATH_OCCA = '~/work/data/OCCA/';
 PATH_ECCO2 = '~/work/data/ECCO2/latlon/';
 
-
 % Make a directory for figures and other output
-PATH_OUT = '~/work/unsw/projects/omega/output/';
-PATH_OUT = [PATH_OUT 'ns_timers_' datestr(now, 'dd-mm-yyyy') '/'];
+PATH_OUT = [PATH_LOCAL 'output/'];
+PATH_OUT = [PATH_OUT datestr(now, 'dd-mm-yyyy') '/'];
 if ~exist(PATH_OUT, 'dir'); mkdir(PATH_OUT); end
 
 fileID = 1; % For standard output to the screen
