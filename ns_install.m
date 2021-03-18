@@ -3,23 +3,6 @@ function ns_install()
 %
 % This file should exist in the root directory of Neutral Surfaces.
 
-% --- Copyright:
-% This file is part of Neutral Surfaces.
-% Copyright (C) 2020  Geoff Stanley
-%
-% This program is free software: you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation, either version 3 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; withouasdft even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program.  If not, see <https://www.gnu.org/licenses/>.
-%
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
@@ -29,13 +12,13 @@ function ns_install()
 V = filesep(); % /  or  \  depending on OS
 
 % Get path to this file, in ./
-PATH_PROJECT = [fileparts(mfilename('fullpath')) V];
+PATH_NS = [fileparts(mfilename('fullpath')) V];
 
 % Get path to ./lib/dat/
-PATH_DAT = [PATH_PROJECT 'lib' V 'dat' V];
+PATH_DAT = [PATH_NS 'lib' V 'dat' V];
 
 % Get path to ./topobaric-surface
-PATH_TOPOBARIC_SURFACE = [PATH_PROJECT 'topobaric-surface' V];
+PATH_TOPOBARIC_SURFACE = [PATH_NS 'topobaric-surface' V];
 
 % Step 1: Check MATLAB version
 VER_MATLAB_STR = version();
@@ -109,21 +92,21 @@ mex('-setup', 'C');
 
 
 % Step 6: Add Neutral Surfaces to MATLAB's search path
-fprintf('* Adding\n %s\nand appropriate sub-folders to MATLAB''s search path.\n', PATH_PROJECT)
-run([PATH_PROJECT 'ns_add_to_path.m']);
+fprintf('* Adding\n %s\nand appropriate sub-folders to MATLAB''s search path.\n', PATH_NS)
+run([PATH_NS 'ns_add_to_path.m']);
 
 reply = input('* Shall I edit your startup.m file to add these folders to MATLAB''s search path every time MATLAB starts? [Y/n]: ', 's');
 if isempty(reply) || lower(reply(1)) == 'y'
     PATH_USER = userpath();
     file_startup = fopen([PATH_USER V 'startup.m'], 'at');
     fprintf(file_startup, '\n%% Add Topobaric Surface\n');
-    fprintf(file_startup, 'run(''%s'');\n', [PATH_PROJECT 'ns_add_to_path.m']);
+    fprintf(file_startup, 'run(''%s'');\n', [PATH_NS 'ns_add_to_path.m']);
     fclose(file_startup);
 end
 
 
 % Step 7: Download data
-reply = input('* Shall I download data used by the scripts in this folder? [Y/n]: ', 's');
+reply = input('* Shall I download oceanic data used by the scripts in the ./run/ directory? [Y/n]: ', 's');
 if isempty(reply) || lower(reply(1)) == 'y'
     
     % Determine if wget or curl is available
