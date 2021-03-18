@@ -1,11 +1,10 @@
-function OPTS = tbs_defaults(ni, nj)
+function OPTS = tbs_defaults()
 %TBS_DEFUALTS  Default options for topobaric_surface.
 %
 %
-% OPTS = tbs_defaults(ni,nj)
+% OPTS = tbs_defaults()
 % returns a struct OPTS containing default options for use in
-% topobaric_surface, appropriate for a grid with ni longitude points and nj
-% latitude points.
+% topobaric_surface.
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -43,13 +42,13 @@ OPTS.GEOSTRF = false;
 OPTS.SPLINE_BREAKS = [0 200 1500 1800 6000]; % [dbar] or [m]
 OPTS.SPLINE_ORDER = 4; % Cubic
 
-% Do not remove the Mixed Layer
-OPTS.MLX = [];
+% pressure or depth of Mixed Layer
+OPTS.ML = []; % Do not remove the Mixed Layer
 
 % Reference pressure or depth.  If a scalar is provided, the pressure or
 % depth on the topobaric surface at the reference water column will be this
 % value (with precision of OPTS.TOL).
-OPTS.REF_X = []; % [dbar] or [m, positive]
+OPTS.REF_P = []; % [dbar] or [m, positive]
 
 % Reference practical / Absolute salinity and potential / Conservative
 % temperature. If provided as scalars, these determine the way delta
@@ -79,17 +78,17 @@ OPTS.SIMPLIFY_WEIGHT_PERSIST = 0.5; % Equal weighting between area and persisten
 OPTS.SIMPLIFY_ARC_REMAIN = Inf;     % No leaf pruning simplification
 
 % Error tolerance when root-finding to update surface, in the same units as
-% X [dbar] or [m].
-OPTS.TOL_X_UPDATE = 1e-4;
+% P [dbar] or [m].
+OPTS.TOL_P_UPDATE = 1e-4;
 
 % Solutions to the root-finding problem in each water column are sought in
 % the domain of the local branch of the multivalued function expanded
-% outwards by this amount, in the same units as X [dbar] or [m].
-OPTS.X_EXPN = 500;
+% outwards by this amount, in the same units as P [dbar] or [m].
+OPTS.P_EXPN = 500;
 
 % Pre-computed interpolation functions.  None given here.
-OPTS.SppX = [];
-OPTS.TppX = [];
+OPTS.Sppc = [];
+OPTS.Tppc = [];
 
 % Conditions to terminate iterations:
 OPTS.ITER_MIN = 6;  % minimum number of iterations
@@ -99,9 +98,8 @@ OPTS.ITER_START_WETTING = 1; % Start wetting immediately
 OPTS.ITER_STOP_WETTING  = 5; % stop wetting after this many iterations (to avoid flip-flopping on adding then removing some nuisance casts)
 
 % quit when the L2 change of pressure on surface exceeds this value (set to
-% 0 to deactivate), in the same units as X [dbar] or [m].
-%OPTS.ITER_L2_CHANGE = 1e-3;
-OPTS.TOL_X_CHANGE_L2 = 1e-3;
+% 0 to deactivate), in the same units as P [dbar] or [m].
+OPTS.TOL_P_CHANGE_L2 = 1e-3;
 
 
 % Grid distances used for calculating gradients and area-weighting norms,

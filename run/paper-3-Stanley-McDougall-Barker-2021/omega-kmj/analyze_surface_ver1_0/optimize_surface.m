@@ -50,7 +50,7 @@ function [sns_i,ctns_i,pns_i,diags] = optimize_surface(s,ct,p,g,n2,sns,ctns,pns,
 %
 
 SHOW_FIGS = false; % GJS
-TOL_X_CHANGE_L2 = 1e-3; % GJS
+TOL_P_CHANGE_L2 = 1e-3; % GJS
 diags = struct(); % GJS
 diags.clocktime = nan(nit,1); % GJS
 diags.epsL1 = nan(nit+1,1); % GJS
@@ -666,7 +666,7 @@ for it = 1:nit
     x_change = pns_i - pns_old; % GJS
     x_change_L2   = nanrms(x_change(:)); % GJS
     fprintf('%3d - |Delta x|_2 = %.6e\n', it, x_change_L2); % GJS
-    if x_change_L2 < TOL_X_CHANGE_L2 % GJS 
+    if x_change_L2 < TOL_P_CHANGE_L2 % GJS 
         break % GJS 
     end % GJS 
     

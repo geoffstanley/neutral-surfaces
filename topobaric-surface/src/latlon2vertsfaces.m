@@ -44,7 +44,7 @@ function [v, f, Qmap, nV] = latlon2vertsfaces(Q, WRAP, X, Y, method, select)
 %
 % --- Input:
 % Q [ni, nj]: rectilinear data
-% WRAP [1, 2]: specification for which dimensions of Q are periodic [logical]
+% WRAP [2 element array]: specification for which dimensions of Q are periodic [logical]
 % X [ni, 1]: spatial positions for the first dimension of Q
 % Y [ni, 1]: spatial positions for the second dimension of Q
 % method [string]:
@@ -53,7 +53,7 @@ function [v, f, Qmap, nV] = latlon2vertsfaces(Q, WRAP, X, Y, method, select)
 %   method(1) == 'c' (for cross) splits a rectangular face of Q into four
 %       triangles, with the mean of Q on the four corners taken as the
 %       value in the centre.
-% select [1, 1] or [1, 2]:
+% select [1, 1] or [2 element array]:
 %   true, to select the largest connected component;
 %   false, to keep all components, even if they are disconnected;
 %   [x y], to select the connected component containing vertex nearest to (x,y).

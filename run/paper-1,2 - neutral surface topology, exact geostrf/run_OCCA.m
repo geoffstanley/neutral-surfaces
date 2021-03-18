@@ -41,29 +41,27 @@ warning('off', 'MATLAB:nargchk:deprecated')
 set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 V = filesep(); % /  or  \  depending on OS.
 
-PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-%PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/'; % Manually set path to this file.
-
-% Get path to one directory up, containing all of Topobaric Surface
-PATH_PROJECT = PATH_LOCAL(1 : find(PATH_LOCAL(1:end-1) == V, 1, 'last'));
-
 % Add Neutral Surfaces to MATLAB's path
-run([PATH_PROJECT 'ns_add_to_path.m']);
+PATH_NS = '~/work/projects-gfd/neutral-surfaces/'; % adjust as needed.
+run([PATH_NS 'ns_add_to_path.m']);
 
-% Make a directory for figures
-PATH_FIGS = [PATH_LOCAL 'figs' V];
-if ~exist(PATH_FIGS, 'dir')
-    mkdir(PATH_FIGS)
-end
+% Make a directory for figures and other output
+PATH_OUT = '~/work/dphil/projects/topobaric/output/'; % adjust as needed.
+PATH_OUT = [PATH_OUT datestr(now, 'dd-mm-yyyy') '/'];
+if ~exist(PATH_OUT, 'dir'); mkdir(PATH_OUT); end
+
+% Folder containing the functions eos.m, eos_p.m, and eos_s_t.m
+PATH_EOS = '~/work/MATLAB/eos/eos/';
+addpath(PATH_EOS);  % Doing this last to ensure at top of MATLAB's path, above eos fcns in other dirs
 
 % Read path to OCCA data from PATH_OCCA.txt
-file_id = fopen([PATH_PROJECT 'lib' V 'dat' V 'PATH_OCCA.txt']);
+file_id = fopen([PATH_NS 'lib' V 'dat' V 'PATH_OCCA.txt']);
 PATH_OCCA = textscan(file_id, '%s');
 PATH_OCCA = PATH_OCCA{1}{1};
 fclose(file_id);
 
 %fileID = 1; % For standard output to the screen
-fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
+fileID = fopen([PATH_OUT 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
 
 db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion
@@ -86,15 +84,17 @@ XG = g.XGvec;
 YG = g.YGvec;
 WRAP = [true false];
 
-%% Set alias functions
-% Ensure the equation of state is for the densjmd95 in-situ density:
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95.m'   ] , [PATH_PROJECT 'eos.m'  ]);
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_dp.m'] , [PATH_PROJECT 'eos_x.m']);
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_s_t.m'], [PATH_PROJECT 'eos_s_t.m']);
-clear eos eos_x eos_s_t % Make sure the copied files get used
+interpfn = @ppc_linterp; % linear interpolation
 
-% Choose vertical interpolation method
-interpfn = @ppc_linterp;
+%% Set alias functions.  << ENSURE THIS GETS DONE >>
+% Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_p.m
+if false % only need to do this once!  Doing every time makes codegen run every time
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], grav, rho_c); %#ok<UNRCH>
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_p.m'], grav, rho_c);
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_s_t.m'], [PATH_EOS 'eos_s_t.m'], grav, rho_c);
+end
+clear eos eos_p eos_s_t % Make sure the copied files get used
+
 
 %% Selecting surfaces and depths
 xref = 180; yref = 0;
@@ -564,7 +564,7 @@ text(axFIG, .985, .4, '~', 'Rotation', 90, 'Units', 'norm', 'FontSize', fontsize
 %% Save figure
 fn = sprintf('illustrative_%s', surfname);
 %saveas(hf1, [figsdir fn '.fig']);
-export_fig(hf1, [PATH_FIGS fn], '-jpg', '-m2.5');
+export_fig(hf1, [PATH_OUT fn], '-jpg', '-m2.5');
 
 %% Table of RG, formatted for Latex
 westr = 'w e';

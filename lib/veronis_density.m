@@ -1,28 +1,28 @@
-function d1 = veronis_density(x_ref, S, T, X, x0, x1, dx, interpfn)
+function d1 = veronis_density(p_ref, S, T, P, p0, p1, dp, interpfn)
 % VERONIS_DENSITY  The surface density plus the integrated vertical 
 %                  gradient of Locally Referenced Potential Density.
 %
 %
-% d1 = veronis_density(x_ref, S, T, X, x0, x1)
-% determines the Veronis density d1 at vertical position x1 on a cast with
+% d1 = veronis_density(p_ref, S, T, P, p0, p1)
+% determines the Veronis density d1 at vertical position p1 on a cast with
 % practical / Absolute salinity S and potential / Conservative temperature
-% T values at depth or pressure values X.  The Veronis density is given by
-% the potential density (with reference pressure / depth x_ref) evaluated
-% at x0 on the cast, plus the integral of the vertical (d/dX) derivative of
-% Locally Referenced Potential Density (LRPD) from X = x0 to X = x1. The
-% vertical (d/dX) derivative of LRPD is rho_S dS/dX + rho_T dT/dX where
+% T values at depth or pressure values P.  The Veronis density is given by
+% the potential density (with reference pressure / depth p_ref) evaluated
+% at p0 on the cast, plus the integral of the vertical (d/dX) derivative of
+% Locally Referenced Potential Density (LRPD) from P = p0 to P = p1. The
+% vertical (d/dP) derivative of LRPD is rho_S dS/dP + rho_T dT/dP where
 % rho_S and rho_T are the partial derivatives of density with respect to S
-% and T, and dS/dX and dT/dX are the derivatives of S and T with respect to
-% X.  The equation of state for density is given by eos.m in the PATH, and
+% and T, and dS/dP and dT/dP are the derivatives of S and T with respect to
+% P.  The equation of state for density is given by eos.m in the PATH, and
 % its partial derivatives with respect to S and T are given by eos_s_t.m in
-% the PATH.  If x0 or x1 are outside the range of X, d1 is returned as NaN.
+% the PATH.  If p0 or p1 are outside the range of P, d1 is returned as NaN.
 % 
-% d1 = veronis_density(..., dx)
+% d1 = veronis_density(..., dp)
 % specifies the maximum interval size used in the trapezoidal numerical
-% integration.  If omitted, the default size is 1 unit of X (1m or 1 dbar).
+% integration.  If omitted, the default size is 1 unit of P (1m or 1 dbar).
 
 % d1 = veronis_density(..., interpfn)
-% uses interpfn (a function handle) to interpolate S and T as piecewise polynomials of X.
+% uses interpfn (a function handle) to interpolate S and T as piecewise polynomials of P.
 % If interpfn = @ppc_linterp, the result is the same as if interpfn were omitted
 % and linear interpolation were performed native to this code.  Other functions
 % from the PPC toolbox can be used, e.g. ppc_pchip and ppc_makima.
@@ -32,14 +32,14 @@ function d1 = veronis_density(x_ref, S, T, X, x0, x1, dx, interpfn)
 %
 %
 % --- Input:
-% x_ref [1,1]: reference pressure / depth to evaluate potential density at x0
-%  S [nk, nt]: practical / Absolute Salinity values on a cast
-%  T [nk, nt]: potential / Conservative Temperature values on a cast
-%  X [nk, nt]: pressure / depth values on a cast
-%  x0 [1, 1]: pressure / depth that starts the integral
-%  x1 [1, 1]: pressure / depth that ends the integral
-%  dx [1, 1]: maximum interval of pressure / depth in numerical integration
-%  interpfn [function handle]: function to calcualte piecewise polynomial coefficients
+% p_ref [1,1]: reference pressure / depth to evaluate potential density at p0
+% S [nk, nt] : practical / Absolute Salinity values on a cast
+% T [nk, nt] : potential / Conservative Temperature values on a cast
+% P [nk, nt] : pressure / depth values on a cast
+% p0 [1, 1]  : pressure / depth that starts the integral
+% p1 [1, 1]  : pressure / depth that ends the integral
+% dp [1, 1]  : maximum interval of pressure / depth in numerical integration
+% interpfn [function handle]: function to calcualte piecewise polynomial coefficients
 %
 %
 % --- Output:
@@ -92,13 +92,13 @@ function d1 = veronis_density(x_ref, S, T, X, x0, x1, dx, interpfn)
 % Email     : geoffstanley@gmail.com
 
 assert(all(size(T) == size(S)), 'T must be same size as S')
-assert(all(size(X) == size(S)), 'X must be same size as S')
-assert(isvector(S), 'S, T, X must be 1D. (Veronis density is only useful for one water column at a time!)');
-assert(isscalar(x0), 'x0 must be a scalar');
-assert(isscalar(x1), 'x1 must be a scalar');
+assert(all(size(P) == size(S)), 'P must be same size as S')
+assert(isvector(S), 'S, T, P must be 1D. (Veronis density is only useful for one water column at a time!)');
+assert(isscalar(p0), 'p0 must be a scalar');
+assert(isscalar(p1), 'p1 must be a scalar');
 
-if nargin < 7 || isempty(dx)
-  dx = 1; % default: 1m or 1dbar step size for trapezoidal integration
+if nargin < 7 || isempty(dp)
+  dp = 1; % default: 1m or 1dbar step size for trapezoidal integration
 end
 
 if nargin < 8 || isempty(interpfn)
@@ -106,57 +106,57 @@ if nargin < 8 || isempty(interpfn)
 end
 
 
-% Interpolate S and T as piecewise polynomials of X
-SppX = interpfn(X, S);
-TppX = interpfn(X, T);
+% Interpolate S and T as piecewise polynomials of P
+Sppc = interpfn(P, S);
+Tppc = interpfn(P, T);
 
-% Evaluate the derivatives of these piecewise polynomials as functions of X
-SxppX = ppc_deriv(X, SppX);
-TxppX = ppc_deriv(X, TppX);
+% Evaluate the derivatives of these piecewise polynomials as functions of P
+SPppc = ppc_deriv(P, Sppc);
+TPppc = ppc_deriv(P, Tppc);
 
-% Calculate potential density, referenced to x_ref, at x0
-[s0, t0] = ppc_val2(X, SppX, TppX, x0);
-d0 = eos(s0, t0, x_ref);
+% Calculate potential density, referenced to p_ref, at p0
+[s0, t0] = ppc_val2(P, Sppc, Tppc, p0);
+d0 = eos(s0, t0, p_ref);
 
-% Find indices at which x0 and x1 sit within X
-k0 = discretize(x0, X);  % X(k0) <= x0 < X(k0+1);  but if x0 == X(end), then k0 = length(X) - 1;  else, k0 = NaN.
-k1 = discretize(x1, X);  % X(k1) <= x1 < X(k1+1);  but if x1 == X(end), then k1 = length(X) - 1;  else, k1 = NaN.
+% Find indices at which p0 and p1 sit within P
+k0 = discretize(p0, P);  % P(k0) <= p0 < P(k0+1);  but if p0 == P(end), then k0 = length(P) - 1;  else, k0 = NaN.
+k1 = discretize(p1, P);  % P(k1) <= p1 < P(k1+1);  but if p1 == P(end), then k1 = length(P) - 1;  else, k1 = NaN.
 if isnan(k0) || isnan(k1)
   d1 = nan;
   return
 end
 
-% Integrate from x0 to X(k0+1)
-d1 =   d0 + int_x_kp1(X, x0, k0, dx, SppX, TppX, SxppX, TxppX);
+% Integrate from p0 to P(k0+1)
+d1 =   d0 + int_x_kp1(P, p0, k0, dp, Sppc, Tppc, SPppc, TPppc);
 
-% Integrate from X(k0+1) to X(k1+1)
+% Integrate from P(k0+1) to P(k1+1)
 for k = k0+1 : k1
-  d1 = d1 + int_k_kp1(X, k, dx, SppX, TppX, SxppX, TxppX);
+  d1 = d1 + int_k_kp1(P, k, dp, Sppc, Tppc, SPppc, TPppc);
 end
 
-% Integrate from x1 to X(k1+1), and subtract this
-d1 =   d1 - int_x_kp1(X, x1, k1, dx, SppX, TppX, SxppX, TxppX);
+% Integrate from p1 to P(k1+1), and subtract this
+d1 =   d1 - int_x_kp1(P, p1, k1, dp, Sppc, Tppc, SPppc, TPppc);
 
 end
 
 
-function d = int_x_kp1(X, x, k, dx, SppX, TppX, SxppX, TxppX)
-% Integrate from x to X(k+1) using trapezoidal integration with spacing dx
+function d = int_x_kp1(P, p, k, dp, Sppc, Tppc, SPppc, TPppc)
+% Integrate from p to P(k+1) using trapezoidal integration with spacing dp
 
-n = ceil((X(k+1) - x) / dx) + 1; % # points between x and X(k+1), inclusive
-xx = linspace(x, X(k+1), n);     % intervals are not larger than dx
+n = ceil((P(k+1) - p) / dp) + 1; % # points between p and P(k+1), inclusive
+xx = linspace(p, P(k+1), n);     % intervals are not larger than dp
 
 % Use piecewise polynomial coefficients as provided
-[ss, tt] = ppc_val2_(X, SppX, TppX, xx, k+1);
-[dsdx, dtdx] = ppc_val2_(X, SxppX, TxppX, xx, k+1);
+[ss, tt] = ppc_val2_(P, Sppc, Tppc, xx, k+1);
+[dsdx, dtdx] = ppc_val2_(P, SPppc, TPppc, xx, k+1);
 
 % To use linear interpolation internally, replace the above two lines with the following 7 lines (and also pass S and T as arguments):
-%   dX = X(k+1) - X(k);
-%   dsdx = (S(k+1) - S(k)) / dX;
-%   dtdx = (T(k+1) - T(k)) / dX;
-%   s0 = ( S(k) * (X(k+1) - x) + S(k+1) * (x - X(k)) ) / dX;
+%   dP = P(k+1) - P(k);
+%   dsdp = (S(k+1) - S(k)) / dP;
+%   dtdp = (T(k+1) - T(k)) / dP;
+%   s0 = ( S(k) * (P(k+1) - p) + S(k+1) * (p - P(k)) ) / dP;
 %   ss = linspace(s0, S(k+1), n);
-%   t0 = ( T(k) * (X(k+1) - x) + T(k+1) * (x - X(k)) ) / dX;
+%   t0 = ( T(k) * (P(k+1) - p) + T(k+1) * (p - P(k)) ) / dP;
 %   tt = linspace(t0, T(k+1), n);
 
 [rs, rt] = eos_s_t(ss, tt, xx);
@@ -165,26 +165,26 @@ d = trapz(xx, yy);
 
 end
 
-function d = int_k_kp1(X, k, dx, SppX, TppX, SxppX, TxppX)
-% Integrate from X(k) to X(k+1) using trapezoidal integration with spacing dx
+function d = int_k_kp1(P, k, dp, Sppc, Tppc, SPppc, TPppc)
+% Integrate from P(k) to P(k+1) using trapezoidal integration with spacing dp
 
-n = ceil((X(k+1) - X(k)) / dx) + 1; % # points between x and X(k+1), inclusive
-xx = linspace(X(k), X(k+1), n);     % intervals are not larger than dx
+n = ceil((P(k+1) - P(k)) / dp) + 1; % # points between p and P(k+1), inclusive
+pp = linspace(P(k), P(k+1), n);     % intervals are not larger than dp
 
 % Use piecewise polynomial coefficients as provided
-[ss, tt] = ppc_val2_(X, SppX, TppX, xx, k+1);
-[dsdx, dtdx] = ppc_val2_(X, SxppX, TxppX, xx, k+1);
+[ss, tt] = ppc_val2_(P, Sppc, Tppc, pp, k+1);
+[dsdp, dtdp] = ppc_val2_(P, SPppc, TPppc, pp, k+1);
 
 % To use linear interpolation internally, replace the above two lines with the following 5 lines (and also pass S and T as arguments):
-%   dX = X(k+1) - X(k);
-%   dsdx = (S(k+1) - S(k)) / dX;
-%   dtdx = (T(k+1) - T(k)) / dX;
+%   dP = P(k+1) - P(k);
+%   dsdp = (S(k+1) - S(k)) / dP;
+%   dtdp = (T(k+1) - T(k)) / dP;
 %   ss = linspace(S(k), S(k+1), n);
 %   tt = linspace(T(k), T(k+1), n);
 
-[rs, rt] = eos_s_t(ss, tt, xx);
-yy = rs .* dsdx + rt .* dtdx;
-d = trapz(xx, yy);
+[rs, rt] = eos_s_t(ss, tt, pp);
+yy = rs .* dsdp + rt .* dtdp;
+d = trapz(pp, yy);
 
 end
 

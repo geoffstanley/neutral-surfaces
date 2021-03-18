@@ -1,5 +1,5 @@
 function [x,flag,relres] = omega_lsqr(A,b,tol)
-%OMEGA LSQR  A specialized version of MATLAB's lsqr.
+%OMEGA_LSQR  A specialized version of MATLAB's lsqr.
 % 
 % 
 % omega_lsqr is a stripped down version of MATLAB's lsqr, mostly to demand

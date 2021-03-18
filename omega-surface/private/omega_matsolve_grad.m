@@ -1,8 +1,8 @@
-function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
+function phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
 % OMEGA_MATSOLVE_GRAD  Build & solve the sparse matrix gradient equations for omega surfaces
 %
 %
-% phi = omega_matsolve_grad(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
+% phi = omega_matsolve_grad(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
 % builds and solves the sparse matrix problem for omega surfaces in
 % gradient equation form, ensuring phi is zero at m_ref.
 %
@@ -10,7 +10,7 @@ function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WR
 % --- Input:
 %  s [ni, nj]: practical / Absolute Salinity on the surface
 %  t [ni, nj]: potential / Conservative Temperature on the surface
-%  x [ni, nj]: pressure or depth on the surface
+%  p [ni, nj]: pressure (or depth) on the surface
 % DIST2on1_iJ [ni, nj]: the area of a grid cell centred at (I-1/2, J),
 %   divided by the distance, squared, from (I-1,J) to (I,J).  Equivalently,
 %   this is the grid distance in second dimension divided by grid distance
@@ -65,7 +65,6 @@ function phi = omega_matsolve_grad(s, t, x, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WR
 % tolerances on density or pressure.  From several numerical tests,
 % the default relative tolerance of 1e-6 seems to work well.
 TOL_LSQR_REL = 1e-6;
-%TOL_LSQR_REL = 1e-10; % DEV
 
 % ZERO_MEAN = true; % Add extra row specifying mean(phi) = 0
 ZERO_MEAN = false; % PINNING.  Add extra row specifying phi = 0 for the first cast in each region
@@ -82,7 +81,7 @@ MJ = 2; % (I-1,J  )
 
 
 %% Process Inputs
-[ni,nj] = size(x);
+[ni,nj] = size(p);
 WALL = ni * nj + 1; % a flag values used by A4 to index neighbours that would go across a non-periodic boundary
 
 % If both gridding variables are 1, then grid is uniform
@@ -94,7 +93,7 @@ UNIFORM_GRID = ...
 % Aliases
 sm = s;
 tm = t;
-xm = x;
+pm = p;
 
 % Anonymous functions for shifting data.  (Faster than indexing with A4.)
 im1 = @(D) circshift(D, [+1 0]);
@@ -104,11 +103,11 @@ flat = @(F) F(:);
 %% m = (i, j) and n = (i-1, j)
 sn = im1(sm);
 tn = im1(tm);
-xn = im1(xm);
+pn = im1(pm);
 if ~WRAP(1)
   sn(1,:) = nan;
 end
-[vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (xm + xn) );
+[vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (pm + pn) );
 eps_iJ = vs .* (sm - sn) + vt .* (tm - tn);
 if ~UNIFORM_GRID
   eps_iJ = eps_iJ .* sqrtDIST2on1_iJ;
@@ -117,11 +116,11 @@ end
 %% m = (i, j) and n = (i, j-1)
 sn = jm1(sm);
 tn = jm1(tm);
-xn = jm1(xm);
+pn = jm1(pm);
 if ~WRAP(2)
   sn(:,1) = nan;
 end
-[vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (xm + xn) );
+[vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (pm + pn) );
 eps_Ij = vs .* (sm - sn) + vt .* (tm - tn);
 if ~UNIFORM_GRID
   eps_Ij = eps_Ij .* sqrtDIST1on2_Ij;

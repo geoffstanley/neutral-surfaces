@@ -1,4 +1,4 @@
-function gsf = cunningham00(s, t, x, X, M, Y, x0, varargin)
+function gsf = cunningham00(s, t, p, P, M, Y, p0, varargin)
 %CUNNINGHAM00  The Cunningham (2000) geostrophic stream function.
 %
 %
@@ -101,19 +101,19 @@ function gsf = cunningham00(s, t, x, X, M, Y, x0, varargin)
 % Input checking
 narginchk(7,9);
 
-[ni,nj] = size(x);
-nk = size(X,1);
+[ni,nj] = size(p);
+nk = size(P,1);
 is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
-lead1 = @(x) reshape(x, [1 size(x)]);
+lead1 = @(p) reshape(p, [1 size(p)]);
 
 
 if is4D(s) % Evaluate interpolants for S and T onto the surface
-    [s,t] = ppc_val2(X, s, t, lead1(x));
+    [s,t] = ppc_val2(P, s, t, lead1(p));
 end
 
-% If x0 not provided, use the mean
-if isempty(x0)
-    x0 = nanmean(x(:));
+% If p0 not provided, use the mean
+if isempty(p0)
+    p0 = nanmean(p(:));
 end
 
 % See McDougall and Klocker (2010) for this formulation of the Cunningham
@@ -122,8 +122,8 @@ end
 
 
 % Calculate the easy terms involving integrals of hydrostatic balance:
-y  = hsap2(s, t, x, X, M, Y, varargin{:});
-y0 = hsap2(s, t, x, x0, X,   varargin{:});
+y  = hsap2(s, t, p, P, M, Y, varargin{:});
+y0 = hsap2(s, t, p, p0, P,   varargin{:});
 
 
 % Calculate the geostrophic stream function

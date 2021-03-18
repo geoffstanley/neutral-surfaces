@@ -1,4 +1,4 @@
-function [y,m] = hsap2(s, t, x, varargin)
+function [y,m] = hsap2(s, t, p, varargin)
 %HSAP2  Integrate hydrostatic balance to obtain acceleration potential on a surface.
 %
 %
@@ -158,9 +158,9 @@ function [y,m] = hsap2(s, t, x, varargin)
 
 narginchk(3,8);
 
-lead1 = @(x) reshape(x, [1 size(x)]);
+lead1 = @(p) reshape(p, [1 size(p)]);
 
-[ni,nj] = size(x);
+[ni,nj] = size(p);
 assert(all(size(s) == size(t)), 'First and second inputs must be the same size');
 
 % Check for gravity and Boussinesq reference density as last 2 arguments
@@ -181,31 +181,31 @@ if isscalar(s) && isscalar(t)
     % or
     %   [y,r] = hsap2(s0, t0, z, grav, rho_c)
     
-    dx = .1;
-    lo = min(0, floor((min(x(:)) / dx)) * dx - dx);
-    hi = max(x(:)) + dx;
-    X = (lo : dx : hi).';
-    m = eos(s, t, x);
-    M = eos(s, t, X);
-    Y = cumsum(diff(X) .* (M(1:end-1) + M(2:end)), 1);
+    dp = .1;
+    lo = min(0, floor((min(p(:)) / dp)) * dp - dp);
+    hi = max(p(:)) + dp;
+    P = (lo : dp : hi).';
+    m = eos(s, t, p);
+    M = eos(s, t, P);
+    Y = cumsum(diff(P) .* (M(1:end-1) + M(2:end)), 1);
     
-    k = ceil((x-lo) / dx); % X(k) < x <= X(k+1)
-    k(isnan(k)) = 2; % Prevent out-of-bounds indexing. Where k should be nan, x is nan, so next line makes y nan at these spots.
-    y = (fac/2) * (Y(k-1) + (M(k) + m) .* (x - X(k)));
+    k = ceil((p-lo) / dp); % P(k) < p <= P(k+1)
+    k(isnan(k)) = 2; % Prevent out-of-bounds indexing. Where k should be nan, p is nan, so next line makes y nan at these spots.
+    y = (fac/2) * (Y(k-1) + (M(k) + m) .* (p - P(k)));
     
 else
     assert(length(varargin) >= 2, 'With non-constant s and t, must provide at least five inputs.')
     
-    X = varargin{1 + isscalar(varargin{1})}; % either varargin{1} or varargin{2}
+    P = varargin{1 + isscalar(varargin{1})}; % either varargin{1} or varargin{2}
     
-    nk = size(X,1);
+    nk = size(P,1);
     is1D = @(F) ismatrix(F) && all(size(F) == [nk,1]);
     is3D = @(F) ndims(F) == 3 && all(size(F) == [nk,ni,nj]);
     is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
-    assert(is1D(X) || is3D(X), 'Fourth input must be [nk,1] or [nk,ni,nj]');
+    assert(is1D(P) || is3D(P), 'Fourth input must be [nk,1] or [nk,ni,nj]');
     
     if is4D(s) % Evaluate interpolants for S and T onto the surface
-        [s,t] = ppc_val2(X, s, t, lead1(x));
+        [s,t] = ppc_val2(P, s, t, lead1(p));
     end
     
     if isscalar(varargin{1})
@@ -214,49 +214,49 @@ else
         % or
         %   [y,r] = hsap2(s, t, z, z0, Z, grav, rho_c)
         
-        x0 = varargin{1};
+        p0 = varargin{1};
         
         if BOUSSINESQ
-            m = eos(s, t, x); % in-situ density on the surface
-            M = eos(lead1(s), lead1(t), X); % in-situ density profiles using S and T from the surface
-            Y = hsap3(X,0,0,M,grav,rho_c);
+            m = eos(s, t, p); % in-situ density on the surface
+            M = eos(lead1(s), lead1(t), P); % in-situ density profiles using S and T from the surface
+            Y = hsap3(P,0,0,M,grav,rho_c);
         else
-            m = eos(s, t, x); % specific volume on the surface
-            M = eos(lead1(s), lead1(t), X); % specific volume profiles using S and T from the surface
-            Y = hsap3(X,0,0,M,0);
+            m = eos(s, t, p); % specific volume on the surface
+            M = eos(lead1(s), lead1(t), P); % specific volume profiles using S and T from the surface
+            Y = hsap3(P,0,0,M,0);
         end
         
         % Find vertical grid index for cell centre just above the surface
-        k = binsrchrightn(x, X); % X(k) <= x < X(k+1)
+        k = binsrchrightn(p, P); % P(k) <= p < P(k+1)
         
         [ii,jj] = ndgrid(1:ni, 1:nj);
         inds = sub2ind([nk,ni,nj], k, ii, jj);
         yk = Y(inds);     % Y at cell centre just shallower than the surface
         mk = M(inds);     % M at cell centre just shallower than the surface
-        if isvector(X)
-            xk = X(k);    % X at cell centre just shallower than the surface
+        if isvector(P)
+            pk = P(k);    % P at cell centre just shallower than the surface
         else
-            xk = X(inds); % X at cell centre just shallower than the surface
+            pk = P(inds); % P at cell centre just shallower than the surface
         end
         
         % Compute y on the surface
-        y = yk + (fac/2) * (m + mk) .* (x - xk);
+        y = yk + (fac/2) * (m + mk) .* (p - pk);
         
         
-        % Now subtract the integral from x0
-        m0 = eos(s, t, x0);
-        k0 = binsrchrightn(x0, X);
-        if isvector(X) % then k0 is a scalar, since x0 is definitely a scalar
-            yk = squeeze(Y(k0,:,:)); % Y at cell centre just shallower than x0
-            mk = squeeze(M(k0,:,:)); % M at cell centre just shallower than x0
-            xk = X(k0);              % X at cell centre just shallower than x0
+        % Now subtract the integral from p0
+        m0 = eos(s, t, p0);
+        k0 = binsrchrightn(p0, P);
+        if isvector(P) % then k0 is a scalar, since p0 is definitely a scalar
+            yk = squeeze(Y(k0,:,:)); % Y at cell centre just shallower than p0
+            mk = squeeze(M(k0,:,:)); % M at cell centre just shallower than p0
+            pk = P(k0);              % P at cell centre just shallower than p0
         else
             inds = sub2ind([nk,ni,nj], k0, ii, jj);
-            yk = Y(inds); % Y at cell centre just shallower than x0
-            mk = M(inds); % M at cell centre just shallower than x0
-            xk = X(inds); % X at cell centre just shallower than x0
+            yk = Y(inds); % Y at cell centre just shallower than p0
+            mk = M(inds); % M at cell centre just shallower than p0
+            pk = P(inds); % P at cell centre just shallower than p0
         end
-        y = y - yk - (fac/2) * (mk + m0) .* (x0 - xk);
+        y = y - yk - (fac/2) * (mk + m0) .* (p0 - pk);
         
     else
         % Either
@@ -269,23 +269,23 @@ else
         M = varargin{2}; % either density or specific volume (M for mass)
         Y = varargin{3};
         
-        m = eos(s, t, x); % in-situ density or specific volume on the surface
+        m = eos(s, t, p); % in-situ density or specific volume on the surface
         
         % Find vertical grid index for cell centre just above the surface
-        k = binsrchrightn(x, X); % X(k) <= x < X(k+1)
+        k = binsrchrightn(p, P); % P(k) <= p < P(k+1)
         
         [ii,jj] = ndgrid(1:ni, 1:nj);
         inds = sub2ind([nk,ni,nj], k, ii, jj);
         yk = Y(inds);     % Y at cell centre just shallower than the surface
         mk = M(inds);     % M at cell centre just shallower than the surface
-        if isvector(X)
-            xk = X(k);    % X at cell centre just shallower than the surface
+        if isvector(P)
+            pk = P(k);    % P at cell centre just shallower than the surface
         else
-            xk = X(inds); % X at cell centre just shallower than the surface
+            pk = P(inds); % P at cell centre just shallower than the surface
         end
         
         % Compute y on the surface
-        y = yk + (fac/2) * (m + mk) .* (x - xk);
+        y = yk + (fac/2) * (m + mk) .* (p - pk);
         
     end
     

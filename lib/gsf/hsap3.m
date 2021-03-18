@@ -1,4 +1,4 @@
-function Y = hsap3(X, ATMP, ETAN, M, grav, varargin)
+function Y = hsap3(P, ATMP, ETAN, A, grav, varargin)
 %HSAP3  Integrate hydrostatic balance to obtain acceleration potential at every data point.
 %
 %
@@ -58,22 +58,22 @@ function Y = hsap3(X, ATMP, ETAN, M, grav, varargin)
 narginchk(5,6);
 
 db2Pa = 1e4;
-lead1 = @(x) reshape(x, [1 size(x)]);
+lead1 = @(p) reshape(p, [1 size(p)]);
 
 if nargin == 6
     % Boussinesq form
     rho_c = varargin{1};
-    if isvector(X)
+    if isvector(P)
         Y = (db2Pa/rho_c) * lead1(ATMP) + grav * lead1(ETAN) ...
-            + cumsum((grav/(2*rho_c)) * diff([0; X]) .* (M([1, 1:end-1],:,:) + M), 1);
+            + cumsum((grav/(2*rho_c)) * diff([0; P]) .* (A([1, 1:end-1],:,:) + A), 1);
     else
         Y = (db2Pa/rho_c) * lead1(ATMP) + grav * lead1(ETAN) ...
-            + cumsum((grav/(2*rho_c)) * cat(1, X(1,:,:), diff(X,[],1)) .* (M([1, 1:end-1],:,:) + M), 1);
+            + cumsum((grav/(2*rho_c)) * cat(1, P(1,:,:), diff(P,[],1)) .* (A([1, 1:end-1],:,:) + A), 1);
     end
     
 else
     % Non-Boussinesq form
     Y = + grav * lead1(ETAN) ...
-        - (db2Pa / 2) * cumsum(cat(1, X(1,:,:) - lead1(ATMP), diff(X,[],1)) .* (M([1 1:end-1],:,:) + M), 1);
+        - (db2Pa / 2) * cumsum(cat(1, P(1,:,:) - lead1(ATMP), diff(P,[],1)) .* (A([1 1:end-1],:,:) + A), 1);
     
 end

@@ -23,7 +23,6 @@
 
 
 %% --- BEGIN SETUP --------------------------------------------------------
-%#ok<*UNRCH>
 
 warning('off', 'MATLAB:nargchk:deprecated')
 set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
@@ -48,7 +47,7 @@ run([PATH_NS 'ns_add_to_path.m']);
 % necessary for gamma_n neutrality error calculations and are included in
 % PATH_LOCAL alongside this file. 
 
-% Folder containing the functions eos.m, eos_x.m, and eos_s_t.m
+% Folder containing the functions eos.m, eos_p.m, and eos_s_t.m
 PATH_EOS = '~/work/MATLAB/eos/eos/';
 addpath(PATH_EOS);  % Doing this last to ensure at top of MATLAB's path, above eos fcns in other dirs
 
@@ -70,7 +69,7 @@ maxNumCompThreads(1);   % Just use one CPU, for apples-to-apples comparison
 REPEAT = true; % for paper
 % REPEAT = false; nrep = 1; % for quicker tests
 
-% RES = 2.^(4:7); MODELS = {};  % for quicker tests
+%  RES = 2.^(4:7); MODELS = {};  % for quicker tests
 % RES = 2.^(4:8); MODELS = {'OCCA'};  % for quicker tests
 RES = 2.^(4:11); MODELS = {'OCCA', 'ECCO2'};  % Everything. For paper
 
@@ -104,14 +103,14 @@ diags = cell(nDATA, nS);
 timer = nan( nDATA, nS);
 
 
-%% Set alias functions
-% Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_x.m
-if false % <-- Can change to false... only need to do this once!  Doing every time makes codegen run every time
-  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], grav, rho_c);
-  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_x.m'], grav, rho_c);
+%% Set alias functions.  << ENSURE THIS GETS DONE >>
+% Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_p.m
+if false % only need to do this once!  Doing every time makes codegen run every time
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], grav, rho_c); %#ok<UNRCH>
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_p.m'], grav, rho_c);
   eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_s_t.m'], [PATH_EOS 'eos_s_t.m'], grav, rho_c);
 end
-
+clear eos eos_p eos_s_t % Make sure the copied files get used
 
 %% Begin looping over data
 for iDATA = 1 : nDATA
@@ -205,8 +204,8 @@ for iDATA = 1 : nDATA
   
   BotK = squeeze(sum(isfinite(S), 1));
   
-  SppZ = INTERPFN(Z, S);
-  TppZ = INTERPFN(Z, T);
+  Sppc = INTERPFN(Z, S);
+  Tppc = INTERPFN(Z, T);
   
   Z2P = Pa2db * rho_c * grav ; % Note > 0
   
@@ -218,7 +217,7 @@ for iDATA = 1 : nDATA
   
   
   % --- Setup options neutral surfaces
-  OPTS.TOL_X_CHANGE_L2 = 1e-3; % Stop iterations when the L2 change of pressure on the surface is less than this
+  OPTS.TOL_P_CHANGE_L2 = 1e-3; % Stop iterations when the L2 change of pressure on the surface is less than this
   OPTS.ITER_MIN = 5;      % .. but do at least 5 iterations
   OPTS.ITER_MAX = 30;     % The maximum number of iterations
   %OPTS.ITER_START_WETTING = 1; % Start wetting on first iteration
@@ -228,16 +227,16 @@ for iDATA = 1 : nDATA
   OPTS.SIMPLIFY_ARC_REMAIN = Inf; % No simplification
   OPTS.FILL_IJ = [];     % No filling
   OPTS.FILL_PIX = 0;     % No filling.
-  OPTS.MLX = [];         % Leave the Mixed Layer in.
-  OPTS.TOL_X_UPDATE = 1e-4; % error tolerance when updating the surface
-  OPTS.X_EXPN = 500;     % expansion of domain to search for solutions in each water column
+  OPTS.ML = [];         % Leave the Mixed Layer in.
+  OPTS.TOL_P_UPDATE = 1e-4; % error tolerance when updating the surface
+  OPTS.P_EXPN = 500;     % expansion of domain to search for solutions in each water column
   OPTS.TOL_LRPD_L1 = 0; % Don't use the LRPD stopping criterion.
   OPTS.VERBOSE = 1;      % Some output while executing functions
   OPTS.FILE_ID = fileID; % Write output to this file
   OPTS.FIGS_SHOW = false; % Don't show figures (for omega surface)
   OPTS.INTERPFN = INTERPFN; % set interpolation function to match this script
-  OPTS.SppX = SppZ;      % Use pre-computed piecewise polynomial for S in terms of X=Z
-  OPTS.TppX = TppZ;      % Use pre-computed piecewise polynomial for T in terms of X=Z
+  OPTS.Sppc = Sppc;      % Use pre-computed piecewise polynomial for S in terms of X=Z
+  OPTS.Tppc = Tppc;      % Use pre-computed piecewise polynomial for T in terms of X=Z
   
   OPTS.DIST1_iJ = g.DXC;   % Distance [m] in 1st dimension centred at (I-1/2, J)
   OPTS.DIST2_Ij = g.DYC;   % Distance [m] in 2nd dimension centred at (I, J-1/2)
@@ -255,7 +254,7 @@ for iDATA = 1 : nDATA
   t = squeeze(T(1,:,:));
   z = Z(1);
   eos(s, t, z);
-  eos_x(s, t, z);
+  eos_p(s, t, z);
   eos_s_t(s, t, z);
   
   fprintf(1, 'Loaded %s (%d,%d)\n', DATA_SOURCE, ni, nj);
@@ -619,13 +618,13 @@ cm = [ ... % Colormap for lines
   0.5       0.2       0.7 % purple
   1.0       0.0       0.0 % red
   0.0       0.5       0.0 % dark green
-  ];
+  ]; %#ok<UNRCH>
 markers = 'ooooooo';
 
 hf = figure('Position', [1920-800, 1080-700, 800, 600]);
 ax = axes('Position', [.1, .11, .74, .8]);
 hold on; grid on; box on;
-fn = @log2;
+fcn = @log2;
 
 %markersize = [8, 11, 8, 8, 8, 11, 8];
 markersize = repmat(6, nS, 1);
@@ -661,12 +660,12 @@ end
 
 % Plot lines
 for iS = surf_order
-  plot(ax, fn(NSP(1:nSYNTH,iS)), fn(timer(1:nSYNTH,iS)), ['-' markers(iS)], 'color', cm(iS,:), 'MarkerFace', cm(iS,:), 'MarkerSize', markersize(iS), 'LineWidth', 1.5);
+  plot(ax, fcn(NSP(1:nSYNTH,iS)), fcn(timer(1:nSYNTH,iS)), ['-' markers(iS)], 'color', cm(iS,:), 'MarkerFace', cm(iS,:), 'MarkerSize', markersize(iS), 'LineWidth', 1.5);
 end
 
 % Add lines for n^slope
 slope_color = [1 1 1] * .7;
-x1 = repmat(fn(max(NWC)), nS, 1); x1(iSURF('KMJ')) = 14;
+x1 = repmat(fcn(max(NWC)), nS, 1); x1(iSURF('KMJ')) = 14;
 slopes = nan(nS,1);
 slopes(iSURF('SIGMA')) = 1;
 slopes(iSURF('DELTA')) = 1;
@@ -678,12 +677,12 @@ for iS = [ iSURF('DELTA'), iSURF('KMJ'), iSURF('OMEGAGRAD'), iSURF('OMEGA')]
   if isempty(i); continue; end
   slope = slopes(iS);
   if iS == iSURF('KMJ')
-    xx = [fn(NSP(1,iS)), fn(NSP(i,iS)) + .4];
+    xx = [fcn(NSP(1,iS)), fcn(NSP(i,iS)) + .4];
   else
-    xx = [fn(NSP(5,iS)), fn(NSP(i,iS)) + .4];
+    xx = [fcn(NSP(5,iS)), fcn(NSP(i,iS)) + .4];
   end
-  x2 = fn(NSP(i,iS));
-  y2 = fn(timer(i,iS));
+  x2 = fcn(NSP(i,iS));
+  y2 = fcn(timer(i,iS));
   ln = @(x) y2 + slope * (x - x2);
   plot(ax, xx, ln(xx), '--', 'Color', slope_color, 'LineWidth', 1 + .5 * (iS==iSURF('DELTA')));  % constant slope line, thicker for DELTA
   
@@ -699,9 +698,9 @@ for iS = iSURF('TOPOB')
   i = find(isfinite(timer(1:nSYNTH,iS)), 1, 'last');
   if isempty(i); continue; end
   
-  xx = linspace(fn(NSP(5,iS)), fn(NSP(i,iS)) + .4, 100);
-  x2 = fn(NSP(i,iS));
-  y2 = fn(timer(i,iS));
+  xx = linspace(fcn(NSP(5,iS)), fcn(NSP(i,iS)) + .4, 100);
+  x2 = fcn(NSP(i,iS));
+  y2 = fcn(timer(i,iS));
   C = y2 - x2 - log2(x2);
   ln = @(x) C + x + log2(x);
   plot(ax, xx, ln(xx), '--', 'Color', slope_color);  % constant slope line
@@ -724,11 +723,11 @@ leg = legend(ax, list_surf(surf_order), 'Position', [.115 .71 .12 .18]);
 % Write # of iterations.  skip SIGMA and DELTA
 for iDATA = 1 : nDATA
   for iS = [iSURF('KMJ'), iSURF('OMEGAGRAD'), iSURF('OMEGA'), iSURF('TOPOB')]
-    x = fn(NSP(iDATA,iS)) - 0.007 * diff(ax.XLim);
+    x = fcn(NSP(iDATA,iS)) - 0.007 * diff(ax.XLim);
     if iS == iSURF('OMEGA')
-      y = fn(timer(iDATA,iS)) - 0.03 * diff(ax.YLim); % below
+      y = fcn(timer(iDATA,iS)) - 0.03 * diff(ax.YLim); % below
     else
-      y = fn(timer(iDATA,iS)) + 0.03 * diff(ax.YLim); % above
+      y = fcn(timer(iDATA,iS)) + 0.03 * diff(ax.YLim); % above
     end
     txt = num2str(iters(iDATA,iS));
     text(ax, x, y, txt, 'Color', cm(iS,:), 'HorizontalAlignment', 'right');
@@ -801,7 +800,7 @@ model_marker_area = [60, 100];
 for iS = [ iSURF('SIGMA'), iSURF('DELTA'), iSURF('GAMMA'), iSURF('KMJ'), iSURF('OMEGAGRAD'), iSURF('TOPOB'), iSURF('OMEGA')]
   for iDATA = nSYNTH + 1 : nDATA
     iMODEL = iDATA - nSYNTH;
-    scatter(ax2, fn(NSP(iDATA,iS)), fn(timer(iDATA,iS)), model_marker_area(iMODEL), cm(iS,:)*.8, model_marker(iMODEL), 'MarkerFaceColor', cm(iS,:)*.8);
+    scatter(ax2, fcn(NSP(iDATA,iS)), fcn(timer(iDATA,iS)), model_marker_area(iMODEL), cm(iS,:)*.8, model_marker(iMODEL), 'MarkerFaceColor', cm(iS,:)*.8);
   end
 end
 
@@ -809,9 +808,9 @@ leg = legend(ax2, {'Aquaplanet', 'OCCA', 'ECCO2'}, 'Position', [.28, .824, .08, 
 leg.String = leg.String(1:3);
 
 %%  Save Figure
-filename = sprintf('cpu-vs-gridres__log2__%s', datestr(now, 'yy-mm-dd hh-MM-ss'));
-export_fig(hf, [PATH_OUT filename], '-pdf')
-savefig(hf, [PATH_OUT filename])
+fn = sprintf('cpu-vs-gridres__log2__%s', datestr(now, 'yy-mm-dd hh-MM-ss'));
+export_fig(hf, [PATH_OUT fn], '-pdf')
+savefig(hf, [PATH_OUT fn])
 %close(hf);
 
 %% Diagnostics plot:  eps L2 norm vs CPU time
@@ -891,7 +890,7 @@ for iS = [iSURF('SIGMA'), iSURF('DELTA'), iSURF('GAMMA'), iSURF('KMJ'), iSURF('T
     elseif iS == iSURF('OMEGAGRAD') || iS == iSURF('OMEGA') || iS == iSURF('TOPOB')
       % Find iteration at which algorithm actually deemed converged, which may be less than OPTS.ITER_MIN
       % +1 epsL2 has one extra element, giving epsL2 on the initial surface (corresponding with clocktime(1) == 0). 
-      j = 1 + find(d.x_change_L2 <= OPTS.TOL_X_CHANGE_L2, 1, 'first');
+      j = 1 + find(d.x_change_L2 <= OPTS.TOL_P_CHANGE_L2, 1, 'first');
     end
     
     semilogy(ax, clocktime{iS}(1:j), d.epsL2(1:j), '-', 'Color', cm(iS,:), 'LineWidth', 2, 'Marker', markers(iS), 'MarkerSize', markersize(iS), 'MarkerFace', cm(iS,:));
@@ -942,9 +941,9 @@ ax.XLim = [0 maxtime];
 end
 
 %% Save figure
-filename = sprintf('rms_dens_error_vs_cputime_SYNTHRAND128x128__OCCA360x160_%s', datestr(now, 'yy-mm-dd hh-MM-ss'));
-export_fig(hf, [PATH_OUT filename], '-pdf');
-savefig(hf, [PATH_OUT filename])
+fn = sprintf('rms_dens_error_vs_cputime_SYNTHRAND128x128__OCCA360x160_%s', datestr(now, 'yy-mm-dd hh-MM-ss'));
+export_fig(hf, [PATH_OUT fn], '-pdf');
+savefig(hf, [PATH_OUT fn])
 % close(hf);
 
 %% Maps showing depth of omega surface, depth difference with other surfaces, and gamma^n on on the omega surface

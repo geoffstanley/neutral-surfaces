@@ -7,10 +7,11 @@ function [qu, qt] = bfs_conncomp1(G, A, r, qu) %#codegen
 % from the root node r.  The graph is best thought of as laid out on a
 % grid, with nodes at the true locations of the multi-dimensional array G,
 % and numbered by their linear index in G.   Node m is adjacent to node n =
-% A(m,j) provided (n > 0 && G(n)), for each j = 1 : D, where D = size(A,2)
-% is the maximal degree in the graph. The outputs are: the search queue for
-% the BFS, qu; the tail index of qu for the BFS, qt.  Specifically, qu(1 : qt)
-% are the linear indices to true locations of G searched by the BFS.
+% A(m,j) provided (n <= numel(G) && G(n)), for each j = 1 : D, where D =
+% size(A,2) is the maximal degree in the graph. The outputs are: the search
+% queue for the BFS, qu; the tail index of qu for the BFS, qt.
+% Specifically, qu(1 : qt) are the linear indices to true locations of G
+% searched by the BFS.
 %
 % [...] = bfs_conncomp(..., qu)
 % works on qu using memory in-place, where the fourth argument qu is a

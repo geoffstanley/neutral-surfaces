@@ -141,6 +141,6 @@ if nargout >= 8
     LOADED = load(sprintf('%sGAMMA.0406annclim.mat', datafolder));
     GAMMA = LOADED.GAMMA;
     clear LOADED
-    GAMMA = permute(GAMMA, [2 3 1]);  % change back from [z,x,y] to [x,y,z] for consistency with above. 
+    GAMMA = permute(GAMMA, [2 3 1]);  % change back from [z,p,y] to [p,y,z] for consistency with above. 
     GAMMA(GAMMA < 0) = NaN; % set bad values (should be -99) to NaN
 end

@@ -9,7 +9,7 @@ function bfs_conncomp1_wet_codegen(nk, ni, nj, Xvec, OPTS)
 % the horizontal and nk points in the vertical.
 %
 % bfs_wet_codegen(nk, ni, nj, true)
-% specifies that X in bfs_wet.m is just a vector: X(k) specifies the
+% specifies that P in bfs_wet.m is just a vector: P(k) specifies the
 % pressure or depth of all grid points having vertical index k. Use this
 % for simple Z-level models (not hybrid coordinate models).
 %
@@ -67,8 +67,8 @@ file_eos    = dir(which_eos);
 % Test values
 s = 34.5;
 t = 3;
-x = 1000;
-m = eos(s, t, x);
+p = 1000;
+m = eos(s, t, p);
 
 % Create textual identifier for this build of the MEX function.
 build_text = sprintf('%s_k%d_i%d_j%d_%dD_m=%.59e', name_mex, nk, ni, nj, (1-Xvec)*2+1, m);
@@ -85,7 +85,7 @@ if isempty(file_mex) ... % No mex file yet
         mytic = tic;
         fprintf(FILE_ID, 'Compiling MEX for %s, with\n', name);
         fprintf(FILE_ID, ' %s in %s\n', read_function_name(which_eos), which_eos);
-        fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, x, m);
+        fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, p, m);
     end
     
     % Note: resulting MEX is actually faster with variable size arrays
@@ -99,7 +99,7 @@ if isempty(file_mex) ... % No mex file yet
     end
     nij = ni * nj;
     t_x    = coder.typeof(0, [ni, nj], [vs, vs]);
-    t_A    = coder.typeof(0, [9, nij, nj], [true, vs, vs]); % [? x nij] or [? x ni x nj]
+    t_A    = coder.typeof(0, [9, nij, nj], [true, vs, vs]); % [? p nij] or [? p ni p nj]
     t_BotK = coder.typeof(0, [ni, nj], [vs, vs]);
     t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
     

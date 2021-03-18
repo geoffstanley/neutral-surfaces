@@ -1,4 +1,4 @@
-function tbs_vertsolve_codegen(nk, ni, nj, Xvec, OPTS)
+function tbs_vertsolve_codegen(nk, ni, nj, Pvec, OPTS)
 %TBS_VERTSOLVE_CODEGEN  Create MEX function for tbs_vertsolve
 %
 %
@@ -81,11 +81,11 @@ try
     % Test values
     s = 34.5;
     t = 3;
-    x = 1000;
-    m = eos(s, t, x);
+    p = 1000;
+    m = eos(s, t, p);
     
     % Create textual identifier for this build of the MEX function.
-    build_text = sprintf('%s_k%d_i%d_j%d_%dD_m=%.59e', name, nk, ni, nj, (1-Xvec)*2+1, m);
+    build_text = sprintf('%s_k%d_i%d_j%d_%dD_m=%.59e', name, nk, ni, nj, (1-Pvec)*2+1, m);
     fileName_build_text = [file_mat.folder V name '_info.txt'];
     fileID_build_text = fopen(fileName_build_text, 'rt');
     
@@ -99,24 +99,24 @@ try
             mytic = tic;
             fprintf(FILE_ID, 'Compiling MEX for %s, with\n', name);
             fprintf(FILE_ID, ' %s in %s\n', read_function_name(which_eos), which_eos);
-            fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, x, m);
+            fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, p, m);
         end
         
         % Note: resulting MEX is actually faster with variable size arrays
         % (using vs = true, below)
         vs = true;
-        t_SppX   = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
-        if Xvec
-            t_X  = coder.typeof(0, [nk, 1], [vs, false]);
+        t_Sppc   = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
+        if Pvec
+            t_P  = coder.typeof(0, [nk, 1], [vs, false]);
         else
-            t_X  = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
+            t_P  = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
         end
         t_BotK   = coder.typeof(0, [ni, nj], [vs, vs]);
-        t_x      = coder.typeof(0, [ni, nj], [vs, vs]);
+        t_p      = coder.typeof(0, [ni, nj], [vs, vs]);
         t_branch = coder.typeof(0, [ni, nj], [vs, vs]);
         t_dfn    = coder.typeof(0, [5, ni*nj], [true, true]);
         
-        args = {t_SppX, t_SppX, t_X, t_BotK, t_x, t_x, t_x, t_branch, t_dfn, 0, 0, 0, 0};
+        args = {t_Sppc, t_Sppc, t_P, t_BotK, t_p, t_p, t_p, t_branch, t_dfn, 0, 0, 0, 0};
         
         % Configure MEX for speed.
         mexconfig = coder.config('mex');

@@ -7,7 +7,7 @@ function ntp_bottle_to_cast_codegen(nk, OPTS)
 % of nk points in the vertical.
 %
 % ntp_bottle_to_cast_codegen(nk,true)
-% specifies that X in ntp_bottle_to_cast.m is just a vector: X(k) specifies
+% specifies that P in ntp_bottle_to_cast.m is just a vector: P(k) specifies
 % the pressure or depth of all grid points having vertical index k. Use
 % this for simple Z-level models (not hybrid coordinate models).
 %
@@ -68,8 +68,8 @@ try
     % Test values
     s = 34.5;
     t = 3;
-    x = 1000;
-    m = eos(s, t, x);
+    p = 1000;
+    m = eos(s, t, p);
     
     % Create textual identifier for this build of the MEX function.
     build_text = sprintf('%s_k%d_m=%.59e', name, nk, m);
@@ -86,7 +86,7 @@ try
             mytic = tic;
             fprintf(FILE_ID, 'Compiling MEX for %s, with\n', name);
             fprintf(FILE_ID, ' %s in %s\n', read_function_name(which_eos), which_eos);
-            fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, x, m);
+            fprintf(FILE_ID, ' eos(%g,%g,%g) = %e\n', s, t, p, m);
         end
 
         t_SppX = coder.typeof(0, [8, nk-1], [true, true]);

@@ -1,4 +1,4 @@
-function gsf = orthobaric_montgomery(s, t, x, X, M, Y, s0, t0, OPTS, varargin)
+function gsf = orthobaric_montgomery(s, t, p, P, A, Y, s0, t0, OPTS, varargin)
 %ORTHOBARIC_MONTGOMERY  The Montgomery potential with a functional offset.
 %
 % Zhang and Hogg (1992) upgraded the Montgomery (1937) potential by
@@ -78,7 +78,7 @@ function gsf = orthobaric_montgomery(s, t, x, X, M, Y, s0, t0, OPTS, varargin)
 % s0 [1, 1] or []: reference s value
 % t0 [1, 1] or []: reference t value
 % OPTS [struct]: algorithmic parameters.
-%   OPTS.WRAP [2, 1]: periodicity of the surface in each horizontal dimension
+%   OPTS.WRAP [2 element array]: periodicity of the surface in each horizontal dimension
 %   OPTS.SPLINE_ORDER [1, 1]: order of the spline (default: 4 for cubic splines)
 %   OPTS.SPLINE_PIECES [1, 1]: maximum number of pieces of the spline (default: 12)
 % grav [1, 1]: gravitational acceleration [m s^-2]
@@ -128,18 +128,18 @@ narginchk(9,11);
 
 BOUSSINESQ = length(varargin) == 2; % grav and rho_c provided
 
-[ni,nj] = size(x);
-nk = size(X,1);
+[ni,nj] = size(p);
+nk = size(P,1);
 is1D = @(F) ismatrix(F) && all(size(F) == [nk,1]);
 is2D = @(F) ismatrix(F) && all(size(F) == [ni,nj]);
 is3D = @(F) ndims(F) == 3 && all(size(F) == [nk,ni,nj]);
 is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
-lead1 = @(x) reshape(x, [1 size(x)]);
+lead1 = @(p) reshape(p, [1 size(p)]);
 
 assert((is2D(s) || is4D(s)), 'S must be [ni,nj] or [O,nk-1,ni,nj]');
 assert(all(size(s) == size(t)), 'S and T must be the same size');
-assert(is1D(X) || is3D(X), 'X must be [nk,1] or [nk,ni,nj]');
-assert(is2D(x), 'x must be [ni,nj]');
+assert(is1D(P) || is3D(P), 'P must be [nk,1] or [nk,ni,nj]');
+assert(is2D(p), 'p must be [ni,nj]');
 
 assert(isstruct(OPTS), 'OPTS must be a struct')
 assert(isfield(OPTS, 'WRAP') && isvector(OPTS.WRAP) && length(OPTS.WRAP) == 2, 'OPTS.WRAP must be a vector of length 2');
@@ -157,17 +157,17 @@ end
 if BOUSSINESQ
     grav = varargin{1};
     rho_c = varargin{2};
-    fac = -grav / rho_c; % (-) because x is z we have been z>0 people!
+    fac = -grav / rho_c; % (-) because p is z we have been z>0 people!
 else
     fac = db2Pa;
 end
 
 if is4D(s) % Evaluate interpolants for S and T onto the surface
-    [s,t] = ppc_val2(X, s, t, lead1(x));
+    [s,t] = ppc_val2(P, s, t, lead1(p));
 end
 
 % Find the connected regions
-wet = isfinite(x);
+wet = isfinite(p);
 neigh = grid_adjacency([ni,nj], 4, OPTS.WRAP);
 [qu,qts,ncc] = bfs_conncomp(wet, neigh);
 
@@ -178,30 +178,30 @@ maxpix = max(diff(qts));
 % Use s0 and t0 if provided, otherwise use the s and t values found where p
 % is a maximum (deepest part of the surface) in each connected region.
 if isscalar(s0) && isscalar(t0)
-    [y0, m0] = hsap2(s0, t0, x, varargin{:});
+    [y0, a0] = hsap2(s0, t0, p, varargin{:});
 else
     y0 = nan(ni,nj);
-    m0 = nan(ni,nj);
+    a0 = nan(ni,nj);
     for l = 1 : ncc
         reg = qu(qts(l) : qts(l+1)-1);
-        x_ = x(reg);
+        p_ = p(reg);
         s_ = s(reg);
         t_ = t(reg);
-        [~,I] = max(x_);
+        [~,I] = max(p_);
         s0 = s_(I);
         t0 = t_(I);
-        [y0(reg), m0(reg)] = hsap2(s0, t0, x_, varargin{:});
+        [y0(reg), a0(reg)] = hsap2(s0, t0, p_, varargin{:});
     end
 end
 
 % Calculate easy term involving an integral of hydrostatic balance
-[y , m ] = hsap2(s, t, x, X, M, Y, varargin{:});
+[y , a ] = hsap2(s, t, p, P, A, Y, varargin{:});
 
 % Calculate the specific volume anomaly or the in-situ density anomaly
-d = m - m0;
+d = a - a0;
 
 % Initialize the geostrophic stream function
-gsf = y - y0 + fac * d .* x;
+gsf = y - y0 + fac * d .* p;
 
 % For each connected region, add an integral of p as a function of d to the
 % geostrophic stream function
@@ -209,22 +209,22 @@ for l = 1 : ncc
     
     reg = qu(qts(l) : qts(l+1)-1);
     d_ = d(reg);
-    x_ = x(reg);
+    p_ = p(reg);
     
     % Number of spline pieces, by linearly scaling between 1 piece for
     % an empty region and OPTS.SPLINE_PIECES pieces for the largest region.
     pieces = ceil(OPTS.SPLINE_PIECES * length(reg) / maxpix);
     
-    % Select the breakpoints linearly through the x data
+    % Select the breakpoints linearly through the p data
     breaks = linspace(min(d_), max(d_), pieces+1);
     
     % Fit pressure (or depth) as a function of delta on the surface
     if breaks(1) == breaks(end)
-        % All data has same x value. Simply choose the mean of the y data.
-        pfnd = mkpp(breaks([1 end]), mean(x_));
+        % All data has same p value. Simply choose the mean of the y data.
+        pfnd = mkpp(breaks([1 end]), mean(p_));
     else
         % Fit a spline
-        pfnd = splinefit(d_, x_, breaks, OPTS.SPLINE_ORDER);
+        pfnd = splinefit(d_, p_, breaks, OPTS.SPLINE_ORDER);
     end
     
     % Finalize the geostrophic stream function

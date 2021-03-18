@@ -1,4 +1,4 @@
-function [x,s,t] = pot_dens_surf_vertsolve(SppX, TppX, X, BotK, x, xref, val, tolx) %#codegen
+function [p,s,t] = pot_dens_surf_vertsolve(Sppc, Tppc, P, BotK, p, pref, val, tolp) %#codegen
 %POT_DENS_SURF_VERTSOLVE  Helper function for pot_dens_surf, solving 
 %                         non-linear root finding problem in each water column
 %
@@ -29,12 +29,12 @@ function [x,s,t] = pot_dens_surf_vertsolve(SppX, TppX, X, BotK, x, xref, val, to
 % Email     : geoffstanley@gmail.com
 
 
-N = numel(x);
-Xmat = ~isvector(X);
+N = numel(p);
+Pmat = ~isvector(P);
 
 
-s = nan(size(x));
-t = nan(size(x));
+s = nan(size(p));
+t = nan(size(p));
 
 % Loop over each cast
 for n = 1:N
@@ -42,28 +42,28 @@ for n = 1:N
     if k > 1
         
         % Select this water column
-        SppXn = SppX(:,1:k-1,n);
-        TppXn = TppX(:,1:k-1,n);
-        if Xmat
-          Xn = X(1:k,n);
+        Sppcn = Sppc(:,1:k-1,n);
+        Tppcn = Tppc(:,1:k-1,n);
+        if Pmat
+          Pn = P(1:k,n);
         else
-          Xn = X((1:k).'); % .' is for codegen, so X and (1:k).' both column vectors
+          Pn = P((1:k).'); % .' is for codegen, so X and (1:k).' both column vectors
         end
         
         % Search for a sign-change, expanding outward from an initial guess 
-        [lb, ub] = fzero_guess_to_bounds(@myfcn, x(n), Xn(1), Xn(k), ...
-          SppXn, TppXn, Xn, xref, val);
+        [lb, ub] = fzero_guess_to_bounds(@myfcn, p(n), Pn(1), Pn(k), ...
+          Sppcn, Tppcn, Pn, pref, val);
         
         if ~isnan(lb)
           % A sign change was discovered, so a root exists in the interval.
           % Solve the nonlinear root-finding problem using Brent's method
-          x(n) = fzero_brent(@myfcn, lb, ub, tolx, ...
-            SppXn, TppXn, Xn, xref, val);
+          p(n) = fzero_brent(@myfcn, lb, ub, tolp, ...
+            Sppcn, Tppcn, Pn, pref, val);
           
           % Interpolate S and T onto the updated surface
-          [s(n),t(n)] = ppc_val2(Xn, SppXn, TppXn, x(n));
+          [s(n),t(n)] = ppc_val2(Pn, Sppcn, Tppcn, p(n));
         else
-          x(n) = nan;
+          p(n) = nan;
           s(n) = nan;
           t(n) = nan;
         end
@@ -73,7 +73,7 @@ end
 
 end
 
-function out = myfcn(x, SppX, TppX, X, xref, val)
-[s,t] = ppc_val2(X, SppX, TppX, x);
-out = eos(s, t, xref) - val;
+function out = myfcn(p, Sppc, Tppc, P, pref, val)
+[s,t] = ppc_val2(P, Sppc, Tppc, p);
+out = eos(s, t, pref) - val;
 end

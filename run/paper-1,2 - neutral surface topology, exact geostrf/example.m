@@ -26,32 +26,30 @@
 
 %% --- BEGIN SETUP --------------------------------------------------------
 warning('off', 'MATLAB:nargchk:deprecated')
-set(0, 'defaultfigurecolor', [1 1 1]); % wite figure background
+set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 V = filesep(); % /  or  \  depending on OS.
 
-PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-%PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/'; % Manually set path to this file.
-
-% Get path to one directory up, containing all of Topobaric Surface
-PATH_PROJECT = PATH_LOCAL(1 : find(PATH_LOCAL(1:end-1) == V, 1, 'last'));
-
 % Add Neutral Surfaces to MATLAB's path
-run([PATH_PROJECT 'ns_add_to_path.m']);
+PATH_NS = '~/work/projects-gfd/neutral-surfaces/'; % adjust as needed.
+run([PATH_NS 'ns_add_to_path.m']);
 
-% Make a directory for figures
-PATH_FIGS = [PATH_LOCAL 'figs' V];
-if ~exist(PATH_FIGS, 'dir')
-    mkdir(PATH_FIGS)
-end
+% Make a directory for figures and other output
+PATH_OUT = '~/work/dphil/projects/topobaric/output/'; % adjust as needed.
+PATH_OUT = [PATH_OUT datestr(now, 'dd-mm-yyyy') '/'];
+if ~exist(PATH_OUT, 'dir'); mkdir(PATH_OUT); end
 
-% Read path to ECCO2 data from PATH_ECCO2.txt
-file_id = fopen([PATH_PROJECT 'lib' V 'dat' V 'PATH_ECCO2.txt'], 'rt');
+% Folder containing the functions eos.m, eos_p.m, and eos_s_t.m
+PATH_EOS = '~/work/MATLAB/eos/eos/';
+addpath(PATH_EOS);  % Doing this last to ensure at top of MATLAB's path, above eos fcns in other dirs
+
+% Read path to OCCA data from PATH_OCCA.txt
+file_id = fopen([PATH_NS 'lib' V 'dat' V 'PATH_ECCO2.txt']);
 PATH_ECCO2 = textscan(file_id, '%s');
 PATH_ECCO2 = PATH_ECCO2{1}{1};
 fclose(file_id);
 
 %fileID = 1; % For standard output to the screen
-fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
+fileID = fopen([PATH_OUT 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
 
 db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion
@@ -77,20 +75,21 @@ land = isnan(squeeze(S(1,:,:))); % true where water column is land, false where 
 % C-grid functions for 2D data (longitude = i = rows, latitude = j = columns)
 jm1 = @(F) subsasgn(circshift(F, [0 +1]), struct('type','()', 'subs', {{':',   1}}), nan); %#ok<SUBSASGN>
 
-%% Set alias functions
-% Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_x.m
-eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq.m'   ] , [PATH_PROJECT 'eos.m'  ], grav, rho_c);
-eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_dz.m'] , [PATH_PROJECT 'eos_x.m'], grav, rho_c);
-eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_s_t.m'], [PATH_PROJECT 'eos_s_t.m'], grav, rho_c);
-
-% Choose vertical interpolation method
-interpfn = @ppc_linterp;
+%% Set alias functions.  << ENSURE THIS GETS DONE >>
+% Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_p.m
+if false % only need to do this once!  Doing every time makes codegen run every time
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], grav, rho_c); %#ok<UNRCH>
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_p.m'], grav, rho_c);
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_s_t.m'], [PATH_EOS 'eos_s_t.m'], grav, rho_c);
+end
+clear eos eos_p eos_s_t % Make sure the copied files get used
 
 %% Pre-compute in-situ density and interpolants
 R = eos(S, T, Z);
 
-SppZ = interpfn(Z, S);
-TppZ = interpfn(Z, T);
+interpfn = @ppc_linterp; % linear interpolation
+Sppc = interpfn(Z, S);
+Tppc = interpfn(Z, T);
 
 
 %% Select reference cast and depth
@@ -101,13 +100,12 @@ ztar = 2000; % Target depth for surfaces at (i0,j0), [m]
 %% Prepare options, OPTS
 OPTS.WRAP = [true, false];   % Periodic in longitude, not latitude
 OPTS.VERBOSE = 1;            % Display modest info during computation
-OPTS.X_TOL = 1e-4;           % error tolerance when updating the surface
-OPTS.X_EXPN = 500;           % expansion of domain to search for solutions in each water column
+OPTS.P_TOL = 1e-4;           % error tolerance when updating the surface
+OPTS.P_EXPN = 500;           % expansion of domain to search for solutions in each water column
 OPTS.ITER_MAX = 3;           % Not too many iterations, for quick gratification
 OPTS.ITER_START_WETTING = 1; % Start wetting right away
-OPTS.REF_IJ = [i0, j0];      % Specify reference cast
-OPTS.SppX = SppZ;            % Use pre-computed interpolant
-OPTS.TppX = TppZ;            % Use pre-computed interpolant
+OPTS.Sppc = Sppc;            % Use pre-computed interpolant
+OPTS.Tppc = Tppc;            % Use pre-computed interpolant
 
 
 %% Compute potential density surface
@@ -126,7 +124,7 @@ clear SIGMA z
 
 
 %% Compute specific volume anomaly surface
-[s0,t0] = ppc_val2(Z, SppZ(:,:,i0,j0), TppZ(:,:,i0,j0), ztar);
+[s0,t0] = ppc_val2(Z, Sppc(:,:,i0,j0), Tppc(:,:,i0,j0), ztar);
 z_DELTA = delta_surf(S, T, Z, s0, t0, [i0, j0, ztar], OPTS);
 
 % The usual approach is to interpolate a 3D specific volume anomaly field. 
@@ -248,11 +246,11 @@ end
 %% --- Compute an "orthobaric" surface
 % initialized from the potential density surface
 OPTS.REEB = false;              % Make single-valued functions
-z_ORTHO = topobaric_surface(S, T, Z, z_PDENS, OPTS);
+z_ORTHO = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], OPTS);
 fig_map(g.XCvec, g.YCvec, z_ORTHO, land); colorbar;
 title('Depth of an "orthobaric" surface')
 
-% We could get more outputs from topobaric_surface, including the
+% We could get more outputs from the function here, including the
 % single-valued function for in-situ density anomaly as a function of
 % depth. But let's carry on to topobaric surfaces...
 
@@ -260,14 +258,14 @@ title('Depth of an "orthobaric" surface')
 % initialized from the potential density surface
 OPTS.REEB = true;     % Make multi-valued functions. (Default)
 OPTS.GEOSTRF = false; % We won't (yet) compute a geostrophic stream function, so let it be ill-defined
-[z_TOPOB, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, OPTS);
+[z_TOPOB, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], OPTS);
 fig_map(g.XCvec, g.YCvec, z_TOPOB, land); colorbar;
 title('Depth of a topobaric surface')
 
 %% Scatter plot depth vs in-situ density anomaly on the surface
 % Get S and T on the surface
 lead1 = @(x) reshape(x, [1 size(x)]);
-[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z_TOPOB));
+[s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z_TOPOB));
 
 % Calculate in-situ density anomaly on the surface
 d = eos(s, t, z_TOPOB) - eos(s0, t0, z_TOPOB); % delta
@@ -316,7 +314,7 @@ title('Difference between $\rho$ and $\hat{\rho}(p)$ on surface', 'Interpreter',
 
 %% --- Compute an omega surface
 % initialized from the potential density surface
-z_OMEGA = omega_surface(S, T, Z, z_PDENS, OPTS);
+z_OMEGA = omega_surface(S, T, Z, z_PDENS, [i0,j0], OPTS);
 fig_map(g.XCvec, g.YCvec, z_TOPOB, land); colorbar;
 title('Depth of omega surface')
 
@@ -328,7 +326,7 @@ mv = .05; % vertical margin
 hv = (1-(npanel+1)*mv) / npanel;
 
 z = z_PDENS;
-[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
+[s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
 eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
 ax = axes('Position', [.1 3*mv+2*hv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
@@ -336,7 +334,7 @@ colorbar
 title('Zonal neutral error on potential density surface [log_{10}]')
 
 z = z_TOPOB;
-[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
+[s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
 eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
 ax = axes('Position', [.1 2*mv+hv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
@@ -344,7 +342,7 @@ colorbar
 title('Zonal neutral error on topobaric surface [log_{10}]')
 
 z = z_OMEGA;
-[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
+[s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
 eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
 ax = axes('Position', [.1 mv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
@@ -359,7 +357,7 @@ Y = hsap3(Z, ATMP, ETAN, R, grav, rho_c); % Pre-compute hydrostatic acceleration
 
 z = z_PDENS;
 
-[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
+[s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
 [y,r] = hsap2(s, t, z, Z, R, Y, grav, rho_c);
 
 % "True" zonal geostrophic velocities, in Boussinesq mode, computed from
@@ -404,7 +402,7 @@ ax = subplot(3,2,5);
 OPTS.REEB = false; % Turn off the Reeb graph => a single-valued function is fit
 OPTS.SPLINE_BREAKS = [0 200 6000]; % [m]
 OPTS.SPLINE_ORDER = 4; % cubic splines
-OB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, OPTS, grav, rho_c);
+OB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS, grav, rho_c);
 uob = -(OB - jm1(OB)) ./ (g.DYCsc * cori_V);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(uob - ugs)), land, OPTS_FIGS); colorbar;
 title(ax, 'log_{10} |u_g error| - Orthobaric gsf');
@@ -412,7 +410,7 @@ title(ax, 'log_{10} |u_g error| - Orthobaric gsf');
 ax = subplot(3,2,6);
 OPTS.REEB = true;    % Use multivalued functions for empirical fits
 OPTS.GEOSTRF = true; % Force well-defined geostrophic stream function
-TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, OPTS, grav, rho_c);
+TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS, grav, rho_c);
 utb = -(TB - jm1(TB)) ./ (g.DYCsc * cori_V);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(utb - ugs)), land, OPTS_FIGS); colorbar;
 title(ax, 'log_{10} |u_g error| - Topobaric gsf');
@@ -422,11 +420,11 @@ title(ax, 'log_{10} |u_g error| - Topobaric gsf');
 OPTS.REEB = true;
 OPTS.ITER_MAX = 6;   % A good number of iterations for convergence, so the gsf will be very accurate
 OPTS.GEOSTRF = true; % Add second integral constraint so that dfn will integrate to give a well-defined gsf
-[z_MTOPO, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, OPTS);
+[z_MTOPO, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], OPTS);
 z = z_MTOPO;
 
 % --- Compute zonal geostrophic velocity on the modified topobaric surface
-[s,t] = ppc_val2(Z, SppZ, TppZ, lead1(z));
+[s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
 [y,r] = hsap2(s, t, z, Z, R, Y, grav, rho_c);
 ugs = -((y - jm1(y)) + (grav / (2*rho_c)) * (-z + jm1(z)) .* (r + jm1(r))) ./ (g.DYCsc * cori_V);
 
@@ -435,7 +433,7 @@ ugs = -((y - jm1(y)) + (grav / (2*rho_c)) * (-z + jm1(z)) .* (r + jm1(r))) ./ (g
 OPTS.REEB = true; % Use multivalued functions for empirical fits
 OPTS.RG    = RG;  % taken from Modified Topobaric Surface
 OPTS.dfn   = dfn; % taken from Modified Topobaric Surface
-TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, OPTS, grav, rho_c);
+TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS, grav, rho_c);
 OPTS = rmfield(OPTS, {'RG', 'dfn'});
 
 utb = -(TB - jm1(TB)) ./ (g.DYCsc * cori_V); % Zonal geostrophic velocity by the topobaric gsf

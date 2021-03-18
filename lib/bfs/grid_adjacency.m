@@ -159,7 +159,7 @@ spin = [ ...
   -1,-1,-1,   0, 0, 0,   1, 1, 1];
 
 % Build linear index to each grid point, and repeat them D times
-ADJ = repmat(reshape(1:ni*nj, [1, ni, nj]), [D 1 1]);  % D x ni x nj
+ADJ = repmat(reshape(1:ni*nj, [1, ni, nj]), [D 1 1]);  % D p ni p nj
 
 % Shift these linear indices so they refer to their neighbours.
 for d = 1 : D

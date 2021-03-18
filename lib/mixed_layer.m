@@ -1,15 +1,15 @@
-function MLX = mixed_layer(S, T, X, OPTS)
+function ML = mixed_layer(S, T, P, OPTS)
 %MIXED_LAYER  The pressure or depth at the bottom of the mixed layer.
 %
 %
-% MLX = mixed_layer(S, T, X)
-% calculates the pressure or depth of the mixed layer, MLX, in an ocean
+% ML = mixed_layer(S, T, P)
+% calculates the pressure or depth of the mixed layer, ML, in an ocean
 % with practical / absolute salinity S and potential / Conservative
-% temperature T located at datasites where the pressure or depth is X.  The
+% temperature T located at datasites where the pressure or depth is P.  The
 % equation of state for either the in-situ density or the specific volume
-% is given by eos.m in the path, which accepts S, T, X as its 3 inputs.
-% MLX is the pressure or depth at which the potential density (referenced
-% to X = 100 dbar or X = 100 m) exceeds the potential density near the
+% is given by eos.m in the path, which accepts S, T, P as its 3 inputs.
+% ML is the pressure or depth at which the potential density (referenced
+% to P = 100 dbar or P = 100 m) exceeds the potential density near the
 % surface (the second bottle on each cast) by 0.03 kg m^-3.
 %
 % ... = mixed_layer(..., OPTS) overwrites the default parameters
@@ -19,7 +19,7 @@ function MLX = mixed_layer(S, T, X, OPTS)
 % --- Input:
 % S [nk, ni, nj]: practical / Absolute salinity
 % T [nk, ni, nj]: potential / Conservative temperature
-% X [nk, ni, nj]: pressure [dbar] or depth [m, positive]
+% P [nk, ni, nj]: pressure [dbar] or depth [m, positive]
 % OPTS [struct]: options
 %   OPTS.POT_DENS_REF [1, 1]: the reference pressure or depth for potential
 %    density [dbar or m, positive]
@@ -33,11 +33,11 @@ function MLX = mixed_layer(S, T, X, OPTS)
 %       ni is the number of data points in longitude,
 %       nj is the number of data points in latitude.
 %
-% Note: X must increase monotonically along the first dimension.
+% Note: P must increase monotonically along the first dimension.
 %
 %
 % --- Output:
-% MLX [ni, nj]: the pressure [dbar] or depth [m, positive] of the mixed layer
+% ML [ni, nj]: the pressure [dbar] or depth [m, positive] of the mixed layer
 
 % --- Copyright:
 % This file is part of Neutral Surfaces.
@@ -86,7 +86,7 @@ end
 
 % These three lines prepare data for a silly case where eos.m transposes
 % its inputs.
-lead1 = @(x) reshape(x, [1 size(x)]);
+lead1 = @(p) reshape(p, [1 size(p)]);
 SB = squeeze(S(BOTTLE_NUM,:,:));
 TB = squeeze(T(BOTTLE_NUM,:,:));
 
@@ -100,5 +100,5 @@ end
 
 % Find the pressure or depth at which the potential density difference
 % exceeds the threshold POT_DENS_DIFF
-MLX = INTERPFN(DD, X, POT_DENS_DIFF);
+ML = INTERPFN(DD, P, POT_DENS_DIFF);
 

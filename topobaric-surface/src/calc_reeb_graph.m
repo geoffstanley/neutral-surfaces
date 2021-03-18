@@ -1,14 +1,14 @@
-function [x, varargout] = calc_reeb_graph(x, OPTS)
-%CALC_REEB_GRAPH  Calculate the Reeb graph of x
+function [p, varargout] = calc_reeb_graph(p, OPTS)
+%CALC_REEB_GRAPH  Calculate the Reeb graph of p
 %
 %
-% [x, RG] = calc_reeb_graph(x, OPTS)
+% [p, RG] = calc_reeb_graph(p, OPTS)
 % performs the following steps:
-% 1, fill small holes with high data in the given rectilinear data x (if
+% 1, fill small holes with high data in the given rectilinear data p (if
 %    OPTS.FILL_PIX is positive or OPTS.FILL_IJ is not empty);
-% 2, build a simplical mesh given rectilinear data in x;
-% 3, perturb the data x on that mesh until all values are unique;
-% 4, calculate the Reeb graph of x on that mesh, using the ReCon software
+% 2, build a simplical mesh given rectilinear data in p;
+% 3, perturb the data p on that mesh until all values are unique;
+% 4, calculate the Reeb graph of p on that mesh, using the ReCon software
 %    (Doraiswamy and Natarajan, 2013);
 % 5, post-process the Reeb graph to take out any holes that were filled with
 %    high data
@@ -17,20 +17,20 @@ function [x, varargout] = calc_reeb_graph(x, OPTS)
 %
 %
 % --- Input:
-% x [ni, nj]: rectilinear data, containing exactly ONE connected component
+% p [ni, nj]: rectilinear data, containing exactly ONE connected component
 %             (where each pixel has 4 neighbours, not 8), as can be found
 %             using bfs_conncomp(). 
 % OPTS [struct]: options. See topobaric_surface documentation for details.
 %
 %
 % --- Output:
-% x [ni, nj]: identical to the input x but possibly having some values
+% p [ni, nj]: identical to the input p but possibly having some values
 %             perturbed by an amount near machine precision.  The input
-%             and output x have identical finite vs NaN structure. 
+%             and output p have identical finite vs NaN structure. 
 % RG [struct]: The Reeb graph. See topobaric_surface.m for details.
 % timer_recon:  time from tic/toc spent running ReCon. 
 %
-% If more than three outputs are requested, the first output is x and the
+% If more than three outputs are requested, the first output is p and the
 % rest of the outputs are the following fields of RG: arc_from, arc_to,
 % arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs,
 % nNodes, wet, n_casts.  Finally, timer_recon is the last output. 
@@ -64,16 +64,16 @@ function [x, varargout] = calc_reeb_graph(x, OPTS)
 
 
 
-[ni,nj] = size(x);
+[ni,nj] = size(p);
 
-% wet: a logical map where x is valid. As this function proceeds, wet ==
-% isfinite(x) is maintained.  wet at the end of this function is identical
-% to wet at the start of this function.  That is, isfinite(output x) ==
-% isfinite(input x).
-wet = isfinite(x);  
+% wet: a logical map where p is valid. As this function proceeds, wet ==
+% isfinite(p) is maintained.  wet at the end of this function is identical
+% to wet at the start of this function.  That is, isfinite(output p) ==
+% isfinite(input p).
+wet = isfinite(p);  
 
 
-OPTS = catstruct(tbs_defaults(ni,nj), OPTS);
+OPTS = catstruct(tbs_defaults(), OPTS);
 
 
 % --- Pre-processing 1: Fill in small or specific holes
@@ -111,20 +111,20 @@ if DO_FILL
     % Now fill in: It won't matter what values are put in there, so long as
     % they are all greater than all surrounding pixels.
     fill = find(Ground);
-    offset = max(x(:));
-    x(fill) = (1+offset) : (length(fill) + offset);
+    offset = max(p(:));
+    p(fill) = (1+offset) : (length(fill) + offset);
     
-    % And update wet, to maintain wet == isfinite(x) 
+    % And update wet, to maintain wet == isfinite(p) 
     wet(fill) = true;
 end
 
 
 % --- Pre-processing 2: Make simplical decomposition
-[verts,faces,~,nV] = latlon2vertsfaces(x,OPTS.WRAP,[],[],OPTS.DECOMP,false);
+[verts,faces,~,nV] = latlon2vertsfaces(p,OPTS.WRAP,[],[],OPTS.DECOMP,false);
 
 % Last argument (select) could be OPTS.REF_IJ as below, but we use false,
 % since we've pre-selected one connected region.
-%[verts,faces,~,nV] = latlon2vertsfaces(x,OPTS.WRAP,[],[],OPTS.DECOMP,OPTS.REF_IJ);
+%[verts,faces,~,nV] = latlon2vertsfaces(p,OPTS.WRAP,[],[],OPTS.DECOMP,OPTS.REF_IJ);
 
 % Ensure all vertices have unique values
 [verts(:,3), perturbed] = perturb_until_unique(verts(:,3));
@@ -167,11 +167,11 @@ nArcs       = RG.nArcs;
 nNodes      = RG.nNodes;
 
 
-% --- Post-processing 1: Update x to match the verts used in the Reeb graph
+% --- Post-processing 1: Update p to match the verts used in the Reeb graph
 % (if they were perturbed)
 if perturbed
     % Just update those vertices that were from the original rectangular grid
-    x(wet) = verts(1:nV,3);
+    p(wet) = verts(1:nV,3);
 end
 clear verts
 
@@ -195,9 +195,9 @@ if DO_FILL
     
     
     % Finally, reset any pixels that were filled to nan
-    x(fill) = nan;
+    p(fill) = nan;
     
-    % And update wet, to maintain wet == isfinite(x) 
+    % And update wet, to maintain wet == isfinite(p) 
     wet(fill) = false;
     
     % And update the number of casts
@@ -217,13 +217,13 @@ end
 
 % --- Integrity checks:
 %{
-assert(all(wet(:) == isfinite(x(:))), 'wet differs from where x is finite');
+assert(all(wet(:) == isfinite(p(:))), 'wet differs from where p is finite');
 
 livenodes = 0 < node_v & node_v <= nV;
 
-x_ = x(wet);
-chk = x_(node_v(livenodes)) == node_fn(livenodes);
-assert(all(chk), 'Check failed: node_fn, node_v, and x_ are mismatched.');
+p_ = p(wet);
+chk = p_(node_v(livenodes)) == node_fn(livenodes);
+assert(all(chk), 'Check failed: node_fn, node_v, and p_ are mismatched.');
 clear livenodes chksimplify_reeb_graph
 
 for e = 1:nArcs

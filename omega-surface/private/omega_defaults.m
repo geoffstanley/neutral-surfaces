@@ -30,21 +30,19 @@ function OPTS = omega_defaults()
 
 OPTS = struct();
 
-%OPTS.AREA_iJ = 1;    % Area [m^2] centred at (I-1/2, J)
-%OPTS.AREA_Ij = 1;    % Area [m^2] centred at (I, J-1/2)
 OPTS.DIST1_iJ = 1;   % Distance [m] in 1st dimension centred at (I-1/2, J)
 OPTS.DIST2_Ij = 1;   % Distance [m] in 2nd dimension centred at (I, J-1/2)
 OPTS.DIST2_iJ = 1;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
 OPTS.DIST1_Ij = 1;   % Distance [m] in 1st dimension centred at (I, J-1/2)
 
-OPTS.MLX = []; % Do not remove the Mixed Layer
+OPTS.ML = []; % Do not remove the Mixed Layer
 
 OPTS.FIGS_SHOW = false; % do not show figures
 
 OPTS.INTERPFN = @ppc_linterp; % Use linear interpolation in the vertical dimension.
 
-OPTS.SppX = [];  % Pre-computed interpolation functions.  None given here.
-OPTS.TppX = [];  % Pre-computed interpolation functions.  None given here.
+OPTS.Sppc = [];  % Pre-computed interpolation coefficients.  None given here.
+OPTS.Tppc = [];  % Pre-computed interpolation coefficients.  None given here.
 
 OPTS.ITER_MIN = 1;  % minimum number of iterations
 OPTS.ITER_MAX = 10; % maximum number of iterations
@@ -54,13 +52,13 @@ OPTS.ITER_STOP_WETTING  = 5; % stop wetting after this many iterations (to avoid
 
 OPTS.TOL_LRPD_L1 = 1e-7; % Tolerance in Locally Referenced Potential Density [kg m^-3]
 
-% quit when the L2 change of pressure on surface exceeds this value (set to
-% 0 to deactivate), in the same units as X [dbar] or [m].
-OPTS.TOL_X_CHANGE_L2 = 0;
+% quit when the L2 change of pressure (or depth) on surface exceeds this
+% value (set to 0 to deactivate), in the same units as P [dbar] or [m].
+OPTS.TOL_P_CHANGE_L2 = 0;
 
 % Error tolerance when root-finding to update surface, in the same units as
-% X [dbar] or [m].
-OPTS.TOL_X_UPDATE = 1e-4;
+% P [dbar] or [m].
+OPTS.TOL_P_UPDATE = 1e-4;
 
 OPTS.VERBOSE = 1; % show a moderate level of information
 

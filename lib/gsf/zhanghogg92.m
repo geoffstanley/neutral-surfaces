@@ -1,4 +1,4 @@
-function gsf = zhanghogg92(s, t, x, X, M, Y, s0, t0, x0, varargin)
+function gsf = zhanghogg92(s, t, p, P, A, Y, s0, t0, p0, varargin)
 %ZHANGHOGG92  The Zhang and Hogg (1992) geostrophic stream function.
 %
 %
@@ -104,42 +104,42 @@ BOUSSINESQ = length(varargin) == 2; % grav and rho_c provided
 
 db2Pa = 1e4;  % Conversion from [dbar] to [Pa]
 
-[ni,nj] = size(x);
-nk = size(X,1);
+[ni,nj] = size(p);
+nk = size(P,1);
 is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
-lead1 = @(x) reshape(x, [1 size(x)]);
+lead1 = @(p) reshape(p, [1 size(p)]);
 
 if BOUSSINESQ
     grav = varargin{1};
     rho_c = varargin{2};
-    fac = -grav / rho_c; % (-) because x is z we have been z>0 people!
+    fac = -grav / rho_c; % (-) because p is z we have been z>0 people!
 else
     fac = db2Pa;
 end
 
 if is4D(s) % Evaluate interpolants for S and T onto the surface
-    [s,t] = ppc_val2(X, s, t, lead1(x));
+    [s,t] = ppc_val2(P, s, t, lead1(p));
 end
 
-% If s0, t0, x0 were not provided, use the mean
+% If s0, t0, p0 were not provided, use the mean
 if isempty(s0)
     s0 = nanmean(s(:));
 end
 if isempty(t0)
     t0 = nanmean(t(:));
 end
-if isempty(x0)
-    x0 = nanmean(x(:));
+if isempty(p0)
+    p0 = nanmean(p(:));
 end
 
 % Calculate the easy terms involving integrals of hydrostatic balance:
-[y , m ] = hsap2(s , t , x, X, M, Y, varargin{:});
-[y0, m0] = hsap2(s0, t0, x,          varargin{:});
+[y , a ] = hsap2(s , t , p, P, A, Y, varargin{:});
+[y0, a0] = hsap2(s0, t0, p,          varargin{:});
 
 % Calculate the specific volume anomaly or the in-situ density anomaly
-d = m - m0;
+d = a - a0;
 
 % Calculate the geostrophic stream function
-gsf = y - y0 + fac * d .* (x - x0);
+gsf = y - y0 + fac * d .* (p - p0);
 
 end

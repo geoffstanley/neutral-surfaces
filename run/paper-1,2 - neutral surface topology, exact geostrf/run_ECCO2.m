@@ -32,42 +32,39 @@
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
 
-
 %% --- BEGIN SETUP --------------------------------------------------------
-%#ok<*UNRCH>
 warning('off', 'MATLAB:nargchk:deprecated')
 set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 V = filesep(); % /  or  \  depending on OS.
 
-OMEGA_FRESH = true;   % Use this to compute omega surfaces from scratch
-%OMEGA_FRESH = false; % Use this to load pre-computed omega surfaces
-
-PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-%PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/'; % Manually set path to this file.
-
-% Get path to one directory up, containing all of Topobaric Surface
-PATH_PROJECT = PATH_LOCAL(1 : find(PATH_LOCAL(1:end-1) == V, 1, 'last'));
-
 % Add Neutral Surfaces to MATLAB's path
-run([PATH_PROJECT 'ns_add_to_path.m']);
+PATH_NS = '~/work/projects-gfd/neutral-surfaces/'; % adjust as needed.
+run([PATH_NS 'ns_add_to_path.m']);
 
-% Make a directory for figures
-PATH_FIGS = [PATH_LOCAL 'figs' V];
-if ~exist(PATH_FIGS, 'dir')
-    mkdir(PATH_FIGS)
-end
+% Make a directory for figures and other output
+PATH_OUT = '~/work/dphil/projects/topobaric/output/'; % adjust as needed.
+PATH_OUT = [PATH_OUT datestr(now, 'dd-mm-yyyy') '/'];
+if ~exist(PATH_OUT, 'dir'); mkdir(PATH_OUT); end
 
-% Read path to ECCO2 data from PATH_ECCO2.txt
-file_id = fopen([PATH_PROJECT 'lib' V 'dat' V 'PATH_ECCO2.txt'], 'rt');
+% Folder containing the functions eos.m, eos_p.m, and eos_s_t.m
+PATH_EOS = '~/work/MATLAB/eos/eos/';
+addpath(PATH_EOS);  % Doing this last to ensure at top of MATLAB's path, above eos fcns in other dirs
+
+% Read path to OCCA data from PATH_OCCA.txt
+file_id = fopen([PATH_NS 'lib' V 'dat' V 'PATH_ECCO2.txt']);
 PATH_ECCO2 = textscan(file_id, '%s');
 PATH_ECCO2 = PATH_ECCO2{1}{1};
 fclose(file_id);
 
 %fileID = 1; % For standard output to the screen
-fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
+fileID = fopen([PATH_OUT 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
 
 db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion
+
+%% Extra setup
+OMEGA_FRESH = true;   % Use this to compute omega surfaces from scratch
+%OMEGA_FRESH = false; % Use this to load pre-computed omega surfaces
 
 %% Load ECCO grid
 TIMESTEP = '20021223';
@@ -87,15 +84,16 @@ Z2P = Pa2db * rho_c * grav ; % Note > 0
 lead1 = @(x) reshape(x, [1 size(x)]);
 
 neigh = grid_adjacency([ni,nj], 4, g.WRAP);
+interpfn = @ppc_linterp; % linear interpolation
 
-%% Set alias functions
-% Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_x.m
-eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq.m'   ] , [PATH_PROJECT 'eos.m'  ], grav, rho_c);
-eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_dz.m'] , [PATH_PROJECT 'eos_x.m'], grav, rho_c);
-eoscg_set_bsq_param([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_bsq_s_t.m'], [PATH_PROJECT 'eos_s_t.m'], grav, rho_c);
-
-% Choose vertical interpolation method
-interpfn = @ppc_linterp;
+%% Set alias functions.  << ENSURE THIS GETS DONE >>
+% Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_p.m
+if false % only need to do this once!  Doing every time makes codegen run every time
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], grav, rho_c); %#ok<UNRCH>
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_p.m'], grav, rho_c);
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_s_t.m'], [PATH_EOS 'eos_s_t.m'], grav, rho_c);
+end
+clear eos eos_p eos_s_t % Make sure the copied files get used
 
 %% C-grid functions for 2D data (longitude = i = rows, latitude = j = columns)
 im1 = @(F) circshift(F, [+1 0]);
@@ -124,15 +122,15 @@ S = permute(S, [3 1 2]); % [nz,nx,ny]. depth  by  long  by  lat
 T = permute(T, [3 1 2]);
 GAMMA = permute(GAMMA, [3 1 2]);
 
-SppX = interpfn(Z, S);
-TppX = interpfn(Z, T);
+Sppc = interpfn(Z, S);
+Tppc = interpfn(Z, T);
 
 % Compute in-situ density
 R = eos(S, T, Z);
 
 % Pre-compute mixed layer
-%MLZ = mixed_layer(S, T, Z); % [m].  Use this to remove the mixed layer
-MLZ = [];  % Use this to leave the mixed layer in
+%ML = mixed_layer(S, T, Z); % [m].  Use this to remove the mixed layer
+ML = [];  % Use this to leave the mixed layer in
 
 %% Selecting surfaces and depths
 list_surf = {'\sigma', '\delta', '\gamma^n', '\sigma_\nu', '\omega', '\tau', '\tau'''};
@@ -157,28 +155,26 @@ i0 = x_to_i(x0);
 j0 = y_to_j(y0);
 
 % Tolerance for vertical solver to find surfaces
-tolx = 1e-4;
+tolp = 1e-4;
 
 OPTS = struct();
 OPTS.WRAP = g.WRAP;    % Periodic in longitude, not in latitude
-OPTS.REF_IJ = [i0 j0]; % Pacific Ocean
 OPTS.GEOSTRF = false;  % Don't add extra criteria that make geostrophic streamfunction well-defined
 OPTS.SIMPLIFY_ARC_REMAIN = Inf; % No simplification
 OPTS.FILL_IJ = [];     % No filling
 OPTS.FILL_PIX = 0;     % No filling.
-%OPTS.MLX = MLZ;        % Mixed Layer Depth
-OPTS.MLX = [];         % Leave the Mixed Layer in.
-OPTS.X_TOL = tolx;     % error tolerance when updating the surface
-OPTS.X_EXPN = 500;     % expansion of domain to search for solutions in each water column
-OPTS.ITER_L2_CHANGE = 1e-3; % Stop iterations when the L2 change of pressure on the surface is less than this
+OPTS.ML = ML;          % Leave the Mixed Layer in.
+OPTS.P_TOL = tolp;     % error tolerance when updating the surface
+OPTS.P_EXPN = 500;     % expansion of domain to search for solutions in each water column
+OPTS.TOL_P_CHANGE_L2 = 1e-3; % Stop iterations when the L2 change of pressure on the surface is less than this
 OPTS.ITER_MAX = 6;     % The maximum number of iterations
 OPTS.ITER_START_WETTING = 1; % Start wetting on first iteration
 OPTS.VERBOSE = 1;      % Some output while executing topobaric_surface()
 OPTS.FILE_ID = fileID; % Write output to this file
-OPTS.FIGS_SHOW = false; % Don't show figures (for omega surface)
+OPTS.FIGS_SHOW = false;% Don't show figures (for omega surface)
 OPTS.INTERPFN = interpfn; % set interpolation function to match this script
-OPTS.SppX = SppX;      % Use pre-computed piecewise polynomial for S in terms of X=Z
-OPTS.TppX = TppX;      % Use pre-computed piecewise polynomial for T in terms of X=Z
+OPTS.Sppc = Sppc;      % Use pre-computed piecewise polynomial for S in terms of X=Z
+OPTS.Tppc = Tppc;      % Use pre-computed piecewise polynomial for T in terms of X=Z
 
 %% Figure setup:
 land = squeeze(isnan(S(1,:,:)));
@@ -214,12 +210,12 @@ for iZ = 1 : nZ
 
         % Calculate omega surface
         mytic = tic;
-        zs(:,:,iSURF('OMEGA'),iZ) = omega_surface(S, T, Z, z_sigma, OPTS);
+        zs(:,:,iSURF('OMEGA'),iZ) = omega_surface(S, T, Z, z_sigma, [i0, j0], OPTS);
         
         
         clear z_sigma
     else
-        zs(:,:,iSURF('OMEGA'),iZ) = load_ECCO2(PATH_ECCO2, 'omega', TIMESTEP, zref); % Load pre-computed omega surface
+        zs(:,:,iSURF('OMEGA'),iZ) = load_ECCO2(PATH_ECCO2, 'omega', TIMESTEP, zref); %#ok<UNRCH> % Load pre-computed omega surface
     end
     
     % Select reference depth. All surfaces shall intersect this point:
@@ -243,7 +239,7 @@ for iZ = 1 : nZ
     caxis([-zref-500 0]);
     colorbar
     fn = sprintf('z_SIGMA%d_(%d,%d,%.4fm)', list_zref(iZ), x0, y0, z_i0j0(iZ));
-    export_fig(hf, [PATH_FIGS fn], '-jpg', '-m2');
+    export_fig(hf, [PATH_OUT fn], '-jpg', '-m2');
     %}
     
     % Figure showing depth of omega surface - depth of isopycnal
@@ -255,14 +251,14 @@ for iZ = 1 : nZ
     colorbar
     % colormap(ax, bluewhitered)
     fn = sprintf('z_SIGMA_minus_OMEGA_%d_(%d,%d,%.4fm)', list_zref(iZ), x0, y0, z_i0j0(iZ));
-    export_fig(hf, [PATH_FIGS fn], '-jpg', '-m2');
+    export_fig(hf, [PATH_OUT fn], '-jpg', '-m2');
     %}
     
     
     %% Density anomaly surface
     
     % Get reference S and T as Southern Ocean average:
-    [s,t] = ppc_val2(Z, SppX, TppX, lead1(zs(:,:,iSURF('OMEGA'),iZ)));
+    [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(zs(:,:,iSURF('OMEGA'),iZ)));
     
     jj = y_to_j(-55) : y_to_j(-50);
     S_delta = nanmean(reshape(s(:,jj), [], 1));
@@ -296,7 +292,7 @@ for iZ = 1 : nZ
     end
     
     mytic = tic;
-    zs(:,:,iSURF('ORTHO'),iZ) = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), OPTS);
+    zs(:,:,iSURF('ORTHO'),iZ) = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], OPTS);
     fprintf(fileID, '(%d,%d,%.4fm): ORTHOBARIC done in time %.2f\n', ...
         i0, j0, z_i0j0(iZ), toc(mytic));
     
@@ -310,7 +306,7 @@ for iZ = 1 : nZ
     OPTS.GEOSTRF = false;
     
     mytic = tic;
-    zs(:,:,iSURF('TOPOB'),iZ) = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), OPTS);
+    zs(:,:,iSURF('TOPOB'),iZ) = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], OPTS);
     fprintf(fileID, '(%d,%d,%.4fm): TOPOBARIC done in time %.2f\n', ...
         i0, j0, z_i0j0(iZ), toc(mytic));
     
@@ -324,7 +320,7 @@ for iZ = 1 : nZ
         colorbar
         % colormap(ax, bluewhitered)
         fn = sprintf('z_TOPOB_minus_OMEGA_%d_(%d,%d,%.4fm)', list_zref(iZ), x0, y0, z_i0j0(iZ));
-        export_fig(hf, [PATH_FIGS fn], '-jpg', '-m2');
+        export_fig(hf, [PATH_OUT fn], '-jpg', '-m2');
         close(hf)
     end
     %}
@@ -334,7 +330,7 @@ for iZ = 1 : nZ
     
     mytic = tic;
     [zs(:,:,iSURF('MTOPO'),iZ), ~, ~, mtopo_data(iZ).RG, mtopo_data(iZ).s0, mtopo_data(iZ).t0, mtopo_data(iZ).dfn] ...
-        = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), OPTS);
+        = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], OPTS);
     fprintf(fileID, '(%d,%d,%.4fm): MODIFIED TOPOBARIC done in time %.2f\n', ...
         i0, j0, z_i0j0(iZ), toc(mytic));
     
@@ -377,7 +373,7 @@ clear z RG arc arc_ cm rp
 
 %% Save figure
 fn = sprintf('arc(%d,%d,%.4fm)', i0, j0, z_i0j0(iZ));
-export_fig(hf, [PATH_FIGS fn], '-jpg', '-m3');
+export_fig(hf, [PATH_OUT fn], '-jpg', '-m3');
 close(hf);
 
 
@@ -387,9 +383,9 @@ I0 = sub2ind([ni,nj], i0, j0);
 good_mask = false(ni,nj,1,nZ);
 for iZ = 1:nZ
     
-    if ~isempty(MLZ)
+    if ~isempty(ML)
         % Will only sample from data where all surfaces are valid & below mixed layer
-        good_mask(:,:,1,iZ) = all(zs(:,:,:,iZ) > MLZ, 3);
+        good_mask(:,:,1,iZ) = all(zs(:,:,:,iZ) > ML, 3);
     else
         good_mask(:,:,1,iZ) = all(isfinite(zs(:,:,:,iZ)), 3);
     end
@@ -423,7 +419,7 @@ for iZ = 1:nZ
             s = ppc_linterp(Z, S, lead1(z));
             t = ppc_linterp(Z, T, lead1(z));
         else
-            [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
+            [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
         end
         
         switch surfname
@@ -439,7 +435,7 @@ for iZ = 1:nZ
         [eps.mapx(:,:,iS,iZ), eps.mapy(:,:,iS,iZ)] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,false,g.WRAP);
         
         % Get slope errors on the Tracer grid
-        [~, ~, sx, sy] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,true,g.WRAP,[],S,T,Z);
+        [~, ~, sx, sy] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,true,g.WRAP,{},grav,S,T,Z);
         
         % Fictitious Diapycnal Diffusivity
         fdd.map(:,:,iS,iZ) = K_iso * (sx.^2 + sy.^2);
@@ -637,7 +633,7 @@ for iZ = 1:nZ
 end
 
 %% Save figure
-fn = sprintf('%shist_Eps,D_%sm_%dsurf', PATH_FIGS, strrep(num2str(list_zref), ' ', '_'), nSs);
+fn = sprintf('%shist_Eps,D_%sm_%dsurf', PATH_OUT, strrep(num2str(list_zref), ' ', '_'), nSs);
 export_fig(hf, fn, '-pdf');
 close(hf)
 
@@ -703,7 +699,7 @@ for iZ = 1 : nZ
     
     %% Save figure
     fn = sprintf('FDD_%dsurfs_(%d,%d,%.4fm)', nSs, i0, j0, z_i0j0(iZ));
-    export_fig(hf, [PATH_FIGS fn], '-jpg', '-m3');
+    export_fig(hf, [PATH_OUT fn], '-jpg', '-m3');
     close(hf);
     
 end
@@ -790,7 +786,7 @@ for iZ = 1 : nZ
             s = ppc_linterp(Z, S, lead1(z));
             t = ppc_linterp(Z, T, lead1(z));
         else
-            [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
+            [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
         end
         
         %[s1,t1] = interp1qn2(lead1(z), Z, S, T);
@@ -805,8 +801,8 @@ for iZ = 1 : nZ
         % Zonal velocities:
         z_avg = (z + jm1(z)) / 2; % on V grid
         u = ppc_linterp(Z, UVEL, lead1(z_avg)); % Full velocity, interpolated onto the surface
-        y     =     hsap2(SppX, TppX,     z_avg , Z, R, Y, grav, rho_c) ;
-        y_adj = jm1(hsap2(SppX, TppX, jp1(z_avg), Z, R, Y, grav, rho_c));
+        y     =     hsap2(Sppc, Tppc,     z_avg , Z, R, Y, grav, rho_c) ;
+        y_adj = jm1(hsap2(Sppc, Tppc, jp1(z_avg), Z, R, Y, grav, rho_c));
         ugz = -(y - y_adj) ./ (g.DYCsc * cori_V); % Geostrophic velocity from z level gradient
         %y1     =     hsap2_orig(S, T,     z_avg , Z, R, Y, grav, rho_c, @interp1qn2) ;
         %y_adj1 = jm1(hsap2_orig(S, T, jp1(z_avg), Z, R, Y, grav, rho_c, @interp1qn2));
@@ -815,8 +811,8 @@ for iZ = 1 : nZ
         % Meridional velocities:
         z_avg = (z + im1(z)) / 2; % on U grid
         v = ppc_linterp(Z, VVEL, lead1(z_avg)); % Full velocity, interpolated onto the surface
-        y     =     hsap2(SppX, TppX,     z_avg , Z, R, Y, grav, rho_c) ;
-        y_adj = im1(hsap2(SppX, TppX, ip1(z_avg), Z, R, Y, grav, rho_c));
+        y     =     hsap2(Sppc, Tppc,     z_avg , Z, R, Y, grav, rho_c) ;
+        y_adj = im1(hsap2(Sppc, Tppc, ip1(z_avg), Z, R, Y, grav, rho_c));
         vgz =  (y - y_adj) ./ (g.DXCvec .* cori_U); % Geostrophic velocity from z level gradient
         
         % Geostrophic streamfunctions:
@@ -837,14 +833,13 @@ for iZ = 1 : nZ
         % Topobaric geostrophic streamfunction:
         OPTS_STRF.REEB = true; % use multivalued functions (topobaric not orthobaric)
         OPTS_STRF.GEOSTRF = true; % ensure topobaric gsf is well-defined
-        OPTS_STRF.REF_IJ = OPTS.REF_IJ;
         if strcmp(surfname, 'MTOPO')
             OPTS_STRF.RG = mtopo_data(iZ).RG;
             OPTS_STRF.dfn = mtopo_data(iZ).dfn;
             s0 = mtopo_data(iZ).s0;
             t0 = mtopo_data(iZ).t0;
         end
-        TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, OPTS_STRF, grav, rho_c);
+        TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS_STRF, grav, rho_c);
         if strcmp(surfname, 'MTOPO')
             OPTS_STRF = rmfield(OPTS_STRF, {'RG', 'dfn'});
         end
@@ -1117,7 +1112,7 @@ for iZ = 1:nZ
 end
 
 %% Save figure
-fn = sprintf('%sboxplot%d%d_GeosVelErr_EQBAND%d', PATH_FIGS, nSs, nF, EQBAND);
+fn = sprintf('%sboxplot%d%d_GeosVelErr_EQBAND%d', PATH_OUT, nSs, nF, EQBAND);
 export_fig(hf, fn, '-pdf');
 close(hf)
 
@@ -1181,14 +1176,14 @@ for iS = 1:nSs
         
         
         % --- Scatter plot of delta vs z, only in the main region
-        % (connected to OPTS.REF_IJ)
+        % (connected to [i0,j0])
         z = zs(:,:,iSURF(surfname),iZ);
         if strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH
             % OMEGA-surface was pre-computed using linear interpolation
             s = ppc_linterp(Z, S, lead1(z));
             t = ppc_linterp(Z, T, lead1(z));
         else
-            [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
+            [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
         end
         
         [~,~,~,ROI] = bfs_conncomp(isfinite(z), neigh, I0);
@@ -1245,7 +1240,7 @@ for iS = 1:nSs
         
         %% Save figure
         fn = sprintf('GeosVelUErr_%d_on_%s_%d_EQBAND%d', nF, list_surf{iSURF(surfname)}(2:end), zref, EQBAND);
-        export_fig(hf, [PATH_FIGS fn] , '-jpg', '-m3');
+        export_fig(hf, [PATH_OUT fn] , '-jpg', '-m3');
         % Close figure
         close(hf);
         
@@ -1263,14 +1258,14 @@ if strcmp(surfname, 'OMEGA') && ~OMEGA_FRESH
     s = ppc_linterp(Z, S, lead1(z));
     t = ppc_linterp(Z, T, lead1(z));
 else
-    [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
+    [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
 end
 s0 = s(i0,j0);
 t0 = t(i0,j0);
 
 OPTS_STRF.REEB = true; % use multivalued functions (topobaric not orthobaric)
 OPTS_STRF.GEOSTRF = false; % Make geostrophic streamfunction is ill-defined
-[~,TBdiff] = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, OPTS_STRF, grav, rho_c);
+[~,TBdiff] = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS_STRF, grav, rho_c);
 
 errX = -dTdy_on_V(TBdiff) ./ cori_V;
 errY = +dTdx_on_U(TBdiff) ./ cori_U;
@@ -1317,7 +1312,7 @@ for iZ = 1 : nZ
         s = ppc_linterp(Z, S, lead1(z));
         t = ppc_linterp(Z, T, lead1(z));
     else
-        [s,t] = ppc_val2(Z, SppX, TppX, lead1(z));
+        [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
     end
     [y,r] = hsap2(s, t, z, Z, R, Y, grav, rho_c);
     
@@ -1335,10 +1330,10 @@ for iZ = 1 : nZ
         OPTS_STRF.SPLINE_BREAKS = [0 200 1500 1800 6000];
         OPTS_STRF.SPLINE_ORDER = 4;
     end
-    %OB = topobaric_geostrf(ATMP, ETAN, S, T, Z, z, OPTS_STRF, R);
+    %OB = topobaric_geostrf(ATMP, ETAN, S, T, Z, z, [i0,j0], OPTS_STRF, R);
     s0 = s(i0,j0);
     t0 = t(i0,j0);
-    OB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, OPTS_STRF, grav, rho_c);
+    OB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS_STRF, grav, rho_c);
     
     % Compare OB and OM:
     exOB = -dTdy_on_V(OB) ./ cori_V  -  ugs;
@@ -1456,7 +1451,7 @@ for iZ = 1:nZ
     end
 end
 %% Save figure
-fn = sprintf('%shist%d%d_GeosVelErr_EQBAND%d', PATH_FIGS, nSs, nF, EQBAND);
+fn = sprintf('%shist%d%d_GeosVelErr_EQBAND%d', PATH_OUT, nSs, nF, EQBAND);
 export_fig(hf, fn, '-pdf');
 close(hf)
 
@@ -1464,10 +1459,10 @@ close(hf)
 
 %% --- Quick test of non-Boussinesq form for geostrophic streamfunctions
 % Switch equation of state to the jmd95 specific volume
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_specvoljmd95.m'   ] , [PATH_PROJECT 'eos.m'  ]);
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_specvoljmd95_dp.m'] , [PATH_PROJECT 'eos_x.m']);
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_specvoljmd95_s_t.m'], [PATH_PROJECT 'eos_s_t.m']);
-clear eos eos_x eos_s_t % Make sure the copied files get used
+copyfile([PATH_NS 'lib' V 'eos' V 'eoscg_specvoljmd95.m'   ] , [PATH_EOS 'eos.m'  ]);
+copyfile([PATH_NS 'lib' V 'eos' V 'eoscg_specvoljmd95_dp.m'] , [PATH_EOS 'eos_p.m']);
+copyfile([PATH_NS 'lib' V 'eos' V 'eoscg_specvoljmd95_s_t.m'], [PATH_EOS 'eos_s_t.m']);
+clear eos eos_p eos_s_t % Make sure the copied files get used
 
 %% Get the hydrostatic pressure (and pretend it's the actual pressure)
 P = Y * (rho_c * Pa2db);
@@ -1479,8 +1474,8 @@ A = eos(S, T, P);
 Y = hsap3(P, ATMP, ETAN, A, grav);
 
 % Interpolate S and T as functions of P
-SppX = interpfn(P, S);
-TppX = interpfn(P, T);
+Sppc = interpfn(P, S);
+Tppc = interpfn(P, T);
 
 % Get a potential density surface to work on
 pref = 2000; % [dbar]
@@ -1490,7 +1485,7 @@ p = interp1qn(isoval, SIGMA, P);
 clear SIGMA
 
 % Properties on the surface
-[s,t] = ppc_val2(P, SppX, TppX, lead1(p));
+[s,t] = ppc_val2(P, Sppc, Tppc, lead1(p));
 [y,a] = hsap2(s, t, p, P, A, Y);
 
 % Geostrophic velocities from in-surface gradients. Non-Boussinesq.
@@ -1500,15 +1495,15 @@ vgs =  ( (db2Pa/2) * (a + im1(a)) .* (p - im1(p)) + (y - im1(y)) ) ./ (g.DXCvec 
 % Zonal velocities:
 p_avg = (p + jm1(p)) / 2; % on V grid
 u = ppc_linterp(P, UVEL, lead1(p_avg)); % Full velocity, interpolated onto the surface
-y     =     hsap2(SppX, TppX,     p_avg , P, A, Y) ;
-y_adj = jm1(hsap2(SppX, TppX, jp1(p_avg), P, A, Y));
+y     =     hsap2(Sppc, Tppc,     p_avg , P, A, Y) ;
+y_adj = jm1(hsap2(Sppc, Tppc, jp1(p_avg), P, A, Y));
 ugz = -(y - y_adj) ./ (g.DYCsc * cori_V); % Geostrophic velocity from z level gradient
 
 % Meridional velocities:
 p_avg = (p + im1(p)) / 2; % on U grid
 v = ppc_linterp(P, VVEL, lead1(p_avg)); % Full velocity, interpolated onto the surface
-y     =     hsap2(SppX, TppX,     p_avg , P, A, Y) ;
-y_adj = im1(hsap2(SppX, TppX, ip1(p_avg), P, A, Y));
+y     =     hsap2(Sppc, Tppc,     p_avg , P, A, Y) ;
+y_adj = im1(hsap2(Sppc, Tppc, ip1(p_avg), P, A, Y));
 vgz =  (y - y_adj) ./ (g.DXCvec .* cori_U); % Geostrophic velocity from z level gradient
 
 % Geostrophic streamfunctions:
@@ -1527,7 +1522,7 @@ OM = orthobaric_montgomery(s, t, p, P, A, Y, [], [], OPTS_STRF);
 % Topobaric geostrophic streamfunction:
 OPTS_STRF.REEB = true;
 OPTS_STRF.GEOSTRF = true;
-TB = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, OPTS_STRF);
+TB = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, [i0,j0], OPTS_STRF);
 
 % --- Calculate error from "true" geostrophic velocity (ugs, vgs)
 ex = nan(ni,nj,nF);
@@ -1590,5 +1585,5 @@ colorbar(ax, 'Position', [1-mr+.01 mb .0333 1-mb-mt], 'FontSize', fs, ...
 
 %% Save figure
 fn = sprintf('GeosVelUErr_%d_on_SIGMA_%d_NONBSQ', nF, pref);
-export_fig(hf, [PATH_FIGS fn] , '-jpg', '-m3');
+export_fig(hf, [PATH_OUT fn] , '-jpg', '-m3');
 close(hf)

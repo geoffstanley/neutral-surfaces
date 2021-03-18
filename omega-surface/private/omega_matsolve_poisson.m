@@ -1,8 +1,8 @@
-function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, mr)
+function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, mr)
 % OMEGA_MATSOLVE_POISSON  Build & solve the sparse matrix Poisson problem for omega surfaces
 %
 %
-% phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
+% phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
 % builds and solves the sparse matrix problem for omega surfaces in Poisson
 % form. 
 %
@@ -10,7 +10,7 @@ function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 % --- Input:
 %  s [ni, nj]: practical / Absolute Salinity on the surface
 %  t [ni, nj]: potential / Conservative Temperature on the surface
-%  x [ni, nj]: pressure or depth on the surface
+%  p [ni, nj]: pressure (or depth) on the surface
 % DIST2on1_iJ [ni, nj]: the area of a grid cell centred at (I-1/2, J),
 %   divided by the distance, squared, from (I-1,J) to (I,J).  Equivalently,
 %   this is the grid distance in second dimension divided by grid distance
@@ -55,7 +55,7 @@ function phi = omega_matsolve_poisson(s, t, x, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 
 
 
-[ni,nj] = size(x);
+[ni,nj] = size(p);
 WALL = ni * nj + 1; % a flag values used by A4 to index neighbours that would go across a non-periodic boundary
 
 autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
@@ -88,19 +88,19 @@ jp1 = @(D) circshift(D, [0 -1]);
 % Aliases
 sm = s;
 tm = t;
-xm = x;
+pm = p;
 
 %% m = (i, j) and n = (i-1, j),  then also n = (i+1, j) by symmetry
 sn = im1(sm);
 tn = im1(tm);
-xn = im1(xm);
+pn = im1(pm);
 
 if ~WRAP(1)
   sn(1,:) = nan;
 end
 
-% A stripped down version of ntp_errors(s,t,x,1,1,true,false,true);
-[vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (xm + xn) );
+% A stripped down version of ntp_errors(s,t,p,1,1,true,false,true);
+[vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (pm + pn) );
 % [vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 1500 );  % DEV: testing omega software to find potential density surface
 eps = vs .* (sm - sn) + vt .* (tm - tn);
 
@@ -126,14 +126,14 @@ L(PJ,:,:) = -ip1(fac);
 %% m = (i, j) and n = (i, j-1),  then also n = (i, j+1) by symmetry
 sn = jm1(sm);
 tn = jm1(tm);
-xn = jm1(xm);
+pn = jm1(pm);
 
 if ~WRAP(2)
   sn(:,1) = nan;
 end
 
-% A stripped down version of ntp_errors(s,t,x,1,1,true,false,true);
-[vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (xm + xn) );
+% A stripped down version of ntp_errors(s,t,p,1,1,true,false,true);
+[vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 0.5 * (pm + pn) );
 % [vs, vt] = eos_s_t( 0.5 * (sm + sn), 0.5 * (tm + tn), 1500 );  % DEV: testing omega software to find potential density surface
 
 eps = vs .* (sm - sn) + vt .* (tm - tn);

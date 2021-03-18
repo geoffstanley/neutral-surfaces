@@ -7,7 +7,7 @@ function bfs_conncomp1_codegen(nk, ni, nj, Xvec, OPTS)
 % in the horizontal and nk points in the vertical.
 %
 % bfs_conncomp1_codegen(nk, ni, nj, true)
-% specifies that X in bfs_conncomp1.m is just a vector: X(k) specifies the
+% specifies that P in bfs_conncomp1.m is just a vector: P(k) specifies the
 % pressure or depth of all grid points having vertical index k. Use this
 % for simple Z-level models (not hybrid coordinate models).
 %
@@ -84,7 +84,7 @@ try
         vs = true;
         t_G    = coder.typeof(true, [ni, nj], [vs, vs]);
         nij = ni * nj;
-        t_A    = coder.typeof(0, [9, nij, nj], [true, vs, vs]); % [? x nij] or [? x ni x nj]
+        t_A    = coder.typeof(0, [9, nij, nj], [true, vs, vs]); % [? p nij] or [? p ni p nj]
         t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
         
         args = {t_G, t_A, 0, t_q};

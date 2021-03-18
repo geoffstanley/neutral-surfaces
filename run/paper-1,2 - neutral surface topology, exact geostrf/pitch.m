@@ -29,43 +29,30 @@ warning('off', 'MATLAB:nargchk:deprecated')
 set(0, 'defaultfigurecolor', [1 1 1]); % white figure background
 V = filesep(); % /  or  \  depending on OS.
 
-PATH_LOCAL = [fileparts(mfilename('fullpath')) V]; % Get path to this file.
-%PATH_LOCAL = '~/work/projects-gfd/neutral-surfaces/run/'; % Manually set path to this file.
-
-% Get path to one directory up, containing all of Topobaric Surface
-PATH_PROJECT = PATH_LOCAL(1 : find(PATH_LOCAL(1:end-1) == V, 1, 'last'));
-
 % Add Neutral Surfaces to MATLAB's path
-run([PATH_PROJECT 'ns_add_to_path.m']);
+PATH_NS = '~/work/projects-gfd/neutral-surfaces/'; % adjust as needed.
+run([PATH_NS 'ns_add_to_path.m']);
 
-% Make a directory for figures
-PATH_FIGS = [PATH_LOCAL 'figs' V];
-if ~exist(PATH_FIGS, 'dir')
-    mkdir(PATH_FIGS)
-end
+% Make a directory for figures and other output
+PATH_OUT = '~/work/dphil/projects/topobaric/output/'; % adjust as needed.
+PATH_OUT = [PATH_OUT datestr(now, 'dd-mm-yyyy') '/'];
+if ~exist(PATH_OUT, 'dir'); mkdir(PATH_OUT); end
 
-% Read path to ECCO2 data from PATH_ECCO2.txt
-file_id = fopen([PATH_PROJECT 'lib' V 'dat' V 'PATH_ECCO2.txt'], 'rt');
+% Folder containing the functions eos.m, eos_p.m, and eos_s_t.m
+PATH_EOS = '~/work/MATLAB/eos/eos/';
+addpath(PATH_EOS);  % Doing this last to ensure at top of MATLAB's path, above eos fcns in other dirs
+
+% Read path to OCCA data from PATH_OCCA.txt
+file_id = fopen([PATH_NS 'lib' V 'dat' V 'PATH_ECCO2.txt']);
 PATH_ECCO2 = textscan(file_id, '%s');
 PATH_ECCO2 = PATH_ECCO2{1}{1};
 fclose(file_id);
 
 %fileID = 1; % For standard output to the screen
-fileID = fopen([PATH_LOCAL 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
+fileID = fopen([PATH_OUT 'run ' datestr(now, 'yyyy mm dd hh MM ss') '.txt'], 'wt'); % For output to a file
 
 db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion
-
-
-%% Set alias functions
-% Ensure the equation of state is for the densjmd95 in-situ density:
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95.m'   ] , [PATH_PROJECT 'eos.m'  ]);
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_dp.m'] , [PATH_PROJECT 'eos_x.m']);
-copyfile([PATH_PROJECT 'lib' V 'eos' V 'eoscg_densjmd95_s_t.m'], [PATH_PROJECT 'eos_s_t.m']);
-clear eos eos_x eos_s_t % Make sure the copied files get used
-
-% Choose vertical interpolation method
-interpfn = @ppc_linterp;
 
 %% Load ECCO
 TIMESTEP = '20021223';
@@ -89,9 +76,24 @@ BotK(BotK == 0) = 1; % Just for finite indexing
 y_to_j = @(y) floor((y - g.YGvec(1)) * g.resy) + 1;
 x_to_i = @(x) mod(floor((x - g.XGvec(1)) * g.resx), ni) + 1;
 
+grav = g.grav;
+rho_c = g.rho_c;
+
+%% Set alias functions.  << ENSURE THIS GETS DONE >>
+% Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_p.m
+if false % only need to do this once!  Doing every time makes codegen run every time
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], grav, rho_c); %#ok<UNRCH>
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_p.m'], grav, rho_c);
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_s_t.m'], [PATH_EOS 'eos_s_t.m'], grav, rho_c);
+end
+clear eos eos_p eos_s_t % Make sure the copied files get used
+
+
 %% Build interpolants for S and T in terms of Z
-SppZ = interpfn(Z, S);
-TppZ = interpfn(Z, T);
+interpfn = @ppc_linterp; % linear interpolation
+
+Sppc = interpfn(Z, S);
+Tppc = interpfn(Z, T);
 
 %% Run codegen on ntp_bottle_to_cast
 ntp_bottle_to_cast_codegen(nk);
@@ -158,7 +160,7 @@ for h = 1 : H
     
     i1 = ij(1,1); j1 = ij(1,2);
     k = BotK(i1,j1);
-    [s,t] = ppc_val2(Z(1:k), SppZ(:,1:k-1,i1,j1), TppZ(:,1:k-1,i1,j1), z);
+    [s,t] = ppc_val2(Z(1:k), Sppc(:,1:k-1,i1,j1), Tppc(:,1:k-1,i1,j1), z);
     
     dir = [0 +1; +1 0; 0 -1; -1 0]; % N E S W
     d = 3; % first step will try to move west
@@ -179,7 +181,7 @@ for h = 1 : H
             end
             
             % Test a neutral trajectory from current location to neighbouring location
-            [z2, s2, t2, success] = ntp_bottle_to_cast_mex(SppZ(:,:,i2,j2), TppZ(:,:,i2,j2), Z, k, s, t, z, tol);
+            [z2, s2, t2, success] = ntp_bottle_to_cast_mex(Sppc(:,:,i2,j2), Tppc(:,:,i2,j2), Z, k, s, t, z, tol);
             
             if success
                 % A successful step! We did not ground. This direction worked -- we grounded.
@@ -230,7 +232,7 @@ for h = 1 : H
         if k >= 2 && i1 ~= ij(1,1)
             
             z = z0;
-            [s,t] = ppc_val2(Z(1:k), SppZ(:,1:k-1,i1,j1), TppZ(:,1:k-1,i1,j1), z);
+            [s,t] = ppc_val2(Z(1:k), Sppc(:,1:k-1,i1,j1), Tppc(:,1:k-1,i1,j1), z);
             
             for l = 2 : STEPS
                 
@@ -238,7 +240,7 @@ for h = 1 : H
                 j2 = ij(l,2);
                 k = BotK(i2,j2);
                 
-                [z, s, t, success] = ntp_bottle_to_cast_mex(SppZ(:,:,i2,j2), TppZ(:,:,i2,j2), Z, k, s, t, z, tol);
+                [z, s, t, success] = ntp_bottle_to_cast_mex(Sppc(:,:,i2,j2), Tppc(:,:,i2,j2), Z, k, s, t, z, tol);
                 
                 if ~success
                     break
@@ -323,8 +325,8 @@ text(axFIG, 0.04, .5, 'Neutral Trajectory Pitch [m]', 'FontSize', OPTS_FIGS.FONT
 
 %% Save figure
 fn = 'Island_Pitch';
-export_fig(hf, [PATH_FIGS fn], '-pdf');
-
+export_fig(hf, [PATH_OUT fn], '-pdf');
+close(hf);
 return
 
 %% Examine contours of pressure on approx neutral surface around each island
