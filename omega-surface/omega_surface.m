@@ -323,7 +323,7 @@ for iter = 1 : ITER_MAX
   if iter >= ITER_START_WETTING && iter <= ITER_STOP_WETTING
     [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(Sppc, Tppc, P, s, t, p, TOL_P_UPDATE, A4, BotK, ref_cast, qu);
   else
-    [qu, qt] = bfs_conncomp1(isfinite(s), A4, ref_cast, qu);
+    [qu, qt] = bfs_conncomp1(isfinite(p), A4, ref_cast, qu);
     freshly_wet = 0;
   end
   
@@ -360,7 +360,7 @@ for iter = 1 : ITER_MAX
   phi_L1 = nanmean(abs(phi(:)));
   if DIAGS || TOL_P_CHANGE_L2 > 0
     p_change = p - p_old;
-    p_change_L2   = nanrms(p_change(:));
+    p_change_L2 = nanrms(p_change(:));
   end
   
   if DIAGS
@@ -378,8 +378,8 @@ for iter = 1 : ITER_MAX
     diags.p_change_Linf(iter) = p_change_Linf;
     diags.freshly_wet(iter)   = freshly_wet;
     
-    diags.timer_solver(iter)    = timer_solver;
-    diags.timer_update(iter)    = timer_update;
+    diags.timer_solver(iter)  = timer_solver;
+    diags.timer_update(iter)  = timer_update;
     
     % Diagnostics about the state AFTER this iteration
     [epsL2, epsL1] = eps_norms(s, t, p, true, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
