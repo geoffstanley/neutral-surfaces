@@ -33,10 +33,12 @@ OPTS.ITER_MAX = 10; % maximum number of iterations
 OPTS.ITER_START_WETTING = 1; % start wetting immediately
 OPTS.ITER_STOP_WETTING  = 5; % stop wetting after this many iterations (to avoid flip-flopping on adding then removing some nuisance casts)
 
-OPTS.TOL_LRPD_L1 = 1e-7; % Tolerance in Locally Referenced Potential Density [kg m^-3]
+% Exit iterations when the L1 change of the Locally Referenced Potential
+% Density perturbation is less than this value [kg m^-3].  Set to 0 to deactivate. 
+OPTS.TOL_LRPD_L1 = 1e-7;
 
-% quit when the L2 change of pressure (or depth) on surface exceeds this
-% value (set to 0 to deactivate), in the same units as P [dbar] or [m].
+% Exit iterations when the L2 change of pressure (or depth) on the surface
+% is less than this value. Set to 0 to deactivate. Units are the same as P [dbar or m].
 OPTS.TOL_P_CHANGE_L2 = 0;
 
 % Error tolerance when root-finding to update surface, in the same units as
