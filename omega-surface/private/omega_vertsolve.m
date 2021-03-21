@@ -64,7 +64,7 @@ function [p, s, t] = omega_vertsolve(Sppc, Tppc, P, BotK, s, t, p, tolp, phi) %#
 % Inputs s0, t0, and p0 are named s, t, p so operations are done in-place.
 
 N = numel(p);
-Xmat = ~isvector(P);
+Pmat = ~isvector(P);
 
 % Loop over each water column
 for n = 1:N
@@ -75,7 +75,7 @@ for n = 1:N
     % Select this water column
     Sppcn = Sppc(:,1:k-1,n);
     Tppcn = Tppc(:,1:k-1,n);
-    if Xmat
+    if Pmat
       Pn = P(1:k,n);
     else
       Pn = P((1:k).'); % .' is for codegen, so P and (1:k).' both column vectors
