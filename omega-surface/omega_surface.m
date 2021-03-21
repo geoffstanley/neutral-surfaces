@@ -209,12 +209,13 @@ DIST2_Ij = OPTS.DIST2_Ij; % Distance [m] in 2nd dimension centred at (I, J-1/2)
 DIST2_iJ = OPTS.DIST2_iJ; % Distance [m] in 2nd dimension centred at (I-1/2, J)
 DIST1_Ij = OPTS.DIST1_Ij; % Distance [m] in 1st dimension centred at (I, J-1/2)
 
+% Calculate the ratios of distances, and autoexpand
 if POISSON
-  DIST2on1_iJ = DIST2_iJ ./ DIST1_iJ;
-  DIST1on2_Ij = DIST1_Ij ./ DIST2_Ij;
+  DIST2on1_iJ = autoexp(DIST2_iJ ./ DIST1_iJ);
+  DIST1on2_Ij = autoexp(DIST1_Ij ./ DIST2_Ij);
 else
-  sqrtDIST2on1_iJ = sqrt(DIST2_iJ ./ DIST1_iJ);
-  sqrtDIST1on2_Ij = sqrt(DIST1_Ij ./ DIST2_Ij);
+  sqrtDIST2on1_iJ = autoexp(sqrt(DIST2_iJ ./ DIST1_iJ));
+  sqrtDIST1on2_Ij = autoexp(sqrt(DIST1_Ij ./ DIST2_Ij));
 end
 
 % auto expand to [ni,nj] sizes, for eps_norms()

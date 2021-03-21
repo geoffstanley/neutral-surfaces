@@ -41,8 +41,6 @@ function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 [ni,nj] = size(p);
 WALL = ni * nj + 1; % a flag values used by A4 to index neighbours that would go across a non-periodic boundary
 
-autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
-
 % If both gridding variables are 1, then grid is uniform
 UNIFORM_GRID = ...
   isscalar(DIST2on1_iJ) && DIST2on1_iJ == 1 && ...
@@ -93,7 +91,7 @@ eps(bad) = 0;
 if UNIFORM_GRID
   fac = double(~bad); % 0 and 1
 else
-  fac = autoexp(DIST2on1_iJ);
+  fac = DIST2on1_iJ;
   fac(bad) = 0;
   eps = eps .* fac; % scale eps
 end
@@ -126,7 +124,7 @@ eps(bad) = 0;
 if UNIFORM_GRID
   fac = double(~bad); % 0 and 1
 else
-  fac = autoexp(DIST1on2_Ij);
+  fac = DIST1on2_Ij;
   fac(bad) = 0;
   eps = eps .* fac; % scale eps
 end
