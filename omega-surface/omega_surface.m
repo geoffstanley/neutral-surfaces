@@ -159,6 +159,7 @@ autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion 
 msg1 = 'Initial surface has  log_10(|eps|_2) == %9.6f .................. \n';
 msg2 = 'Iter %2d (%6.2f sec) log_10(|eps|_2) == %9.6f by |phi''|_1 = %.6e; %4d casts freshly wet; |Delta_p|_2 = %.6e\n';
 
+p_change_L2 = 0; % ensure this is defined; needed if OPTS.TOL_P_CHANGE_L2 == 0
 %% Process OPTS
 
 % Load default options, then override with any user-specified OPTS.
@@ -357,7 +358,7 @@ for iter = 1 : ITER_MAX
   
   % --- Closing Remarks
   phi_L1 = nanmean(abs(phi(:)));
-  if DIAGS || isfinite(TOL_P_CHANGE_L2)
+  if DIAGS || TOL_P_CHANGE_L2 > 0
     p_change = p - p_old;
     p_change_L2   = nanrms(p_change(:));
   end
