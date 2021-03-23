@@ -284,7 +284,6 @@ if DIAGS
   diags.p_change_L2   = nan(ITER_MAX, 1);
   diags.p_change_Linf = nan(ITER_MAX, 1);
   diags.freshly_wet   = nan(ITER_MAX, 1);
-  diags.relaxation    = nan(ITER_MAX, 1);
   diags.clocktime     = nan(ITER_MAX, 1);
   
   diags.timer_solver  = nan(ITER_MAX, 1);
