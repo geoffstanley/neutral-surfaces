@@ -5,10 +5,10 @@ function [p, s, t] = omega_vertsolve(Sppc, Tppc, P, BotK, s, t, p, tolp, phi) %#
 %
 % [s, t, p] = omega_vertsolve(Sppc, Tppc, P, BotK, s0, t0, p0, tolp, phi)
 % determines pressures p that satisfy
-%   |eos(S_n(p(n)), T_n(p(n)), (p(n) + p0(n))/2) + phi(n) - eos(s0(n), t0(n), (p(n) + p0(n))/2)| < tolp
+%   |eos(S_n(p(n)), T_n(p(n)), p0(n)) + phi(n) - eos(s0(n), t0(n), p0(n))| < tolp
 % where S_n(p') and T_n(p') are interpolants whose coefficients are given
-% by Sppc and Tppc. These interpolants also determines salinities s and
-% temperatures t such that
+% by Sppc(:,:,n) and Tppc(:,:,n) in water column n. These interpolants 
+% determine salinities s and temperatures t on the surface, namely
 %   s(n) = S_n(p(n)) and t(n) = T_n(p(n)).
 % The function eos.m determines either the in-situ density or the specific
 % volume.
