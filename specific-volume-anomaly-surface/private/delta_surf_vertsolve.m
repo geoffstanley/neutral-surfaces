@@ -32,6 +32,11 @@ for n = 1:N
           Pn = P((1:k).'); % .' is for codegen, so X and (1:k).' both column vectors
         end
         
+        % Initial guess could be nan.  In this case, try initial guess at mid-depth.
+        if isnan(p(n))
+            p(n) = (P(1) + P(k)) * 0.5;
+        end
+        
         % Search for a sign-change, expanding outward from an initial guess 
         [lb, ub] = fzero_guess_to_bounds(@myfcn, p(n), Pn(1), Pn(k), ...
           Sppcn, Tppcn, Pn, s_ref, t_ref, d0);
