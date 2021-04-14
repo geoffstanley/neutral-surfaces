@@ -119,10 +119,12 @@ end
 
 
 function out = diff_p0(p, Sppc, Tppc, P, r0, p0, d)
-% Evaluate difference between (a) eos at location on the cast (S, T, P)
-% where the pressure or depth is p, and (b) d + eos of the bottle (s0, t0,
-% p0); here, eos is always evaluated at the pressure or depth of the
-% original position, p0.
+% Evaluate difference between (a) eos at location on the cast where the
+% pressure or depth is p, plus the density perturbation d, and (b) eos at
+% location on the cast where the surface currently resides (at pressure or
+% depth p0).   Here, eos always evaluated at the pressure or depth of the
+% original position, p0; this is to calculate locally referenced potential
+% density with reference pressure p0.
 
 % Interpolate S and T to the current pressure or depth
 [s,t] = ppc_val2(P, Sppc, Tppc, p);
