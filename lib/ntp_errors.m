@@ -212,7 +212,7 @@ if ~use_s_t || nargout >= 3
   r = eos(s, t, p); % in-situ density (or specific volume)
 end
 
-% Begin calculations for errors in p direction
+% Begin calculations for errors in x direction
 sa = A_X(s);
 ta = A_X(t);
 pa = A_X(p);
@@ -275,7 +275,7 @@ else
   dsigmadz(dsigmadz > -thresh) = -thresh;
 end
 
-% Slope error in p direction
+% Slope error in x direction
 sx = ex ./ A_X(dsigmadz);
 
 
