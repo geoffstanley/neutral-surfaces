@@ -116,18 +116,20 @@ pot_dens_surf_vertsolve_codegen(nk, ni_, nj_, isvector(P), OPTS);
 
 % Interpolate S and T as piecewise polynomials of P, or use pre-computed interpolants in OPTS.
 if isfield(OPTS, 'Sppc') && isfield(OPTS, 'Tppc')
-    [~, kIS, iIS, jIS] = size(OPTS.Sppc);
-    [~, kIT, iIT, jIT] = size(OPTS.Tppc);
-end
-if exist('kIS', 'var') && ...
-        nk-1 == kIS && kIS == kIT && ...
-        ni   == iIS && iIS == iIT && ...
-        nj   == jIS && jIS == jIT
+  [~, kIS, iIS, jIS] = size(OPTS.Sppc);
+  [~, kIT, iIT, jIT] = size(OPTS.Tppc);
+  if nk-1 == kIS && kIS == kIT && ...
+      ni  == iIS && iIS == iIT && ...
+      nj  == jIS && jIS == jIT
     Sppc = OPTS.Sppc;
     Tppc = OPTS.Tppc;
-else
+  else
     Sppc = OPTS.INTERPFN(P, S);
     Tppc = OPTS.INTERPFN(P, T);
+  end
+else
+  Sppc = OPTS.INTERPFN(P, S);
+  Tppc = OPTS.INTERPFN(P, T);
 end
 
 % Count number of valid bottles per cast
