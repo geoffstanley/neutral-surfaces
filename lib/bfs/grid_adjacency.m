@@ -93,12 +93,12 @@ elseif CONN == 8
   ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
-    ADJ([2,5,6], 1 , :) = WALLVAL; % i-1 hits a wall when i = 1
-    ADJ([3,7,8], ni, :) = WALLVAL; % i+1 hits a wall when i = ni
+    ADJ([2,5,7], 1 , :) = WALLVAL; % i-1 hits a wall when i = 1
+    ADJ([3,6,8], ni, :) = WALLVAL; % i+1 hits a wall when i = ni
   end
   if ~WRAP(2)
-    ADJ([1,5,7], :, 1 ) = WALLVAL; % j-1 hits a wall when j = 1
-    ADJ([4,6,8], :, nj) = WALLVAL; % j+1 hits a wall when j = nj
+    ADJ([1,5,6], :, 1 ) = WALLVAL; % j-1 hits a wall when j = 1
+    ADJ([4,7,8], :, nj) = WALLVAL; % j+1 hits a wall when j = nj
   end
   
 elseif CONN == 9
