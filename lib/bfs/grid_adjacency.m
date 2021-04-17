@@ -19,9 +19,9 @@ function ADJ = grid_adjacency(SZ, CONN, WRAP)
 % following diagram:
 %  CONN==4        CONN==5   CONN==8   CONN==9
 % +---------> j
-% |   . 2 .       . 2 .     5 2 6     1 4 7
+% |   . 2 .       . 2 .     5 2 7     1 4 7
 % |   1 . 4       1 3 5     1 . 4     2 5 8
-% v   . 3 .       . 4 .     7 3 8     3 6 9
+% v   . 3 .       . 4 .     6 3 8     3 6 9
 % i
 % Here, i increases downward and j increases right.  For example, if CONN
 % == 4, the 2'nd neighbour of the central grid point at (i,j) is located at
