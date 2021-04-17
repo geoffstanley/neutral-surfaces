@@ -86,10 +86,10 @@ elseif CONN == 5
   end
   
 elseif CONN == 8
-  % 5 2 6
+  % 5 2 7
   % 1 . 4
-  % 7 3 8
-  DIR = [2 4 6 8 1 7 3 9];
+  % 6 3 8
+  DIR = [2 4 6 8 1 3 7 9];
   ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
