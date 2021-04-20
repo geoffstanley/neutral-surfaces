@@ -299,8 +299,8 @@ if DIAGS
   %diags.mean_eos(1) = mean_eos;
   
   if VERBOSE > 0
-    %fprintf(FILE_ID, msg1, log10(abs(epsL2)), mean_p, mean_eos);
-    fprintf(FILE_ID, msg1, log10(abs(epsL2)));
+    %fprintf(FILE_ID, msg1, log10(epsL2), mean_p, mean_eos);
+    fprintf(FILE_ID, msg1, log10(epsL2));
   end
   
 end
