@@ -64,7 +64,6 @@ end
 D = size(A,1); % maximal degree
 
 G = isfinite(p); % Good nodes
-N = numel(G);
 
 dry = (BotK > 1) & ~G; % Try wetting only these locations: ocean and not currently in the surface
 
@@ -82,32 +81,33 @@ while qt > qh
   
   for d = 1 : D
     n = A(d,m); % neighbour node
-    if n <= N && G(n) % First condition checks n is not a neighbour across a non-periodic boundary
-      % n is good, and undiscovered
-      
-      qt = qt + 1;  % Add n to queue
-      qu(qt) = n;
-      G(n) = false; % mark n as discovered
-      
-    elseif dry(n)
-      % n is "dry".  Try wetting.
-      
-      if Pmat
-        Pn = P(:,n);
-      end
-      p(n) = ntp_bottle_to_cast(Sppc(:,:,n), Tppc(:,:,n), Pn, BotK(n), s(m), t(m), p(m), TOL_P);
-      if isfinite(p(n))
-        % The NTP connection was successful
-        
-        [s(n), t(n)] = ppc_val2(Pn, Sppc(:,:,n), Tppc(:,:,n), p(n));
-        
+    if n <= nij  % check n is not a neighbour across a non-periodic boundary
+      if G(n) 
+        % n is good, and undiscovered
+
         qt = qt + 1;  % Add n to queue
         qu(qt) = n;
         G(n) = false; % mark n as discovered
-        dry(n) = false;
-        
-        freshly_wet = freshly_wet + 1;  % augment counter of freshly wet casts
-        
+
+      elseif dry(n)
+        % n is "dry".  Try wetting.
+
+        if Pmat
+          Pn = P(:,n);
+        end
+        p(n) = ntp_bottle_to_cast(Sppc(:,:,n), Tppc(:,:,n), Pn, BotK(n), s(m), t(m), p(m), TOL_P);
+        if isfinite(p(n))
+          % The NTP connection was successful
+
+          [s(n), t(n)] = ppc_val2(Pn, Sppc(:,:,n), Tppc(:,:,n), p(n));
+
+          qt = qt + 1;  % Add n to queue
+          qu(qt) = n;
+          G(n) = false; % mark n as discovered
+          dry(n) = false;
+
+          freshly_wet = freshly_wet + 1;  % augment counter of freshly wet casts
+        end
       end
     end
   end
