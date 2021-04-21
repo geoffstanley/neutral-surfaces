@@ -20,8 +20,8 @@ function ADJ = grid_adjacency(SZ, CONN, WRAP)
 %  CONN==4        CONN==5   CONN==8   CONN==9
 % +---------> j
 % |   . 2 .       . 2 .     5 2 7     1 4 7
-% |   1 . 4       1 3 5     1 . 4     2 5 8
-% v   . 3 .       . 4 .     6 3 8     3 6 9
+% |   1 . 4       1 5 4     1 . 4     2 5 8
+% v   . 3 .       . 3 .     6 3 8     3 6 9
 % i
 % Here, i increases downward and j increases right.  For example, if CONN
 % == 4, the 2'nd neighbour of the central grid point at (i,j) is located at
@@ -71,18 +71,18 @@ if CONN == 4
   
 elseif CONN == 5
   % . 2 .
-  % 1 3 5
-  % . 4 .
-  DIR = [2 4 5 6 8];
+  % 1 5 4
+  % . 3 .
+  DIR = [2 4 8 5 6];
   ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
     ADJ(2, 1 , :) = WALLVAL; % i-1 hits a wall when i = 1
-    ADJ(4, ni, :) = WALLVAL; % i+1 hits a wall when i = ni
+    ADJ(3, ni, :) = WALLVAL; % i+1 hits a wall when i = ni
   end
   if ~WRAP(2)
     ADJ(1, :, 1 ) = WALLVAL; % j-1 hits a wall when j = 1
-    ADJ(5, :, nj) = WALLVAL; % j+1 hits a wall when j = nj
+    ADJ(4, :, nj) = WALLVAL; % j+1 hits a wall when j = nj
   end
   
 elseif CONN == 8

@@ -49,23 +49,28 @@ qh = 0; % Queue Head
 
 D = size(A,1); % maximal degree
 
-% Initialize BFS from root node
-qt = qt + 1; % Add r to queue
-qu(qt) = r;
-G(r) = false; % mark r as discovered
+% Check that the root node is valid.  If not, leave qt as 0, so qu(1:qt) is empty
+if G(r)
 
-while qt > qh
-  qh = qh + 1; % advance head of the queue
-  m = qu(qh);  % me node; pop from head of queue
-  for d = 1 : D
-    n = A(d,m); % neighbour node
-    if n <= N && G(n) % First condition checks n is not a neighbour across a non-periodic boundary
-      % n is good, and undiscovered
-      qt = qt + 1;  % Add n to queue
-      qu(qt) = n;
-      G(n) = false; % mark n as discovered
+  % Initialize BFS from root node
+  qt = qt + 1; % Add r to queue
+  qu(qt) = r;
+  G(r) = false; % mark r as discovered
+
+  while qt > qh
+    qh = qh + 1; % advance head of the queue
+    m = qu(qh);  % me node; pop from head of queue
+    for d = 1 : D
+      n = A(d,m); % neighbour node
+      if n <= N && G(n) % First condition checks n is not a neighbour across a non-periodic boundary
+        % n is good, and undiscovered
+        qt = qt + 1;  % Add n to queue
+        qu(qt) = n;
+        G(n) = false; % mark n as discovered
+      end
     end
   end
+
 end
 
 

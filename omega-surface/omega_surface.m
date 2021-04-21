@@ -326,6 +326,7 @@ for iter = 1 : ITER_MAX
     [qu, qt] = bfs_conncomp1(isfinite(p), A4, ref_cast, qu);
     freshly_wet = 0;
   end
+  assert(qt > 0, "Error: surface is NaN at the reference cast")
   
   
   % --- Solve global matrix problem for ...
