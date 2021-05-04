@@ -36,9 +36,18 @@ function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 % Email     : g.stanley@unsw.edu.au
 % Email     : geoffstanley@gmail.com
 
-
-
 [ni,nj] = size(p);
+
+% If there is only one water column, there are no equations to solve,
+% and the solution is simply phi = 0 at that water column, and nan elsewhere.
+% Note, qt > 0 should be guaranteed by omega_surf(), so qt <= 1 should
+% imply qt == 1.  If qt > 0 weren't guaranteed, this could throw an error.
+if qt <= 1
+  phi = nan(ni, nj);
+  phi(qu(1)) = 0; % Leave this isolated pixel at current pressure
+  return
+end
+
 WALL = ni * nj + 1; % a flag values used by A4 to index neighbours that would go across a non-periodic boundary
 
 % If both gridding variables are 1, then grid is uniform
@@ -137,23 +146,11 @@ L(IM,:,:) = -fac;
 
 L(IP,:,:) = -jp1(fac); 
 
-%% Finish building L
-% For any m where all neighbours are NaN, set L(IJ,m) to 1 so that this
-% equation amounts to:  1 * phi(m) = 0. This keeps phi(m) = 0, rather than
-% becoming NaN and infecting its neighbours.
-L(IJ, L(IJ,:,:) == 0) = 1;
-
 %% Build and solve sparse matrix problem
 phi = nan(ni, nj);     % solution to matrix problem
 
 % Collect and sort linear indices to all pixels in this region
 m = sort(qu(1:qt));  % sorting here makes matrix better structured; overall speedup.
-
-N = length(m);  % Number of water columns
-if N <= 1  % There are definitely no equations to solve
-  phi(m) = 0; % Leave this isolated pixel at current pressure
-  return
-end
 
 % remap changes from linear indices for the entire 2D space into linear
 % indices for the current connected component.  

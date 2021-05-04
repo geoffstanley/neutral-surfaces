@@ -286,6 +286,7 @@ if DIAGS
   diags.freshly_wet   = nan(ITER_MAX, 1);
   diags.clocktime     = nan(ITER_MAX, 1);
   
+  diags.timer_bfs     = nan(ITER_MAX, 1);
   diags.timer_solver  = nan(ITER_MAX, 1);
   diags.timer_update  = nan(ITER_MAX, 1);
   
@@ -320,12 +321,14 @@ for iter = 1 : ITER_MAX
   
   
   % --- Determine the connected component containing the reference cast, via Breadth First Search
+  mytic = tic;
   if iter >= ITER_START_WETTING && iter <= ITER_STOP_WETTING
     [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(Sppc, Tppc, P, s, t, p, TOL_P_UPDATE, A4, BotK, ref_cast, qu);
   else
     [qu, qt] = bfs_conncomp1(isfinite(p), A4, ref_cast, qu);
     freshly_wet = 0;
   end
+  timer_bfs = toc(mytic);
   assert(qt > 0, "Error: surface is NaN at the reference cast")
   
   
@@ -379,6 +382,7 @@ for iter = 1 : ITER_MAX
     diags.p_change_Linf(iter) = p_change_Linf;
     diags.freshly_wet(iter)   = freshly_wet;
     
+    diags.timer_bfs(iter)     = timer_bfs;
     diags.timer_solver(iter)  = timer_solver;
     diags.timer_update(iter)  = timer_update;
     
