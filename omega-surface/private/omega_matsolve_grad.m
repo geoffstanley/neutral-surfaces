@@ -1,10 +1,10 @@
-function phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
+function phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WRAP, A4, qu, N, mr)
 % OMEGA_MATSOLVE_GRAD  Build & solve the sparse matrix gradient equations for omega surfaces
 %
 %
-% phi = omega_matsolve_grad(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
+% phi = omega_matsolve_grad(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, N, mr)
 % builds and solves the sparse matrix problem for omega surfaces in
-% gradient equation form, ensuring phi is zero at m_ref.
+% gradient equation form, ensuring phi is zero at mr.
 %
 %
 % --- Input:
@@ -22,9 +22,10 @@ function phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WR
 % WRAP [2 element array]: WRAP(i) is true iff the domain is periodic in the
 %                         i'th lateral dimension.  
 % A4 [4, ni*nj]: adjacency matrix  (see grid_adjacency.m)
-% qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to qt (see bfs_conncomp1.m)
-% qt [1,1]: the last valid index of qu (see bfs_conncomp1.m)
-% m_ref [1,1]:  linear index to a reference cast at which phi will be zero.
+% qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to N (see bfs_conncomp1.m)
+% N [1,1]: the number of water columns in the region; 
+%          also, the last valid index of qu, i.e. the queue tail (see bfs_conncomp1.m)
+% mr [1,1]:  linear index to a reference cast at which phi will be zero.
 %
 %
 % --- Output:
@@ -39,6 +40,7 @@ function phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WR
 
 
 %#ok<*UNRCH>
+
 
 %% --- Hard-coded parameters
 
@@ -71,6 +73,20 @@ WALL = ni * nj + 1; % a flag values used by A4 to index neighbours that would go
 UNIFORM_GRID = ...
   isscalar(sqrtDIST2on1_iJ) && sqrtDIST2on1_iJ == 1 && ...
   isscalar(sqrtDIST1on2_Ij) && sqrtDIST1on2_Ij == 1;
+
+phi = nan(ni, nj);     % solution to matrix problem
+
+%% Check for trivial solution
+
+% If there is only one water column, there are no equations to solve,
+% and the solution is simply phi = 0 at that water column, and nan elsewhere.
+% Note, N > 0 should be guaranteed by omega_surf(), so N <= 1 should
+% imply N == 1.  If N > 0 weren't guaranteed, this could throw an error.
+if N <= 1
+  phi = nan(ni, nj);
+  phi(qu(1)) = 0; % Leave this isolated pixel at current pressure
+  return
+end
 
 %% --- Compute epsilon neutrality errors
 % Aliases
@@ -110,16 +126,9 @@ if ~UNIFORM_GRID
 end
 
 %% --- Build and solve sparse matrix problem
-phi = nan(ni, nj);     % solution to matrix problem
 
 % Collect and sort linear indices to all pixels in this region
-m = sort(qu(1 : qt));  % sorting here makes mat better structured; overall speedup.
-
-N = length(m);  % Number of water columns
-if N <= 1  % There are definitely no equations to solve
-  phi(m) = 0; % Leave this isolated pixel at current pressure
-  return
-end
+m = sort(qu(1 : N));  % sorting here makes mat better structured; overall speedup.
 
 % remap changes from linear indices for the entire 2D space into linear
 % indices for the current connected component.  
@@ -134,7 +143,7 @@ remap(m) = 1:N;          % Label the water columns in this region alone by 1, 2,
 
 
 % Build the RHS of the matrix problem, containing neutrality errors
-rhs = [eps_iJ(m); eps_Ij(m)];
+rhs = -[eps_iJ(m); eps_Ij(m)];
 good_eq = isfinite(rhs);
 rhs = [rhs(good_eq); 0]; % Ignore equations where the east or the north water column is invalid.
 E = length(rhs) - 1; % number of Equations, excluding density conserving equation.  Note E > 0 is guaranteed, because bfs_conncomp used 4-connectivity
@@ -187,10 +196,10 @@ if flag > 0
   warning('omega_surface:lsqr did not converge.');
 end
 
-% Force phi(m_ref) = 0 exactly.  This keeps the surface pinned at its
-% initial depth in water column m_ref.  This does not affect other
+% Force phi(mr) = 0 exactly.  This keeps the surface pinned at its
+% initial depth in water column mr.  This does not affect other
 % connected components.
-sol = sol - sol(remap(m_ref));
+sol = sol - sol(remap(mr));
 
 % Save solution
 phi(m) = sol;

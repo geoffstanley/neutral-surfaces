@@ -1,8 +1,8 @@
-function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, mr)
+function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, N, mr)
 % OMEGA_MATSOLVE_POISSON  Build & solve the sparse matrix Poisson problem for omega surfaces
 %
 %
-% phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, qt, m_ref)
+% phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, N, m_ref)
 % builds and solves the sparse matrix problem for omega surfaces in Poisson
 % form. 
 %
@@ -22,9 +22,10 @@ function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 % WRAP [2 element array]: WRAP(i) is true iff the domain is periodic in the
 %                         i'th lateral dimension.  
 % A4 [4, ni*nj]: adjacency matrix  (see grid_adjacency.m)
-% qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to qt (see bfs_conncomp1.m)
-% qt [1,1]: the last valid index of qu (see bfs_conncomp1.m)
-% m_ref [1,1]  : linear index to a reference cast at which phi will be zero.
+% qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to N (see bfs_conncomp1.m)
+% N [1,1]: the number of water columns in the region; 
+%          also, the last valid index of qu, i.e. the queue tail (see bfs_conncomp1.m)
+% mr [1,1]  : linear index to a reference cast at which phi will be zero.
 %
 %
 % --- Output:
@@ -38,12 +39,13 @@ function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 
 [ni,nj] = size(p);
 
+phi = nan(ni, nj);
+
 % If there is only one water column, there are no equations to solve,
 % and the solution is simply phi = 0 at that water column, and nan elsewhere.
-% Note, qt > 0 should be guaranteed by omega_surf(), so qt <= 1 should
-% imply qt == 1.  If qt > 0 weren't guaranteed, this could throw an error.
-if qt <= 1
-  phi = nan(ni, nj);
+% Note, N > 0 should be guaranteed by omega_surf(), so N <= 1 should
+% imply N == 1.  If N > 0 weren't guaranteed, this could throw an error.
+if N <= 1
   phi(qu(1)) = 0; % Leave this isolated pixel at current pressure
   return
 end
@@ -55,7 +57,7 @@ UNIFORM_GRID = ...
   isscalar(DIST2on1_iJ) && DIST2on1_iJ == 1 && ...
   isscalar(DIST1on2_Ij) && DIST1on2_Ij == 1;
 
-%% Begin building D = divergence of epsilon, and L = Laplacian (compact representation)
+%% Begin building D = divergence of epsilon, and L = negative Laplacian (compact representation)
 
 % L refers to neighbours in this order (so does A4, except without the 5'th entry):
 % . 2 .
@@ -105,7 +107,7 @@ else
   eps = eps .* fac; % scale eps
 end
 
-D = eps - ip1(eps);
+D = -eps + ip1(eps);
 
 L(IJ,:,:) = fac + ip1(fac);                     
 
@@ -138,7 +140,7 @@ else
   eps = eps .* fac; % scale eps
 end
 
-D = D + eps - jp1(eps);
+D = D - eps + jp1(eps);
 
 L(IJ,:,:) = squeeze(L(IJ,:,:)) + fac + jp1(fac);       
 
@@ -147,10 +149,9 @@ L(IM,:,:) = -fac;
 L(IP,:,:) = -jp1(fac); 
 
 %% Build and solve sparse matrix problem
-phi = nan(ni, nj);     % solution to matrix problem
 
 % Collect and sort linear indices to all pixels in this region
-m = sort(qu(1:qt));  % sorting here makes matrix better structured; overall speedup.
+m = sort(qu(1:N));  % sorting here makes matrix better structured; overall speedup.
 
 % remap changes from linear indices for the entire 2D space into linear
 % indices for the current connected component.  
