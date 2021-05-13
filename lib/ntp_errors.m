@@ -275,7 +275,7 @@ else
   dsigmadz(dsigmadz > -thresh) = -thresh;
 end
 
-% Slope error in x direction
+% Slope error in p direction
 sx = ex ./ A_X(dsigmadz);
 
 
