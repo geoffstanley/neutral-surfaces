@@ -116,7 +116,7 @@ Stanley, G.J., 2019a. Neutral surface topology. Ocean Modelling 138, 88–106. h
 
 Stanley, G.J., 2019b. The exact geostrophic streamfunction for neutral surfaces. Ocean Modelling 138, 107–121. https://doi.org/10.1016/j.ocemod.2019.04.002
 
-Stanley, G.J., McDougall, T.J., Barker, P.M., 2021. Algorithmic improvements to finding approximately neutral surfaces. J. Adv. Model. Earth Syst. submitted.
+Stanley, G. J., McDougall, T. J., & Barker, P. M. (2021). Algorithmic improvements to finding approximately neutral surfaces. Journal of Advances in Modeling Earth Systems, 13, e2020MS002436. https://doi.org/10.1029/2020MS002436 
 
 Wüst, G., 1935. The stratosphere of the Atlantic ocean. Scientific Results of the German Atlantic Expedition of the Research Vessel “Meteor” 1925–27 6.
 
