@@ -40,6 +40,7 @@ if ~strcmp(VER_JAVA, '1.7') && ~strcmp(VER_JAVA, '1.8')
     disp('Either compile ReCon from the included source code (see README.md for instructions),');
     disp('or contact the author (Geoff Stanley, g.stanley@unsw.edu.au or geoffstanley@gmail.com)');
     disp('kindly requesting an update.');
+    disp('[Note: This is only needed to run topobaric_surface and topobaric_geostrf.]')
     
     WARN_JAVA = true;
 else
@@ -77,6 +78,7 @@ end
 
 % Step 4: Increase memory that MATLAB allocates to Java
 disp('* Increase the memory that MATLAB allocates to Java:');
+disp('[Note: This is only needed to run topobaric_surface and topobaric_geostrf.]')
 disp('Go to MATLAB Preferences -> General -> Java HEAP Memory');
 disp('Move the slider far to the right.');
 disp('e.g. the default value is 512 MB, and you increase it to 2048 MB.');
@@ -86,7 +88,7 @@ input('Press any key to continue.')
 % Step 5: Setup MEX with C
 disp('* About to setup MEX for use with C. You should have a working C compiler');
 disp('installed on this system, such as gcc. On MacOS, you can install Xcode to get clang.');
-disp('Note: Topobaric Surface can run without MEX compiled code, but it will be far slower.');
+disp('Note: this toolbox can run without MEX compiled code, but it will be far slower.');
 input('Press any key to continue.', 's');
 mex('-setup', 'C');
 
@@ -106,7 +108,7 @@ end
 
 
 % Step 7: Download data
-reply = input('* Shall I download oceanic data used by the scripts in the ./run/ directory? [Y/n]: ', 's');
+reply = input('* Shall I download OCCA and ECCO2 data used by the scripts in the ./run/ directory? [Y/n]: ', 's');
 if isempty(reply) || lower(reply(1)) == 'y'
     
     % Determine if wget or curl is available
@@ -139,7 +141,7 @@ if isempty(reply) || lower(reply(1)) == 'y'
     if isa(download, 'function_handle')
         % Download OCCA data
         URL = 'ftp://mit.ecco-group.org/ecco_for_las/OCCA_1x1_v2/2004-6/annual/';
-        reply = input('* Do you want to download OCCA data (used by illustrative_surface.m)? [Y/n]: ', 's');
+        reply = input('* Do you want to download some OCCA data? [Y/n]: ', 's');
         if isempty(reply) || lower(reply(1)) == 'y'
             disp(['OCCA data will be downloaded from ' URL]);
             while true
@@ -178,7 +180,7 @@ if isempty(reply) || lower(reply(1)) == 'y'
         
         % Download ECCO data
         URL = 'ftp://ecco.jpl.nasa.gov/ECCO2/cube92_latlon_quart_90S90N/';
-        reply = input('Do you want to download ECCO2 data (used by run.m, pitch.m, example.m)? [Y/n]: ', 's');
+        reply = input('Do you want to download some ECCO2 data? [Y/n]: ', 's');
         if isempty(reply) || lower(reply(1)) == 'y'
             disp(['ECCO2 data will be downloaded from ' URL]);
             while true
@@ -236,6 +238,7 @@ disp('To complete installation, MATLAB must be restarted.')
 disp('Upon restarting, execute')
 disp('>> javaclasspath')
 disp('in MATLAB and confirm the path to recon.jar appears in the final line of the output.')
+disp('[Note: This is only needed to run topobaric_surface and topobaric_geostrf.]')
 if WARN_JAVA
     disp('Reminder: topobaric_surface cannot run without recon.jar!')
 end
