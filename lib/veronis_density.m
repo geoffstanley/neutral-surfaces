@@ -114,7 +114,7 @@ d1 =   d0 + int_x_kp1(P, p0, k0, dp, Sppc, Tppc, SPppc, TPppc);
 
 % Integrate from P(k0+1) to P(k1+1)
 for k = k0+1 : k1
-  d1 = d1 + int_k_kp1(P, k, dp, Sppc, Tppc, SPppc, TPppc);
+  d1 = d1 + int_x_kp1(P, P(k), k, dp, Sppc, Tppc, SPppc, TPppc);
 end
 
 % Integrate from p1 to P(k1+1), and subtract this
@@ -127,47 +127,26 @@ function d = int_x_kp1(P, p, k, dp, Sppc, Tppc, SPppc, TPppc)
 % Integrate from p to P(k+1) using trapezoidal integration with spacing dp
 
 n = ceil((P(k+1) - p) / dp) + 1; % # points between p and P(k+1), inclusive
-xx = linspace(p, P(k+1), n);     % intervals are not larger than dp
+p_ = linspace(p, P(k+1), n);     % intervals are not larger than dp
 
 % Use piecewise polynomial coefficients as provided
-[ss, tt] = ppc_val2_(P, Sppc, Tppc, xx, k+1);
-[dsdx, dtdx] = ppc_val2_(P, SPppc, TPppc, xx, k+1);
+[s_, t_] = ppc_val2_(P, Sppc, Tppc, p_, k+1);
+[dsdp_, dtdp_] = ppc_val2_(P, SPppc, TPppc, p_, k+1);
 
-% To use linear interpolation internally, replace the above two lines with the following 7 lines (and also pass S and T as arguments):
-%   dP = P(k+1) - P(k);
-%   dsdp = (S(k+1) - S(k)) / dP;
-%   dtdp = (T(k+1) - T(k)) / dP;
-%   s0 = ( S(k) * (P(k+1) - p) + S(k+1) * (p - P(k)) ) / dP;
-%   ss = linspace(s0, S(k+1), n);
-%   t0 = ( T(k) * (P(k+1) - p) + T(k+1) * (p - P(k)) ) / dP;
-%   tt = linspace(t0, T(k+1), n);
+% To use linear interpolation internally, replace the above 2 lines with the following 9 lines:
+% S = Sppc(end,:);
+% T = Tppc(end,:);
+% dP = P(k+1) - P(k);
+% dsdp_ = (S(k+1) - S(k)) / dP;
+% dtdp_ = (T(k+1) - T(k)) / dP;
+% s0 = ( S(k) * (P(k+1) - p) + S(k+1) * (p - P(k)) ) / dP;
+% t0 = ( T(k) * (P(k+1) - p) + T(k+1) * (p - P(k)) ) / dP;
+% s_ = linspace(s0, S(k+1), n);
+% t_ = linspace(t0, T(k+1), n);
 
-[rs, rt] = eos_s_t(ss, tt, xx);
-yy = rs .* dsdx + rt .* dtdx;
-d = trapz(xx, yy);
-
-end
-
-function d = int_k_kp1(P, k, dp, Sppc, Tppc, SPppc, TPppc)
-% Integrate from P(k) to P(k+1) using trapezoidal integration with spacing dp
-
-n = ceil((P(k+1) - P(k)) / dp) + 1; % # points between p and P(k+1), inclusive
-pp = linspace(P(k), P(k+1), n);     % intervals are not larger than dp
-
-% Use piecewise polynomial coefficients as provided
-[ss, tt] = ppc_val2_(P, Sppc, Tppc, pp, k+1);
-[dsdp, dtdp] = ppc_val2_(P, SPppc, TPppc, pp, k+1);
-
-% To use linear interpolation internally, replace the above two lines with the following 5 lines (and also pass S and T as arguments):
-%   dP = P(k+1) - P(k);
-%   dsdp = (S(k+1) - S(k)) / dP;
-%   dtdp = (T(k+1) - T(k)) / dP;
-%   ss = linspace(S(k), S(k+1), n);
-%   tt = linspace(T(k), T(k+1), n);
-
-[rs, rt] = eos_s_t(ss, tt, pp);
-yy = rs .* dsdp + rt .* dtdp;
-d = trapz(pp, yy);
+[rs_, rt_] = eos_s_t(s_, t_, p_);
+y_ = rs_ .* dsdp_ + rt_ .* dtdp_;
+d = trapz(p_, y_);
 
 end
 
