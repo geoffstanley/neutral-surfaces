@@ -205,9 +205,9 @@ end
 if ~isempty(lattick)
     ax.YTick = lattick;
 end
-xt = mod(ax.XTick, 360);
-xt(xt > 180) = xt(xt > 180) - 360;
-ax.XTickLabel = arrayfun(@(a) [num2str(abs(a)) deg WEstr(sign(a-180*(a==180))+2)], xt, 'UniformOutput', false);
+xt = mod(ax.XTick - 180, 360) - 180;  % translate into range [-180, 180)
+idx = @(x) sign(x + 180*(x==-180))+2;  % -1 if -180 < x < 0;  +1 if 0 < x < 180;  0 otherwise.
+ax.XTickLabel = arrayfun(@(a) [num2str(abs(a)) deg WEstr(idx(a))], xt, 'UniformOutput', false);
 ax.YTickLabel = arrayfun(@(a) [num2str(abs(a)) deg SNstr(sign(a)+2)], ax.YTick, 'UniformOutput', false);
 ax.TickDir = 'out';
 ax.FontSize = fontsize;
