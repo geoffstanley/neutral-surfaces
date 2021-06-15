@@ -69,9 +69,13 @@ end
 
 % These three lines prepare data for a silly case where eos.m transposes
 % its inputs.
-lead1 = @(p) reshape(p, [1 size(p)]);
 SB = squeeze(S(BOTTLE_NUM,:,:));
 TB = squeeze(T(BOTTLE_NUM,:,:));
+if ismatrix(S)
+  lead1 = @(p) p; % do nothing, since SB will have a leading singleton dimension (squeeze doesn't change a matrix's shape)
+else
+  lead1 = @(p) reshape(p, [1 size(p)]);
+end
 
 % Calculate potential density difference between each data point and the
 % near-surface bottle
