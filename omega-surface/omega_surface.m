@@ -126,9 +126,10 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, OPTS)
 % Klocker, McDougall, Jackett 2009: A new method of forming approximately
 %  neutral surfaces, Ocean Science, 5, 155-172.
 %
-% Stanley, McDougall, Barker: Algorithmic improvements to finding
+% Stanley, McDougall, Barker 2021: Algorithmic improvements to finding
 %  approximately neutral surfaces, Journal of Advances in Earth System
-%  Modelling, submitted.
+%  Modelling, 13(5).
+
 
 % Author(s) : Geoff Stanley
 % Email     : g.stanley@unsw.edu.au
