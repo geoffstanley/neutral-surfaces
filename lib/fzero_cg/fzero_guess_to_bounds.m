@@ -1,4 +1,4 @@
-function [a, b] = fzero_guess_to_bounds(f, x, lb, ub, varargin) %#codegen
+function [a, b] = fzero_guess_to_bounds(f, x, A, B, varargin) %#codegen
 %FZERO_GUESS_TO_BOUNDS  Search for a sign change bounding a zero of a
 %                       univariate function, expanding geometrically
 %                       outward from an initial guess.
@@ -15,14 +15,14 @@ function [a, b] = fzero_guess_to_bounds(f, x, lb, ub, varargin) %#codegen
 % function in this form is therefore not recommended unless you know the
 % function will not result in such an infinite loop.
 %
-% [a, b] = fzero_guess_to_bounds(f, x, lb, ub)
-% as above, but limits [a,b] to remain inside the subset [lb, ub].  If x is
-% outside of [lb, ub], it is immediately moved into this range. If no
-% sign-change is found within [lb, ub], then a = nan and b = nan are
+% [a, b] = fzero_guess_to_bounds(f, x, A, B)
+% as above, but limits [a,b] to remain inside the subset [A, B].  If x is
+% outside of [A, B], it is immediately moved into this range. If no
+% sign-change is found within [A, B], then a = nan and b = nan are
 % returned.  Note, as above, it is possible that a sign-change is skipped
 % over as f is only evaluated at finitely many x values.
 %
-% [a,b] = fzero_guess_to_bounds(f, x, lb, ub, ...)
+% [a,b] = fzero_guess_to_bounds(f, x, A, B, ...)
 % passes all additional arguments to the function f. 
 %
 % * Note: for computational speed, herein the "sign" of 0 is considered the
@@ -35,8 +35,8 @@ function [a, b] = fzero_guess_to_bounds(f, x, lb, ub, varargin) %#codegen
 %   f       : handle to a function that accepts a real scalar as its first
 %             input and returns a real scalar
 %   x       : initial scalar guess for a root of f
-%   lb      : scalar lower bound
-%   ub      : scalar upper bound
+%   A       : scalar lower bound
+%   B       : scalar upper bound
 %   varargin: All additional inputs are passed directly to f
 %
 %
@@ -59,41 +59,60 @@ function [a, b] = fzero_guess_to_bounds(f, x, lb, ub, varargin) %#codegen
 sqrttwo = 1.414213562373095;
 
 
-if nargin >= 4 && isscalar(lb) && isscalar(ub)
+if nargin >= 4 && isscalar(A) && isscalar(B)
 
-  x = min(max(x, lb), ub);
+  fa = f(A, varargin{:});
+  if fa == 0
+    a = A;
+    b = A;
+    return
+  end
+  
+  fb = f(B, varargin{:});
+  if fb == 0
+    a = B;
+    b = B;
+    return
+  end
+  
+  x = min(max(x, A), B);
   
   % bounds are given
-  dxp = (ub - x) / 50;
-  dxm = (x - lb) / 50;
+  dxp = (B - x) / 50;
+  dxm = (x - A) / 50;
   
-  % Set a = x, except when x is so close to lb that machine roundoff makes dxm identically 0,
-  % which would lead to an infinite loop below.  In this case, set a = lb.
+  % Set a = x, except when x is so close to A that machine roundoff makes dxm identically 0,
+  % which would lead to an infinite loop below.  In this case, set a = A.
   if dxm == 0
-    a = lb;
+    a = A;
   else
     a = x;
   end
+  fapos = f(a, varargin{:}) > 0;
   
   % Similarly, set b = x, except for machine precision problems.
   if dxp == 0
-    b = ub;
+    b = B;
+    fbpos = f(b, varargin{:}) > 0;
   else
     b = x;
+    if dxm == 0
+      fbpos = fapos; % since a = b = x
+    else
+      fbpos = f(b, varargin{:}) > 0;
+    end
   end
   
-  fbpos = f(b, varargin{:}) > 0;
-  fapos = fbpos; % needed for codegen
   while true
-    if a > lb
+    if a > A
       % Move a left, and test for a sign change
       dxm = sqrttwo * dxm;
-      a = max(x - dxm, lb);
+      a = max(x - dxm, A);
       fapos = f(a, varargin{:}) > 0;
       if xor(fapos, fbpos) % fa and fb have different signs
         break
       end
-    elseif b == ub % also a == lb, so cannot expand anymore
+    elseif b == B % also a == A, so cannot expand anymore
       if xor(fapos, fbpos) % one last test for sign change
         break
       else % no sign change found
@@ -102,15 +121,15 @@ if nargin >= 4 && isscalar(lb) && isscalar(ub)
       end
     end
     
-    if b < ub
+    if b < B
       % Move b right, and test for a sign change
       dxp = sqrttwo * dxp;
-      b = min(x + dxp, ub);
+      b = min(x + dxp, B);
       fbpos = f(b, varargin{:}) > 0;
       if xor(fapos, fbpos) % fa and fb have different signs
         break
       end
-    elseif a == lb % also b == ub, so cannot expand anymore
+    elseif a == A % also b == B, so cannot expand anymore
       if xor(fapos, fbpos) % one last test for sign change
         break
       else % no sign change found

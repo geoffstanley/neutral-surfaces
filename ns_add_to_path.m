@@ -20,6 +20,7 @@ addpath([PATH_PROJECT 'lib']);
 addpath([PATH_PROJECT 'lib' V 'bfs']);
 addpath([PATH_PROJECT 'lib' V 'dat']);
 addpath([PATH_PROJECT 'lib' V 'file-ops']);
+addpath([PATH_PROJECT 'lib' V 'fzero_cg']);
 addpath([PATH_PROJECT 'lib' V 'gsf']);
 addpath([PATH_PROJECT 'lib' V 'ntp-bottle-to-cast']);
 
