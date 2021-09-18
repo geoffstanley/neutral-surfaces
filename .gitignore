@@ -4,4 +4,5 @@
 run/paper-1,2 - neutral surface topology, exact geostrf/output
 run/paper-3-Stanley-McDougall-Barker-2021/output
 dev/
+.cloc-ns.sh
 
