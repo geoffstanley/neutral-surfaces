@@ -103,14 +103,14 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, OPTS)
 %       knots are at P, that interpolate T as a function of P in each water
 %       column.  E.g. Tppc = ppc_linterp(P, T);
 %   TOL_LRPD_L1 [scalar]: Error tolerance in Locally Referenced Potential Density [kg m^-3].
-%       Iterations stop when the L1 norm of the LRPD change of the surface
+%       Iterations stop when the Mean Absolute Value of the LRPD change of the surface
 %       is below this value. Even if eos gives specific volume, specify
 %       this with units of density; it will be converted. Set to 0 to
 %       ignore this stopping criterion.
 %       Default: 10^-7 kg m^-3 (chosen to give an uncertainty in pressure
 %       of roughly +/- 0.01 dbar.)
 %   TOL_P_CHANGE_L2 [scalar]: Error tolerance in change of pressure [dbar].
-%       Iterations stop when the L2 norm of the change in pressure on the
+%       Iterations stop when the root-mean-square of the change in pressure on the
 %       surface is below this value.  Set to 0 to ignore this stopping
 %       criterion.
 %       Default: inf
