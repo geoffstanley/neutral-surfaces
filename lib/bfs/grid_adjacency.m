@@ -73,7 +73,7 @@ elseif CONN == 5
   % . 2 .
   % 1 5 4
   % . 3 .
-  DIR = [2 4 8 5 6];
+  DIR = [2 4 6 8 5];
   ADJ = helper(ni, nj, DIR);
   
   if ~WRAP(1)
