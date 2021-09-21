@@ -146,7 +146,7 @@ for iDATA = 1 : nDATA
     
     
     % Re-order data so water-columns are contiguous data:
-    S = permute(S, [3 1 2]); % [nz,ny,nx]. depth  by  lat  by  long
+    S = permute(S, [3 1 2]); % [nz,nx,ny]. depth  by  long  by  lat
     T = permute(T, [3 1 2]);
     if exist('P', 'var')
       P = permute(P, [3 1 2]);
