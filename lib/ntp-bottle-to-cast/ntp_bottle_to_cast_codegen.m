@@ -2,14 +2,9 @@ function ntp_bottle_to_cast_codegen(nk, OPTS)
 %NTP_BOTTLE_TO_CAST_CODEGEN  Create MEX function for ntp_bottle_to_cast
 %
 %
-% ntp_bottle_to_cast_codegen(nk,false)
+% ntp_bottle_to_cast_codegen(nk)
 % runs codegen on ntp_bottle_to_cast.m, appropriate for a grid
 % of nk points in the vertical.
-%
-% ntp_bottle_to_cast_codegen(nk,true)
-% specifies that P in ntp_bottle_to_cast.m is just a vector: P(k) specifies
-% the pressure or depth of all grid points having vertical index k. Use
-% this for simple Z-level models (not hybrid coordinate models).
 %
 % ntp_bottle_to_cast_codegen(..., OPTS)
 % overrides default verbosity by OPTS.VERBOSE and file output by
