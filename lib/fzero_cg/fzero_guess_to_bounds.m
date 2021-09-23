@@ -55,12 +55,20 @@ function [a, b] = fzero_guess_to_bounds(f, x, A, B, varargin) %#codegen
 % History   : 01/07/2020 - initial release
 %           : 22/07/2020 - fix infinite loop in bounded case, arising from machine precision rounding
 
+
 % Geometrically expand from the guess x, until a sign change is found
 sqrttwo = 1.414213562373095;
 
 
 if nargin >= 4 && isscalar(A) && isscalar(B)
 
+  % Handle bad inputs
+  if isnan(A) || isnan(B) || isnan(x)
+    a = nan;
+    b = nan;
+    return
+  end
+  
   fa = f(A, varargin{:});
   if fa == 0
     a = A;
@@ -110,13 +118,14 @@ if nargin >= 4 && isscalar(A) && isscalar(B)
       a = max(x - dxm, A);
       fapos = f(a, varargin{:}) > 0;
       if xor(fapos, fbpos) % fa and fb have different signs
-        break
+        return
       end
     elseif b == B % also a == A, so cannot expand anymore
       if xor(fapos, fbpos) % one last test for sign change
-        break
+        return
       else % no sign change found
-        a = nan; b = nan;
+        a = nan; 
+        b = nan;
         return
       end
     end
@@ -127,19 +136,27 @@ if nargin >= 4 && isscalar(A) && isscalar(B)
       b = min(x + dxp, B);
       fbpos = f(b, varargin{:}) > 0;
       if xor(fapos, fbpos) % fa and fb have different signs
-        break
+        return
       end
     elseif a == A % also b == B, so cannot expand anymore
       if xor(fapos, fbpos) % one last test for sign change
-        break
+        return
       else % no sign change found
-        a = nan; b = nan;
+        a = nan; 
+        b = nan;
         return
       end
     end
   end
   
 else
+  
+  % Handle bad inputs
+  if isnan(x)
+    a = nan;
+    b = nan;
+    return
+  end
   
   % no bounds given
   if x ~= 0
@@ -162,9 +179,9 @@ else
     if isnan(fa)  % Outside the valid bounds of the function.  Give up.
       a = nan; 
       b = nan;
-      break
+      return
     elseif xor(fa > 0, fb > 0) % fa and fb have different signs
-      break
+      return
     end
     
     % Move b right, and test for a sign change
@@ -173,9 +190,9 @@ else
     if isnan(fb)  % Outside the valid bounds of the function.  Give up.
       a = nan; 
       b = nan;
-      break
+      return
     elseif xor(fa > 0, fb > 0) % fa and fb have different signs
-      break
+      return
     end
     
   end
