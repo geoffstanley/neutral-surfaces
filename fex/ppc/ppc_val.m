@@ -52,6 +52,13 @@ L = szx(1);  % number of levels to interpolate
 N = prod(szC(3:end));
 XM = prod(szX(2:end));
 xM = prod(szx(2:end));
+
+% Handle case when L should be 1.
+if L * xM == N
+  L = 1;
+  xM = N;
+end
+
 szy = [L, szC(3:end), 1]; % Add a trailing 1, to ensure 2 dimensions at least
 
 assert(szC(2) == K-1,       'C must have one fewer columns than X has rows.');
