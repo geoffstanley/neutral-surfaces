@@ -1,8 +1,8 @@
-function [p, varargout] = calc_reeb_graph(p, OPTS)
+function [p, varargout] = calc_reeb_graph(p, WRAP, OPTS)
 %CALC_REEB_GRAPH  Calculate the Reeb graph of p
 %
 %
-% [p, RG] = calc_reeb_graph(p, OPTS)
+% [p, RG] = calc_reeb_graph(p, WRAP, OPTS)
 % performs the following steps:
 % 1, fill small holes with high data in the given rectilinear data p (if
 %    OPTS.FILL_PIX is positive or OPTS.FILL_IJ is not empty);
@@ -20,6 +20,9 @@ function [p, varargout] = calc_reeb_graph(p, OPTS)
 % p [ni, nj]: rectilinear data, containing exactly ONE connected component
 %             (where each pixel has 4 neighbours, not 8), as can be found
 %             using bfs_conncomp(). 
+% WRAP [2 element array]: determines which dimensions are treated periodic
+%                         [logical].  Set WRAP(i) to true when periodic in 
+%                         the i'th lateral dimension(i=1,2).
 % OPTS [struct]: options. See topobaric_surface documentation for details.
 %
 %
@@ -66,7 +69,7 @@ if DO_FILL
     Ground = ~wet;
     
     % Calculate connected components of Ground.  Use 8 connectivity here!
-    neigh = grid_adjacency([ni,nj], 8, OPTS.WRAP);
+    neigh = grid_adjacency([ni,nj], 8, WRAP);
     [qu,qts,~,~,L] = bfs_conncomp(Ground, neigh, []);
     
     % Set to false (will not fill) for land regions that have > specified number of pixels:
@@ -103,11 +106,11 @@ end
 
 
 % --- Pre-processing 2: Make simplical decomposition
-[verts,faces,~,nV] = latlon2vertsfaces(p,OPTS.WRAP,[],[],OPTS.DECOMP,false);
+[verts,faces,~,nV] = latlon2vertsfaces(p,WRAP,[],[],OPTS.DECOMP,false);
 
 % Last argument (select) could be OPTS.REF_IJ as below, but we use false,
 % since we've pre-selected one connected region.
-%[verts,faces,~,nV] = latlon2vertsfaces(p,OPTS.WRAP,[],[],OPTS.DECOMP,OPTS.REF_IJ);
+%[verts,faces,~,nV] = latlon2vertsfaces(p,WRAP,[],[],OPTS.DECOMP,OPTS.REF_IJ);
 
 % Ensure all vertices have unique values
 [verts(:,3), perturbed] = perturb_until_unique(verts(:,3));

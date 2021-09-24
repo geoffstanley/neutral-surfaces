@@ -95,7 +95,6 @@ surfname = sprintf('OMEGA%04d_(%03d,%02d,%.0f)', pref, xref, yref, p(iref,jref))
 
 %% Compute the Simplified Reeb Graph
 OPTS = struct();
-OPTS.WRAP = WRAP;
 
 % Fill in everything except land connected to these locations:
 FILL_LATLON = [ ...
@@ -133,11 +132,11 @@ OPTS.SIMPLIFY_WEIGHT_PERSIST = 0.5;
 
 
 % Find the connected component containing the reference cast I0
-[~,~,~,wet] = bfs_conncomp(isfinite(p), grid_adjacency([ni,nj], 4, OPTS.WRAP), I0);
+[~,~,~,wet] = bfs_conncomp(isfinite(p), grid_adjacency([ni,nj], 4, WRAP), I0);
 p(~wet) = nan;
 
 % Calculate the Reeb graph
-[p, RG] = calc_reeb_graph(p, OPTS);
+[p, RG] = calc_reeb_graph(p, WRAP, OPTS);
 
 % Interpolate water properties on the surface
 lead1 = @(x) reshape(x, [1 size(x)]);

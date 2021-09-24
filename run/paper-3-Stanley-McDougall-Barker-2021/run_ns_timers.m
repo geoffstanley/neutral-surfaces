@@ -104,14 +104,14 @@ for iDATA = 1 : nDATA
   if iDATA <= nSYNTH
     
     DATA_SOURCE = 'SYNTHRAND';
-    OPTS.WRAP = [false; false]; % non-periodic in both dimensions
+    WRAP = [false; false]; % non-periodic in both dimensions
     
     
     ni = RES(iDATA);
     nj = ni;
     nk = 50;
     
-    [S, T, Z, g] = synthocean_rand(ni, nj, nk, OPTS.WRAP);
+    [S, T, Z, g] = synthocean_rand(ni, nj, nk, WRAP);
     g.DXC = repmat(g.DXCvec, ni, 1);
     g.DYC = repmat(g.DYCsc, ni, nj);
     g.DXG = repmat(g.DXGvec, ni, 1);
@@ -125,7 +125,7 @@ for iDATA = 1 : nDATA
   else
     
     DATA_SOURCE = MODELS{iDATA - nSYNTH};
-    OPTS.WRAP = [true; false]; % periodic in longitude, non-periodic in latitude
+    WRAP = [true; false]; % periodic in longitude, non-periodic in latitude
     
     if DATA_SOURCE(1) == 'O'
       [g, S, T, P, ETAN, ATMP] = load_OCCA(PATH_OCCA);
@@ -516,7 +516,7 @@ for iDATA = 1 : nDATA
       nrep = max(1, ceil(log2(1024^2 ./ NWC(iDATA)))); % so N x N data gets done once where N=1024.  Others get about same CPU time, if they scale as N^1.
     end
     for rep = 1 : nrep
-      [z, ~, ~, d] = omega_surface(S, T, Z, z_delta, I0, OPTS);
+      [z, ~, ~, d] = omega_surface(S, T, Z, z_delta, I0, WRAP, OPTS);
       mytime = mytime + sum(d.clocktime(1:OPTS.ITER_MIN));
     end
     timer(iDATA, iSURF('OMEGAGRAD')) = mytime / nrep;
@@ -537,7 +537,7 @@ for iDATA = 1 : nDATA
       nrep = max(1, ceil(log2(1024^2 ./ NWC(iDATA)))); % so N x N data gets done once where N=1024.  Others get about same CPU time, if they scale as N^1.
     end
     for rep = 1 : nrep
-      [z, ~, ~, d] = omega_surface(S, T, Z, z_delta, I0, OPTS);
+      [z, ~, ~, d] = omega_surface(S, T, Z, z_delta, I0, WRAP, OPTS);
       mytime = mytime + sum(d.clocktime(1:OPTS.ITER_MIN));
     end
     timer(iDATA, iSURF('OMEGA')) = mytime / nrep;
@@ -556,7 +556,7 @@ for iDATA = 1 : nDATA
       nrep = max(1, ceil(log2(1024^2 ./ NWC(iDATA)))); % so N x N data gets done once where N=1024.  Others get about same CPU time, if they scale as N^1.
     end
     for rep = 1 : nrep
-      [z, ~, ~, RG, ~, ~, ~, d] = topobaric_surface(S, T, Z, z_delta, I0, OPTS);
+      [z, ~, ~, RG, ~, ~, ~, d] = topobaric_surface(S, T, Z, z_delta, I0, WRAP, OPTS);
       mytime = mytime + sum(d.clocktime(1:OPTS.ITER_MIN));
     end
     timer(iDATA, iSURF('TOPOB')) = mytime / nrep;

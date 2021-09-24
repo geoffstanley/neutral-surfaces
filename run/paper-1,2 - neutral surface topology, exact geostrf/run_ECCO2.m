@@ -141,7 +141,6 @@ j0 = y_to_j(y0);
 tolp = 1e-4;
 
 OPTS = struct();
-OPTS.WRAP = g.WRAP;    % Periodic in longitude, not in latitude
 OPTS.GEOSTRF = false;  % Don't add extra criteria that make geostrophic streamfunction well-defined
 OPTS.SIMPLIFY_ARC_REMAIN = Inf; % No simplification
 OPTS.FILL_IJ = [];     % No filling
@@ -193,7 +192,7 @@ for iZ = 1 : nZ
 
         % Calculate omega surface
         mytic = tic;
-        zs(:,:,iSURF('OMEGA'),iZ) = omega_surface(S, T, Z, z_sigma, [i0, j0], OPTS);
+        zs(:,:,iSURF('OMEGA'),iZ) = omega_surface(S, T, Z, z_sigma, [i0, j0], WRAP, OPTS);
         
         
         clear z_sigma
@@ -275,7 +274,7 @@ for iZ = 1 : nZ
     end
     
     mytic = tic;
-    zs(:,:,iSURF('ORTHO'),iZ) = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], OPTS);
+    zs(:,:,iSURF('ORTHO'),iZ) = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], WRAP, OPTS);
     fprintf(fileID, '(%d,%d,%.4fm): ORTHOBARIC done in time %.2f\n', ...
         i0, j0, z_i0j0(iZ), toc(mytic));
     
@@ -289,7 +288,7 @@ for iZ = 1 : nZ
     OPTS.GEOSTRF = false;
     
     mytic = tic;
-    zs(:,:,iSURF('TOPOB'),iZ) = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], OPTS);
+    zs(:,:,iSURF('TOPOB'),iZ) = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], WRAP, OPTS);
     fprintf(fileID, '(%d,%d,%.4fm): TOPOBARIC done in time %.2f\n', ...
         i0, j0, z_i0j0(iZ), toc(mytic));
     
@@ -313,7 +312,7 @@ for iZ = 1 : nZ
     
     mytic = tic;
     [zs(:,:,iSURF('MTOPO'),iZ), ~, ~, mtopo_data(iZ).RG, mtopo_data(iZ).s0, mtopo_data(iZ).t0, mtopo_data(iZ).dfn] ...
-        = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], OPTS);
+        = topobaric_surface(S, T, Z, zs(:,:,iSURF('SIGMA'),iZ), [i0, j0], WRAP, OPTS);
     fprintf(fileID, '(%d,%d,%.4fm): MODIFIED TOPOBARIC done in time %.2f\n', ...
         i0, j0, z_i0j0(iZ), toc(mytic));
     
@@ -331,7 +330,7 @@ z(~wet) = nan;
 n_casts = qts(end)-1; % == sum(wet(:))
 
 % Calculate the Reeb graph
-[~, RG] = calc_reeb_graph(z, OPTS);
+[~, RG] = calc_reeb_graph(z, WRAP, OPTS);
 
 arc_ = zeros(n_casts,1);
 for e = 1:RG.nArcs
@@ -699,7 +698,6 @@ EQBAND = 1; % Ignore 1 deg band either side of equator
 
 % For orthobaric Montgomery and topobaric gsf
 OPTS_STRF = struct();
-OPTS_STRF.WRAP = g.WRAP;
 
 list_geos_utilde = {...
     '\utilde{\mathbf{u}}', ...

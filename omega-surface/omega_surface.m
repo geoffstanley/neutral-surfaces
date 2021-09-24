@@ -1,8 +1,8 @@
-function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, OPTS)
+function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 % OMEGA_SURFACE  Create an omega surface, minimizing error from the neutral tangent plane.
 %
 %
-% [p, s, t] = omega_surface(S, T, P, p, ref_cast, OPTS)
+% [p, s, t] = omega_surface(S, T, P, p, ref_cast, WRAP)
 % returns the pressure (or depth) p, practical / Absolute salinity s, and
 % potential / Conservative temperature t on an omega surface, initialized
 % from an approximately neutral surface of (input) pressure (or depth) p,
@@ -13,26 +13,31 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, OPTS)
 % ref_cast.  An omega surface attempts to minimize the L2 norm of the
 % neutrality error. The density or specific volume (either may be used) and
 % its partial derivatives with respect to S and T are given by the
-% functions eos.m and eos_s_t.m in MATLAB's path. Algorithmic parameters
-% are provided in OPTS (see "Options" below for further details).  For
-% units, see "Equation of State" below.
+% functions eos.m and eos_s_t.m in MATLAB's path.  For units, see "Equation
+% of State" below.
+
+% ... = omega_surface(..., OPTS)
+% specifies algorithmic parameters (see "Options" below for details).  
 %
 %
 % --- Input:
-%  S [nk, ni, nj]: practical / Absolute Salinity
-%  T [nk, ni, nj]: potential / Conservative Temperature
-%  P [nk, ni, nj] or [nk, 1]: pressure (or depth)
-%  p     [ni, nj]: pressure (or depth) on initial surface
-%  ref_cast [1, 1] or [2, 1] : linear index or 2D index to the reference cast
-%  OPTS [struct]: options (see "Options" below)
+% S [nk, ni, nj]: practical / Absolute Salinity
+% T [nk, ni, nj]: potential / Conservative Temperature
+% P [nk, ni, nj] or [nk, 1]: pressure (or depth)
+% p     [ni, nj]: pressure (or depth) on initial surface
+% ref_cast [1, 1] or [2, 1] : linear index or 2D index to the reference cast
+% WRAP [2 element array]: determines which dimensions are treated periodic
+%                         [logical].  Set WRAP(i) to true when periodic in 
+%                         the i'th lateral dimension(i=1,2).
+% OPTS [struct]: options (see "Options" below)
 %
 %
 % --- Output:
-%  p [ni, nj]: pressure (or depth) on omega surface
-%  s [ni, nj]: practical / Absolute salinity on omega surface
-%  t [ni, nj]: potential / Conservative temperature on omega surface
-%  diags [struct]: diagnostics such as clock time and norms of neutrality
-%                  errors.  See code for info. Programmable as needed.
+% p [ni, nj]: pressure (or depth) on omega surface
+% s [ni, nj]: practical / Absolute salinity on omega surface
+% t [ni, nj]: potential / Conservative temperature on omega surface
+% diags [struct]: diagnostics such as clock time and norms of neutrality
+%                 errors.  See code for info. Programmable as needed.
 %
 % Note: physical units of S, T, P, and p are determined by eos.m.
 %
@@ -118,8 +123,6 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, OPTS)
 %   VERBOSE [scalar]: 0 for no output; 1 for summary of each iteration;
 %                     2 for detailed information on each iteration.
 %                     Default: 1.
-%   WRAP [2 element array]: logical array.  WRAP(i) is true iff the domain 
-%       is periodic in the i'th lateral dimension.  
 %
 %
 % --- References:
@@ -149,9 +152,23 @@ T = double(T);
 P = double(P);
 p = double(p);
 
+if nargin < 7 || isempty(OPTS)
+  OPTS = struct();
+end
+
 % Get size of 3D hydrography
 [nk,ni,nj] = size(S);
 nij = nj * ni;
+
+if isscalar(ref_cast)
+  assert(ref_cast >= 1 && ref_cast <= nij, 'Out of bounds Linear index for ref_cast.');
+elseif numel(ref_cast) == 2
+  assert(all(ref_cast >= 1) && all(ref_cast(:) <= [ni; nj]), 'ref_cast must index a cast within the domain.')
+  ref_cast = sub2ind([ni, nj], ref_cast(1), ref_cast(2)); % Convert into linear index to the reference cast
+else
+  assert(false, 'ref_cast must be a 1 or 2 element vector');
+end
+assert(length(WRAP) == 2, 'WRAP must be a two element vector');
 
 % Setup anonymous functions:
 lead1 = @(x) reshape(x, [1 size(x)]);
@@ -177,18 +194,8 @@ VERBOSE = OPTS.VERBOSE;
 POISSON = OPTS.POISSON; 
 TOL_P_CHANGE_L2 = OPTS.TOL_P_CHANGE_L2;
 TOL_P_UPDATE = OPTS.TOL_P_UPDATE; % tolerance in pressure [dbar] during vertical solve.
-WRAP = OPTS.WRAP(:);
 
 DIAGS = (VERBOSE > 0) || (nargout > 3);
-
-if isscalar(ref_cast)
-  assert(ref_cast >= 1 && ref_cast <= nij, 'Out of bounds Linear index for ref_cast.');
-elseif numel(ref_cast) == 2
-  assert(all(ref_cast >= 1) && all(ref_cast(:) <= [ni; nj]), 'ref_cast must index a cast within the domain.')
-  ref_cast = sub2ind([ni, nj], ref_cast(1), ref_cast(2)); % Convert into linear index to the reference cast
-else
-  assert(false, 'ref_cast must be a 1 or 2 element vector');
-end
 
 % Pre-calculate things for Breadth First Search
 qu = zeros(nij, 1); % queue storing linear indices to pixels
@@ -254,7 +261,7 @@ end
 %% Interpolate S and T casts onto surface
 [~, K, N] = size(OPTS.Sppc);
 if K > 0
-  assert(K == nk-1 && N == nij, 'size(Sppc) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
+  assert(K == nk-1 && N == nij, 'size(OPTS.Sppc) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
   Sppc = OPTS.Sppc;
 else
   Sppc = OPTS.INTERPFN(P, S);
@@ -262,7 +269,7 @@ end
 
 [~, K, N] = size(OPTS.Tppc);
 if K > 0
-  assert(K == nk-1 && N == nij, 'size(Tppc) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
+  assert(K == nk-1 && N == nij, 'size(OPTS.Tppc) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
   Tppc = OPTS.Tppc;
 else
   Tppc = OPTS.INTERPFN(P, T);

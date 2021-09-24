@@ -1,4 +1,4 @@
-function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_cast, OPTS)
+function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 %TOPOBARIC_SURFACE  Create a topobaric surface.
 %
 %
@@ -73,6 +73,10 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % p [ni, nj]: pressure [dbar] or depth [m, positive] on approximately
 %             neutral surface
 % ref_cast [1, 1] or [2, 1] : linear index or 2D index to the reference cast
+% WRAP [2 element array]: determines which dimensions are treated periodic
+%                         [logical].  Set WRAP(i) to true when periodic in 
+%                         the i'th lateral dimension(i=1,2).
+
 % OPTS [struct]: options (see "Options" below)
 %
 % Note: P must increase monotonically along the first dimension.
@@ -96,8 +100,7 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 %
 %
 % --- Options:
-% OPTS is a struct containing the following fields. Those marked * are
-% required. See ./private/tbs_defaults.m for default values.
+% OPTS is a struct containing the following fields. See ./private/tbs_defaults.m for default values.
 %   INTERPFN [function handle]: vertical interpolation function, used to
 %       evaluate Sppc and Tppc if those are not provided.  Default:
 %       INTERPFN = @ppc_linterp.
@@ -124,8 +127,6 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 %       topobaric surface intersects the reference water column
 %   REF_S [1, 1]: override the reference practical / Absolute salinity.
 %   REF_T [1, 1]: override the reference potential / Conservative temperature.
-% * WRAP [2 element array]: determines which dimensions are treated periodic [logical].
-%   Set WRAP(i) true when periodic in the i'th lateral dimension (i=1,2).
 %   FILL_PIX [1, 1]: fill all holes in the surface containing with fewer
 %       pixels than this, before computing the Reeb graph.
 %   FILL_IJ = [*, 2]: fill all holes in the surface except those containing
@@ -300,8 +301,9 @@ T = double(T);
 P = double(P);
 p = double(p);
 
-% Process mandatory options
-assert(isstruct(OPTS) && isfield(OPTS, 'WRAP') && isvector(OPTS.WRAP) && length(OPTS.WRAP) == 2, 'OPTS.WRAP must be provided as a vector of length 2');
+if nargin < 7 || isempty(OPTS)
+  OPTS = struct();
+end
 
 [ni,nj] = size(p);
 nij = ni * nj;
@@ -316,6 +318,17 @@ assert(is3D(S), 'S and T must have 3 dimensions [nk, ni, nj]');
 assert(is2D(p), 'p must have 2 dimensions [ni, nj]');
 assert(is1D(P) || is3D(P), 'P must be a vector of length nk, or a matrix of size [nk, ni, nj]');
 
+if isscalar(ref_cast)
+  assert(ref_cast >= 1 && ref_cast <= nij, 'Out of bounds Linear index for ref_cast.');
+elseif numel(ref_cast) == 2
+  assert(all(ref_cast >= 1) && all(ref_cast(:) <= [ni; nj]), 'ref_cast must index a cast within the domain.')
+  ref_cast = sub2ind([ni, nj], ref_cast(1), ref_cast(2)); % Convert into linear index to the reference cast
+else
+  assert(false, 'ref_cast must be a 1 or 2 element vector');
+end
+
+assert(length(WRAP) == 2, 'WRAP must be provided as a vector of length 2');
+
 % Simple anonymous functions
 lead1 = @(x) reshape(x, [1 size(x)]); % augment with leading singleton dimension
 nanrms = @(x) sqrt(nanmean(x(:) .* conj(x(:)))); % root mean square, ignoring nans
@@ -327,7 +340,7 @@ d_fn = [];
 
 % Pre-calculate things for Breadth First Search
 qu = zeros(nij, 1); % queue storing linear indices to pixels
-A4 = grid_adjacency([ni,nj], 4, OPTS.WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
+A4 = grid_adjacency([ni,nj], 4, WRAP); % all grid points that are adjacent to all grid points, using 4-connectivity
 
 % Number of bottles per cast. BotK(n) > 0 if and only if pixel n is ocean.
 BotK = squeeze(sum(isfinite(S), 1));
@@ -379,12 +392,17 @@ if OPTS.ITER_MAX > 1
 end
 
 %% Interpolate S and T casts onto surface
-if isfield(OPTS, 'Sppc')
+[~, K, N] = size(OPTS.Sppc);
+if K > 0
+  assert(K == nk-1 && N == nij, 'size(OPTS.Sppc) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
   Sppc = OPTS.Sppc;
 else
   Sppc = OPTS.INTERPFN(P, S);
 end
-if isfield(OPTS, 'Tppc')
+
+[~, K, N] = size(OPTS.Tppc);
+if K > 0
+  assert(K == nk-1 && N == nij, 'size(OPTS.Tppc) should be [O, nk-1, ni, nj] == [?, %d, %d, %d]', nk-1, ni, nj);
   Tppc = OPTS.Tppc;
 else
   Tppc = OPTS.INTERPFN(P, T);
@@ -413,19 +431,10 @@ diags.timer_fitting   = nan(OPTS.ITER_MAX, 1);
 diags.timer_update    = nan(OPTS.ITER_MAX, 1);
 
 % Compute the L1 and L2 norms of the neutrality (epsilon) errors
-[diags.epsL2(1), diags.epsL1(1)] = eps_norms(s, t, p, false, OPTS.WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
+[diags.epsL2(1), diags.epsL1(1)] = eps_norms(s, t, p, false, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
 
 %% Process the reference cast:
 % Get linear index to reference cast
-
-if isscalar(ref_cast)
-  assert(ref_cast >= 1 && ref_cast <= nij, 'Out of bounds Linear index for ref_cast.');
-elseif numel(ref_cast) == 2
-  assert(all(ref_cast >= 1) && all(ref_cast(:) <= [ni; nj]), 'ref_cast must index a cast within the domain.')
-  ref_cast = sub2ind([ni, nj], ref_cast(1), ref_cast(2)); % Convert into linear index to the reference cast
-else
-  assert(false, 'ref_cast must be a 1 or 2 element vector');
-end
 
 % Set p0: the p value the surface will be pinned to at this ref cast
 if isscalar(OPTS.REF_P)
@@ -493,7 +502,7 @@ for iter = 1 : OPTS.ITER_MAX
     % 1. Pre-process to select one region, possibly filling in certain holes;
     % 2. Calculate the Reeb graph;
     % 3. Post-process to undo any hole-filling and possibly simplify the graph.
-    [p, arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes, ~, ~, timer_recon] = calc_reeb_graph(p, OPTS);
+    [p, arc_from, arc_to, arc_segment, node_prev, node_next, node_type, node_fn, node_v, nArcs, nNodes, ~, ~, timer_recon] = calc_reeb_graph(p, WRAP, OPTS);
     
     % --- Prepare info about cycles
     [~, graph, ~, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb_arcs, cb_nodes] = ...
@@ -630,7 +639,7 @@ for iter = 1 : OPTS.ITER_MAX
     % Diagnostics about the state AFTER this iteration
     
     % Compute the L1 and L2 norms of the neutrality (epsilon) errors
-    [diags.epsL2(iter+1), diags.epsL1(iter+1)] = eps_norms(s, t, p, false, OPTS.WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
+    [diags.epsL2(iter+1), diags.epsL1(iter+1)] = eps_norms(s, t, p, false, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
     
   end
   

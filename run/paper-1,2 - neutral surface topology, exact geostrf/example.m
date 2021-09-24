@@ -128,13 +128,13 @@ z = z_PDENS;
 I0 = sub2ind([ni nj], i0, j0);
 
 % Find the connected component containing the reference cast I0
-[~,~,~,wet] = bfs_conncomp(isfinite(z), grid_adjacency([ni,nj], 4, OPTS.WRAP), I0);
+[~,~,~,wet] = bfs_conncomp(isfinite(z), grid_adjacency([ni,nj], 4, WRAP), I0);
 
 % Remove other regions from the surface
 z(~wet) = nan;
 
 % Calculate the Reeb graph of z
-[z, RG] = calc_reeb_graph(z, OPTS);
+[z, RG] = calc_reeb_graph(z, WRAP, OPTS);
 
 %% Map each region of the Reeb graph:
 % First, find the arc that each pixel in the one connected region (each
@@ -229,7 +229,7 @@ end
 %% --- Compute an "orthobaric" surface
 % initialized from the potential density surface
 OPTS.REEB = false;              % Make single-valued functions
-z_ORTHO = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], OPTS);
+z_ORTHO = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], WRAP, OPTS);
 fig_map(g.XCvec, g.YCvec, z_ORTHO, land); colorbar;
 title('Depth of an "orthobaric" surface')
 
@@ -241,7 +241,7 @@ title('Depth of an "orthobaric" surface')
 % initialized from the potential density surface
 OPTS.REEB = true;     % Make multi-valued functions. (Default)
 OPTS.GEOSTRF = false; % We won't (yet) compute a geostrophic stream function, so let it be ill-defined
-[z_TOPOB, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], OPTS);
+[z_TOPOB, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], WRAP, OPTS);
 fig_map(g.XCvec, g.YCvec, z_TOPOB, land); colorbar;
 title('Depth of a topobaric surface')
 
@@ -297,7 +297,7 @@ title('Difference between $\rho$ and $\hat{\rho}(p)$ on surface', 'Interpreter',
 
 %% --- Compute an omega surface
 % initialized from the potential density surface
-z_OMEGA = omega_surface(S, T, Z, z_PDENS, [i0,j0], OPTS);
+z_OMEGA = omega_surface(S, T, Z, z_PDENS, [i0,j0], WRAP, OPTS);
 fig_map(g.XCvec, g.YCvec, z_TOPOB, land); colorbar;
 title('Depth of omega surface')
 
@@ -385,7 +385,7 @@ ax = subplot(3,2,5);
 OPTS.REEB = false; % Turn off the Reeb graph => a single-valued function is fit
 OPTS.SPLINE_BREAKS = [0 200 6000]; % [m]
 OPTS.SPLINE_ORDER = 4; % cubic splines
-OB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS, grav, rho_c);
+OB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], WRAP, OPTS, grav, rho_c);
 uob = -(OB - jm1(OB)) ./ (g.DYCsc * cori_V);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(uob - ugs)), land, OPTS_FIGS); colorbar;
 title(ax, 'log_{10} |u_g error| - Orthobaric gsf');
@@ -393,7 +393,7 @@ title(ax, 'log_{10} |u_g error| - Orthobaric gsf');
 ax = subplot(3,2,6);
 OPTS.REEB = true;    % Use multivalued functions for empirical fits
 OPTS.GEOSTRF = true; % Force well-defined geostrophic stream function
-TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS, grav, rho_c);
+TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], WRAP, OPTS, grav, rho_c);
 utb = -(TB - jm1(TB)) ./ (g.DYCsc * cori_V);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(utb - ugs)), land, OPTS_FIGS); colorbar;
 title(ax, 'log_{10} |u_g error| - Topobaric gsf');
@@ -403,7 +403,7 @@ title(ax, 'log_{10} |u_g error| - Topobaric gsf');
 OPTS.REEB = true;
 OPTS.ITER_MAX = 6;   % A good number of iterations for convergence, so the gsf will be very accurate
 OPTS.GEOSTRF = true; % Add second integral constraint so that dfn will integrate to give a well-defined gsf
-[z_MTOPO, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], OPTS);
+[z_MTOPO, ~, ~, RG, s0, t0, dfn] = topobaric_surface(S, T, Z, z_PDENS, [i0,j0], WRAP, OPTS);
 z = z_MTOPO;
 
 % --- Compute zonal geostrophic velocity on the modified topobaric surface
@@ -416,7 +416,7 @@ ugs = -((y - jm1(y)) + (grav / (2*rho_c)) * (-z + jm1(z)) .* (r + jm1(r))) ./ (g
 OPTS.REEB = true; % Use multivalued functions for empirical fits
 OPTS.RG    = RG;  % taken from Modified Topobaric Surface
 OPTS.dfn   = dfn; % taken from Modified Topobaric Surface
-TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS, grav, rho_c);
+TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], WRAP, OPTS, grav, rho_c);
 OPTS = rmfield(OPTS, {'RG', 'dfn'});
 
 utb = -(TB - jm1(TB)) ./ (g.DYCsc * cori_V); % Zonal geostrophic velocity by the topobaric gsf

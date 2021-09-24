@@ -1,4 +1,4 @@
-function [gsf, gsfdiff] = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, ref_cast, OPTS, varargin)
+function [gsf, gsfdiff] = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, ref_cast, WRAP, OPTS, varargin)
 %TOPOBARIC_GEOSTRF  The topobaric geostrophic stream function.
 %
 %
@@ -26,9 +26,9 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, ref_cast, 
 % are not provided, the Reeb graph is internally calculated and the
 % specific volume anomaly on the surface is empirically fit as a
 % multivalued function of pressure on the surface. The surface is treated
-% as periodic in its first dimension (longitude) if OPTS.WRAP(1) is true,
+% as periodic in its first dimension (longitude) if WRAP(1) is true,
 % and likewise treated periodic in its second dimension (latitude) if
-% OPTS.WRAP(2) is true.
+% WRAP(2) is true.
 %
 % [gsf, gsfdiff] = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, ref_cast, OPTS)
 % also returns the difference, gsfdiff, between gsf and an alternative
@@ -79,9 +79,10 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, ref_cast, 
 % s0 [1, 1] or []: reference s value
 % t0 [1, 1] or []: reference t value
 % ref_cast [1 or 2 element array]: index (linear or 2D) to the reference cast
+% WRAP [2 element array]: determines which dimensions are treated periodic
+%                         [logical].  Set WRAP(i) to true when periodic in 
+%                         the i'th lateral dimension(i=1,2).
 % OPTS [struct]: algorithmic parameters.
-%   OPTS.WRAP [2 element array]: periodicity of the surface in each horizontal
-%     dimension
 %   REEB [1, 1]: true to compute the topobaric geostrophic stream
 %     function, or false to compute the orthobaric geostrophic stream
 %     function
@@ -134,9 +135,11 @@ db2Pa = 1e4;
 
 % Input checking
 narginchk(10,12);
+assert(length(WRAP) == 2, 'WRAP must be provided as a vector of length 2');
+if nargin < 11 || isempty(OPTS)
+  OPTS = struct();
+end
 BOUSSINESQ = (nargin == 12);
-assert(isstruct(OPTS), 'OPTS must be a struct');
-assert(isfield(OPTS, 'WRAP') && numel(OPTS.WRAP) == 2, 'OPTS.WRAP must be a vector of length 2');
 
 [ni,nj] = size(p);
 nk = size(P,1);
@@ -202,11 +205,11 @@ else
     d_fn = [];
     
     % Find the connected component containing the reference cast, using 4-connectivity
-    [~,~,~,wet] = bfs_conncomp(isfinite(p), grid_adjacency([ni,nj], 4, OPTS.WRAP), ref_cast, 4);
+    [~,~,~,wet] = bfs_conncomp(isfinite(p), grid_adjacency([ni,nj], 4, WRAP), ref_cast, 4);
     p(~wet) = nan;
     
     % Calculate the Reeb graph
-    [p, arc_from, arc_to, arc_segment, ~, ~, ~, node_fn, ~, nArcs, nNodes] = calc_reeb_graph(p, OPTS);
+    [p, arc_from, arc_to, arc_segment, ~, ~, ~, node_fn, ~, nArcs, nNodes] = calc_reeb_graph(p, WRAP, OPTS);
     
     % Prepare info about cycles
     [~, graph, ~, bfs_parent_node, bfs_topo_order, bfs_missing_arc, cb_arcs, cb_nodes] = ...
