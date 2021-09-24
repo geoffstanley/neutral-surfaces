@@ -1,4 +1,4 @@
-function [p, s, t, success] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, tolp) %#codegen
+function [p, s, t] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, tolp) %#codegen
 %NTP_BOTTLE_TO_CAST  Find a bottle's level of neutral buoyancy in a cast,
 %                    using the Neutral Tangent Plane relationship.
 %
@@ -14,11 +14,8 @@ function [p, s, t, success] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, t
 % and   p' is in the range [p_avg - tolp/2, p_avg + tolp/2],
 % and   p_avg = (pB + p) / 2 is the average of the fluid bottle's original
 %                          and final pressure or depth.
+% If no such (s, t, p) is found, each of (s, t, p) is NaN.
 % The equation of state is determined by eos.m on the MATLAB path. 
-%
-% [p, s, t, success] = ntp_bottle_to_cast(...)
-% returns a flag value success that is true if a valid solution was found,
-% false otherwise.
 %
 % For a non-Boussinesq ocean, P, pB, and p are pressure.
 % For a Boussinesq ocean, P, pB, and p are depth.
@@ -26,9 +23,9 @@ function [p, s, t, success] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, t
 %
 % --- Input:
 % Sppc [O, K-1]: coefficients for piecewise polynomial for practical / 
-%     Absolute Salinity in terms of Z, on casts A and B.  Here, O is the
+%     Absolute Salinity in terms of Z on the cast.  Here, O is the
 %     polynomial order and K is the number of data points (including NaN's)
-%     on the casts.
+%     on the cast.
 % Tppc [O, K-1]: as above but for potential / Conservative Temperature.
 % P [K, 1]: pressure or depth data points on the cast.
 % k [1, 1]: number of valid (non-NaN) data points on the cast.
@@ -49,7 +46,6 @@ function [p, s, t, success] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, t
 % p [1, 1]: pressure or depth in the cast at level of neutral buoyancy
 % s [1, 1]: practical / Absolute salinity in the cast at level of neutral buoyancy
 % t [1, 1]: potential / Conservative temperature in the cast at level of neutral buoyancy
-% success [1,1]: true if a valid solution was found, false otherwise.
 %
 %
 % --- See Also:
@@ -76,20 +72,16 @@ if k > 1
       % Interpolate S and T onto the updated surface
       [s,t] = ppc_val2(P, Sppc, Tppc, p);
 
-      success = true;
     else
       p = nan;
       s = nan;
       t = nan;
-      success = false;
     end
 
-    
 else
     p = nan;
     s = nan;
     t = nan;
-    success = false;
 end
 end
 
