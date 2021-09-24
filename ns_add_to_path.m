@@ -22,7 +22,7 @@ addpath([PATH_PROJECT 'lib' V 'dat']);
 addpath([PATH_PROJECT 'lib' V 'file-ops']);
 addpath([PATH_PROJECT 'lib' V 'fzero_cg']);
 addpath([PATH_PROJECT 'lib' V 'gsf']);
-addpath([PATH_PROJECT 'lib' V 'ntp-bottle-to-cast']);
+addpath([PATH_PROJECT 'lib' V 'ntp']);
 
 FEX_DIR = dir([PATH_PROJECT 'fex']); % rather than genpath, only go one level deep: avoid codegen folders
 for i = 1 : length(FEX_DIR)
