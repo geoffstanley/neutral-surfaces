@@ -134,7 +134,7 @@ function [gsf, gsfdiff] = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, ref_cast, 
 db2Pa = 1e4;
 
 % Input checking
-narginchk(10,12);
+narginchk(10,13);
 assert(length(WRAP) == 2, 'WRAP must be provided as a vector of length 2');
 if nargin < 11 || isempty(OPTS)
   OPTS = struct();

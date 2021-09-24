@@ -64,9 +64,10 @@ rho_c = g.rho_c;
 grav = g.grav;
 Z = -g.RC(:); % We are going to be Z > 0 people!
 Z2P = Pa2db * rho_c * grav ; % Note > 0
+WRAP = g.WRAP;
 lead1 = @(x) reshape(x, [1 size(x)]);
 
-neigh = grid_adjacency([ni,nj], 4, g.WRAP);
+neigh = grid_adjacency([ni,nj], 4, WRAP);
 interpfn = @ppc_linterp; % linear interpolation
 
 %% Set alias functions.  << ENSURE THIS GETS DONE >>
@@ -414,10 +415,10 @@ for iZ = 1:nZ
         end
         
         % Get neutrality errors on the U,V grid
-        [eps.mapx(:,:,iS,iZ), eps.mapy(:,:,iS,iZ)] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,false,g.WRAP);
+        [eps.mapx(:,:,iS,iZ), eps.mapy(:,:,iS,iZ)] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,false,WRAP);
         
         % Get slope errors on the Tracer grid
-        [~, ~, sx, sy] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,true,g.WRAP,{},grav,S,T,Z);
+        [~, ~, sx, sy] = ntp_errors(s,t,z,g.DXCvec,g.DYCsc,use_s_t,true,WRAP,{},grav,S,T,Z);
         
         % Fictitious Diapycnal Diffusivity
         fdd.map(:,:,iS,iZ) = K_iso * (sx.^2 + sy.^2);
@@ -809,7 +810,7 @@ for iZ = 1 : nZ
         % Do this by passing [] for s0 and t0.
         OPTS_STRF.SPLINE_PIECES = 12; % 12 pieces in spline
         OPTS_STRF.SPLINE_ORDER = 4; % cubic splines
-        OM = orthobaric_montgomery(s, t, z, Z, R, Y, [], [], OPTS_STRF, grav, rho_c);
+        OM = orthobaric_montgomery(s, t, z, Z, R, Y, [], [], WRAP, OPTS_STRF, grav, rho_c);
         
         % Topobaric geostrophic streamfunction:
         OPTS_STRF.REEB = true; % use multivalued functions (topobaric not orthobaric)
@@ -820,7 +821,7 @@ for iZ = 1 : nZ
             s0 = mtopo_data(iZ).s0;
             t0 = mtopo_data(iZ).t0;
         end
-        TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], OPTS_STRF, grav, rho_c);
+        TB = topobaric_geostrf(s, t, z, Z, R, Y, s0, t0, [i0,j0], WRAP, OPTS_STRF, grav, rho_c);
         if strcmp(surfname, 'MTOPO')
             OPTS_STRF = rmfield(OPTS_STRF, {'RG', 'dfn'});
         end
@@ -1498,12 +1499,12 @@ CU = cunningham00(      s, t, p, P, A, Y,         p0);
 % Orthobaric Montgomery potential:
 % Ensure orthobaric_montgomery chooses its own reference S and T!
 % Do this by passing [] for s0 and t0.
-OM = orthobaric_montgomery(s, t, p, P, A, Y, [], [], OPTS_STRF);
+OM = orthobaric_montgomery(s, t, p, P, A, Y, [], [], WRAP, OPTS_STRF);
 
 % Topobaric geostrophic streamfunction:
 OPTS_STRF.REEB = true;
 OPTS_STRF.GEOSTRF = true;
-TB = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, [i0,j0], OPTS_STRF);
+TB = topobaric_geostrf(s, t, p, P, A, Y, s0, t0, [i0,j0], WRAP, OPTS_STRF);
 
 % --- Calculate error from "true" geostrophic velocity (ugs, vgs)
 ex = nan(ni,nj,nF);

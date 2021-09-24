@@ -1,4 +1,4 @@
-function gsf = orthobaric_montgomery(s, t, p, P, A, Y, s0, t0, OPTS, varargin)
+function gsf = orthobaric_montgomery(s, t, p, P, A, Y, s0, t0, WRAP, OPTS, varargin)
 %ORTHOBARIC_MONTGOMERY  The Montgomery potential with a functional offset.
 %
 % Zhang and Hogg (1992) upgraded the Montgomery (1937) potential by
@@ -31,8 +31,8 @@ function gsf = orthobaric_montgomery(s, t, p, P, A, Y, s0, t0, OPTS, varargin)
 % specific volume minus that using the reference values s0 and t0) of order
 % OPTS.SPLINE_ORDER and having at most OPTS.SPLINE_PIECES number of pieces.
 % To determine the connected regions, the surface is treated as periodic in
-% its first dimension (longitude) if OPTS.WRAP(1) is true, and likewise
-% treated periodic in its second dimension (latitude) if OPTS.WRAP(2) is
+% its first dimension (longitude) if WRAP(1) is true, and likewise
+% treated periodic in its second dimension (latitude) if WRAP(2) is
 % true.
 %
 % gsf = orthobaric_montgomery(s, t, z, Z, R, Y, s0, t0, OPTS, grav, rho_c)
@@ -58,8 +58,8 @@ function gsf = orthobaric_montgomery(s, t, p, P, A, Y, s0, t0, OPTS, varargin)
 % density minus that using the reference values s0 and t0) of order
 % OPTS.SPLINE_ORDER and having at most OPTS.SPLINE_PIECES number of pieces.
 % To determine the connected regions, the surface is treated as periodic in
-% its first dimension (longitude) if OPTS.WRAP(1) is true, and likewise
-% treated periodic in its second dimension (latitude) if OPTS.WRAP(2) is
+% its first dimension (longitude) if WRAP(1) is true, and likewise
+% treated periodic in its second dimension (latitude) if WRAP(2) is
 % true. Note z and Z must be positive and increase downwards.
 %
 %
@@ -77,8 +77,10 @@ function gsf = orthobaric_montgomery(s, t, p, P, A, Y, s0, t0, OPTS, varargin)
 % Y [nk, ni, nj]: acceleration potential from hydrostatic balance [m^2 s^-2]
 % s0 [1, 1] or []: reference s value
 % t0 [1, 1] or []: reference t value
+% WRAP [2 element array]: determines which dimensions are treated periodic
+%                         [logical].  Set WRAP(i) to true when periodic in 
+%                         the i'th lateral dimension(i=1,2).
 % OPTS [struct]: algorithmic parameters.
-%   OPTS.WRAP [2 element array]: periodicity of the surface in each horizontal dimension
 %   OPTS.SPLINE_ORDER [1, 1]: order of the spline (default: 4 for cubic splines)
 %   OPTS.SPLINE_PIECES [1, 1]: maximum number of pieces of the spline (default: 12)
 % grav [1, 1]: gravitational acceleration [m s^-2]
@@ -107,8 +109,11 @@ function gsf = orthobaric_montgomery(s, t, p, P, A, Y, s0, t0, OPTS, varargin)
 db2Pa = 1e4;  % Conversion from [dbar] to [Pa]
 
 % Input checking
-narginchk(9,11);
-
+narginchk(8,11);
+assert(length(WRAP) == 2, 'WRAP must be provided as a vector of length 2');
+if nargin < 9 || isempty(OPTS)
+  OPTS = struct();
+end
 BOUSSINESQ = length(varargin) == 2; % grav and rho_c provided
 
 [ni,nj] = size(p);
@@ -124,8 +129,6 @@ assert(all(size(s) == size(t)), 'S and T must be the same size');
 assert(is1D(P) || is3D(P), 'P must be [nk,1] or [nk,ni,nj]');
 assert(is2D(p), 'p must be [ni,nj]');
 
-assert(isstruct(OPTS), 'OPTS must be a struct')
-assert(isfield(OPTS, 'WRAP') && isvector(OPTS.WRAP) && length(OPTS.WRAP) == 2, 'OPTS.WRAP must be a vector of length 2');
 if isfield(OPTS, 'SPLINE_ORDER')
     assert(isscalar(OPTS.SPLINE_ORDER), 'OPTS.SPLINE_ORDER must be a scalar');
 else
@@ -151,7 +154,7 @@ end
 
 % Find the connected regions
 wet = isfinite(p);
-neigh = grid_adjacency([ni,nj], 4, OPTS.WRAP);
+neigh = grid_adjacency([ni,nj], 4, WRAP);
 [qu,qts,ncc] = bfs_conncomp(wet, neigh);
 
 % The number of data points in the largest connected region

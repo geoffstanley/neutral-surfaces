@@ -48,6 +48,7 @@ grav = g.grav;
 rho_c = g.rho_c;
 Z = -g.RC(:); % We are going to be Z > 0 people!
 cori_V = g.cori_YG;
+WRAP = g.WRAP;
 
 % Re-order data so water-columns are contiguous data:
 S = permute(S, [3 1 2]); % [nz,nx,ny]. depth  by  long  by  lat
@@ -310,7 +311,7 @@ hv = (1-(npanel+1)*mv) / npanel;
 
 z = z_PDENS;
 [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
-eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
+eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, WRAP);
 ax = axes('Position', [.1 3*mv+2*hv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
 colorbar
@@ -318,7 +319,7 @@ title('Zonal neutral error on potential density surface [log_{10}]')
 
 z = z_TOPOB;
 [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
-eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
+eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, WRAP);
 ax = axes('Position', [.1 2*mv+hv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
 colorbar
@@ -326,7 +327,7 @@ title('Zonal neutral error on topobaric surface [log_{10}]')
 
 z = z_OMEGA;
 [s,t] = ppc_val2(Z, Sppc, Tppc, lead1(z));
-eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, g.WRAP);
+eps_x = ntp_errors(s, t, z, g.DXCvec, g.DYCsc, false, false, WRAP);
 ax = axes('Position', [.1 mv .87 hv]);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(eps_x)), land, struct('CLIM', [-12 -5]));
 colorbar
@@ -375,7 +376,7 @@ fig_map(ax, g.XCvec, g.YCvec, log10(abs(ucu - ugs)), land, OPTS_FIGS); colorbar;
 title(ax, 'log_{10} |u_g error| - Cunningham (2000)');
 
 ax = subplot(3,2,4);
-OM = orthobaric_montgomery(s, t, z, Z, R, Y, [], [], struct('WRAP', g.WRAP), grav, rho_c);
+OM = orthobaric_montgomery(s, t, z, Z, R, Y, [], [], WRAP, [], grav, rho_c);
 uom = -(OM - jm1(OM)) ./ (g.DYCsc * cori_V);
 fig_map(ax, g.XCvec, g.YCvec, log10(abs(uom - ugs)), land, OPTS_FIGS); colorbar;
 title(ax, 'log_{10} |u_g error| - Orthobaric Montgomery');
