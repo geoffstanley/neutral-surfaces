@@ -1,21 +1,20 @@
 function [p, s, t] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, tolp) %#codegen
-%NTP_BOTTLE_TO_CAST  Find a bottle's level of neutral buoyancy in a cast,
-%                    using the Neutral Tangent Plane relationship.
+%NTP_BOTTLE_TO_CAST  Find the Neutral Tangent Plane from a bottle to a cast.
 %
 % [p, s, t] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, tolp)
-% finds (s, t, p), with accuracy in p of tolp, that is at the level of
-% neutral buoyancy for a fluid bottle of (sB, tB, pB) in a water column of
-% with piecewise polynomial interpolants for S and T given by Sppc and Tppc 
-% with knots at P(1:k).  Specifically, s and t are given by
-%   [s,t] = ppc_val2(P, Sppc, Tppc, p)
-% and p satisfies
-%      eos(s, t, p') = eos(sB, tB, p')
+% finds a point on the cast with properties (s, t, p) that is neutrally 
+% related to the bottle of (sB, tB, pB), meaning that
+%   eos(s, t, p_avg) = eos(sB, tB, p_avg)
+% is approximately solved (there is an exact solution within tolp of p),
 % where eos is the equation of state given by eos.m in MATLAB's path,
-% and   p' is in the range [p_avg - tolp/2, p_avg + tolp/2],
-% and   p_avg = (pB + p) / 2 is the average of the fluid bottle's original
-%                          and final pressure or depth.
-% If no such (s, t, p) is found, each of (s, t, p) is NaN.
-% The equation of state is determined by eos.m on the MATLAB path. 
+% and   p_avg = (pB + p) / 2 is the average of the bottle's pressure
+%                            and the pressure on the cast,
+% and   [s,t] are the salinity and temperature on the cast at pressure p
+%             given by ppc_val2(P, Sppc, Tppc, p).
+% The cast's hydrographic properties are given by piecewise polynomial
+% interpolants for salinity and temperature as functions of pressure,
+% given by coefficient arrays Sppc and Tppc with knots at P(1:k). If no
+% such (s, t, p) is found, each of (s, t, p) is NaN.
 %
 % For a non-Boussinesq ocean, P, pB, and p are pressure.
 % For a Boussinesq ocean, P, pB, and p are depth.
