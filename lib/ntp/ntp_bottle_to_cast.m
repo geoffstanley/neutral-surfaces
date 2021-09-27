@@ -42,9 +42,12 @@ function [p, s, t] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, tolp) %#co
 %
 %
 % --- Output:
-% p [1, 1]: pressure or depth in the cast at level of neutral buoyancy
-% s [1, 1]: practical / Absolute salinity in the cast at level of neutral buoyancy
-% t [1, 1]: potential / Conservative temperature in the cast at level of neutral buoyancy
+% p [1, 1]: pressure or depth in the cast 
+%           that is neutrally related to the bottle
+% s [1, 1]: practical / Absolute salinity in the cast
+%           that is neutrally related to the bottle
+% t [1, 1]: potential / Conservative temperature in the cast
+%           that is neutrally related to the bottle
 %
 %
 % --- See Also:
