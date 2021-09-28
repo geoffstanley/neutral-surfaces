@@ -394,7 +394,7 @@ for iDATA = 1 : nDATA
       nrep = max(1, ceil(log2(1024^2 ./ NWC(iDATA)))); % so N x N data gets done once where N=1024.  Others get about same CPU time, if they scale as N^1.
     end
     for rep = 1 : nrep
-      [z, s, t, isoval, d] = pot_dens_surf(S, T, Z, zref, [i0, j0, z0], OPTS);
+      [z, s, t, isoval, d] = pot_dens_surf(S, T, Z, zref, [i0, j0, z0], WRAP, OPTS);
       
       zs{iDATA, iSURF('SIGMA')} = z;
       
@@ -425,7 +425,7 @@ for iDATA = 1 : nDATA
     %[z, s, t, isoval, s0, t0, d] = delta_surf(S, T, Z, s0, t0, [i0, j0, z0], OPTS);
     % ... But actually, the results for OCCA are marginally better if we take s0, t0 from the reference Pacific cast.
     
-    [z, s, t, isoval, s0, t0, d] = delta_surf(S, T, Z, [], [], [i0, j0, z0], OPTS);
+    [z, s, t, isoval, s0, t0, d] = delta_surf(S, T, Z, [], [], [i0, j0, z0], WRAP, OPTS);
     
     zs{iDATA, iSURF('DELTA')} = z;
     

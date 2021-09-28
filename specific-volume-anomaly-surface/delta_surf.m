@@ -1,8 +1,8 @@
-function [p,s,t,d0,s_ref,t_ref,diags] = delta_surf(S, T, P, s_ref, t_ref, var, OPTS)
+function [p,s,t,d0,s_ref,t_ref,diags] = delta_surf(S, T, P, s_ref, t_ref, var, WRAP, OPTS)
 %DELTA_SURF Specific volume anomaly surface by nonlinear solution in each water column.
 %
 %
-% [p,s,t] = delta_surf(S, T, P, s_ref, t_ref, d0)
+% [p,s,t] = delta_surf(S, T, P, s_ref, t_ref, d0, WRAP)
 % finds pressure or depth p -- and its salinity s and temperature t -- of
 % the isosurface d0 of delta = eos(S,T,P) - eos(s_ref,t_ref,P) with reference
 % practical / Absolute salinity s_ref and reference potential / Conservative
@@ -12,9 +12,12 @@ function [p,s,t,d0,s_ref,t_ref,diags] = delta_surf(S, T, P, s_ref, t_ref, var, O
 % which accepts S, T, and P as its 3 inputs.  For a non-Boussinesq ocean, p
 % and P are pressure [dbar] and eos gives the specific volume.  For a
 % Boussinesq ocean, p and P are depth [m] positive and increasing down, and
-% eos gives the in-situ density.
+% eos gives the in-situ density.  The domain is periodic in the
+% i'th horizontal dimension iff WRAP(i) is true; this is relevant only to
+% measuring neutrality errors in diags output, not to constructing the
+% surface. 
 %
-% [p, s, t, d0] = delta_surf(S, T, P, s_ref, t_ref, [i0, j0, p0])
+% [p, s, t, d0] = delta_surf(S, T, P, s_ref, t_ref, [i0, j0, p0], WRAP)
 % as above but finds the delta isosurface, delta = d0, that intersects the
 % reference cast at grid indices (i0,j0) at pressure or depth p0.
 %
@@ -34,6 +37,9 @@ function [p,s,t,d0,s_ref,t_ref,diags] = delta_surf(S, T, P, s_ref, t_ref, var, O
 % s_ref [1, 1] or []: reference S
 % t_ref [1, 1] or []: reference T
 % var [1, 1] or [1, 3]: isovalue of delta, or location to intersect
+% WRAP [2 element array]: determines which dimensions are treated periodic
+%                         [logical].  Set WRAP(i) to true when periodic in 
+%                         the i'th lateral dimension(i=1,2).
 % OPTS [struct]: options (see below)
 %
 % Note: nk is the maximum number of data points per water column,
@@ -199,7 +205,7 @@ iter_tic = tic();
 if DIAGS
     diags = struct();
     diags.clocktime = toc(iter_tic);
-    [epsL2, epsL1] = eps_norms(s, t, p, true, OPTS.WRAP, {}, OPTS.DIST1_iJ, OPTS.DIST2_Ij, OPTS.DIST2_iJ, OPTS.DIST1_Ij);
+    [epsL2, epsL1] = eps_norms(s, t, p, true, WRAP, {}, OPTS.DIST1_iJ, OPTS.DIST2_Ij, OPTS.DIST2_iJ, OPTS.DIST1_Ij);
     diags.epsL1 = epsL1;
     diags.epsL2 = epsL2;
 end

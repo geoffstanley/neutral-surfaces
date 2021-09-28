@@ -11,10 +11,11 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 % pressure (or depth) is P.  The pressure of the omega surface is pinned,
 % unchanging through the iterations, at the reference cast indexed by
 % ref_cast.  An omega surface attempts to minimize the L2 norm of the
-% neutrality error. The density or specific volume (either may be used) and
-% its partial derivatives with respect to S and T are given by the
-% functions eos.m and eos_s_t.m in MATLAB's path.  For units, see "Equation
-% of State" below.
+% neutrality error.  The domain is periodic in the i'th horizontal
+% dimension iff WRAP(i) is true.  The density or specific volume (either
+% may be used) and its partial derivatives with respect to S and T are
+% given by the functions eos.m and eos_s_t.m in MATLAB's path.  For units,
+% see "Equation of State" below.
 
 % ... = omega_surface(..., OPTS)
 % specifies algorithmic parameters (see "Options" below for details).  

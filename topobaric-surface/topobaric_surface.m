@@ -2,7 +2,7 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 %TOPOBARIC_SURFACE  Create a topobaric surface.
 %
 %
-% p = topobaric_surface(S, T, P, p, ref_cast, OPTS)
+% p = topobaric_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 % returns the pressure p (output) of a topobaric surface formed by an
 % iterative procedure, initialized from an approximately neutral surface on
 % which the pressure is p (input), in an ocean with practical / Absolute
@@ -13,8 +13,9 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % its partial derivative with respect to pressure are given by eos.m and
 % eos_p.m in the path.  If topobaric_geostrf will not be called, eos.m and
 % eos_p.m can instead determine the in-situ density and its derivative with
-% respect to pressure. Only one connected component of the surface is
-% processed.  Algorithmic options are given by OPTS (see below).  For
+% respect to pressure.  Only one connected component of the surface is
+% processed.  The domain is periodic in the i'th horizontal dimension iff
+% WRAP(i) is true.  Algorithmic options are given by OPTS (see below).  For
 % physical units, see "Equation of State" below.
 %
 % [p, s, t, RG, s0, t0, d_fn] = topobaric_surface(...)
@@ -24,10 +25,9 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % the specific volume anomaly or the in-situ density anomaly, depending on
 % which is given by eos.m.  The actual delta on the surface will closely
 % match the delta values evaluated by d_fn on the surface, as follows.
-% >> lead1 = @(x) reshape(x, [1, size(x)]);              % add leading singleton dimension
 % >> Sppc = ppc_linterp(P, S);                           % Interpolant for S in terms of P
 % >> Tppc = ppc_linterp(P, T);                           % Interpolant for T in terms of P
-% >> [s,t] = ppc_val2(P, Sppc, Tppc, lead1(p));          % get S and T on the surface
+% >> [s,t] = ppc_val2(P, Sppc, Tppc, p);                 % get S and T on the surface
 % >> d = eos(s, t, p) - eos(s0, t0, p);                  % gegeoffstanley@gmail.com"t delta on the surface
 % >> p_ = p(RG.wet);                                     % get p just on the valid surface
 % >> d_fn_at_p = nan(size(p));                           % prepare to build a 2D map of evaluations of the delta function
@@ -38,7 +38,7 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % The smaller OPTS.TOL_P_UPDATE, the smaller OPTS.ITER_L2_CHANGE, and the larger
 % OPTS.ITER_MAX, the closer (d_fn_at_p - d) will be to zero.
 %
-% [p, s, t, RG, s0, t0, d_fn1] = topobaric_surface(S, T, P, p, ref_cast, OPTS)
+% [p, s, t, RG, s0, t0, d_fn1] = topobaric_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 % with OPTS.REEB == false instead calculates an "orthobaric" surface, in
 % which d is a single-valued function of the pressure or depth, d_fn1. This
 % is done in just one connected ReGion of the surface, namely the true
@@ -46,10 +46,9 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % anomaly, and delta on the surface will (less-so, relative to with
 % OPTS.REEB == true) closely match the delta values evaluated by d_fn1 on
 % the surface, as follows:
-% >> lead1 = @(x) reshape(x, [1, size(x)]);              % add leading singleton dimension
 % >> Sppc = ppc_linterp(P, S);                           % Interpolant for S in terms of P
 % >> Tppc = ppc_linterp(P, T);                           % Interpolant for T in terms of P
-% >> [s,t] = ppc_val2(P, Sppc, Tppc, lead1(p));          % get S and T on the surface
+% >> [s,t] = ppc_val2(P, Sppc, Tppc, p);                 % get S and T on the surface
 % >> d = eos(s, t, p) - eos(s0, t0, p);                  % get delta on the surface
 % >> p_ = p(RG.wet);                                     % get p just on the valid surface
 % >> d_fn_at_p = ppval(d_fn1, p);                        % evaluate the function for delta in terms of p
@@ -76,7 +75,6 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % WRAP [2 element array]: determines which dimensions are treated periodic
 %                         [logical].  Set WRAP(i) to true when periodic in 
 %                         the i'th lateral dimension(i=1,2).
-
 % OPTS [struct]: options (see "Options" below)
 %
 % Note: P must increase monotonically along the first dimension.
