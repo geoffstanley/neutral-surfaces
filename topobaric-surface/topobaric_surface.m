@@ -367,9 +367,9 @@ AREA_Ij = DIST1_Ij .* DIST2_Ij;   % Area [m^2] centred at (I, J-1/2)
 ni_ = max(ni, 4096); % using variable size code generation and avoiding
 nj_ = max(nj, 4096); % recompiling all the time
 if OPTS.REEB
-  tbs_vertsolve_codegen(nk, ni_, nj_, Pvec, OPTS);
+  tbs_vertsolve_codegen(nk, ni_, nj_, OPTS);
 else
-  obs_vertsolve_codegen(nk, ni_, nj_, Pvec, OPTS);
+  obs_vertsolve_codegen(nk, ni_, nj_, OPTS);
 end
 % bfs_conncomp1_codegen(nk, ni_, nj_, Xvec, OPTS);
 if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX && OPTS.ITER_STOP_WETTING > 0

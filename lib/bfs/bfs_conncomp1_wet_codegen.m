@@ -1,17 +1,10 @@
-function bfs_conncomp1_wet_codegen(nk, ni, nj, Xvec, OPTS)
-
-
-%BFS_WET_CODEGEN  Create MEX function for bfs_wet
+function bfs_conncomp1_wet_codegen(nk, ni, nj, OPTS)
+%BFS_CONNCOMP1_WET_CODEGEN  Create MEX function for bfs_conncomp1_wet
 %
 %
-% bfs_wet_codegen(nk, ni, nj, false)
-% runs codegen on bfs_wet.m, appropriate for a grid of ni by nj points in
-% the horizontal and nk points in the vertical.
-%
-% bfs_wet_codegen(nk, ni, nj, true)
-% specifies that P in bfs_wet.m is just a vector: P(k) specifies the
-% pressure or depth of all grid points having vertical index k. Use this
-% for simple Z-level models (not hybrid coordinate models).
+% bfs_conncomp1_wet_codegen(nk, ni, nj)
+% runs codegen on bfs_conncomp1_wet.m, appropriate for a grid of ni by nj
+% points in the horizontal and nk points in the vertical.
 %
 % bfs_wet_codegen(..., OPTS)
 % overrides default verbosity by OPTS.VERBOSE and file output by
@@ -54,7 +47,7 @@ p = 1000;
 m = eos(s, t, p);
 
 % Create textual identifier for this build of the MEX function.
-build_text = sprintf('%s_k%d_i%d_j%d_%dD_m=%.59e', name_mex, nk, ni, nj, (1-Xvec)*2+1, m);
+build_text = sprintf('%s_k%d_i%d_j%d_m=%.59e', name_mex, nk, ni, nj, m);
 fileName_build_text = [file_mat.folder V name '_info.txt'];
 fileID_build_text = fopen(fileName_build_text, 'rt');
 
@@ -75,11 +68,7 @@ if isempty(file_mex) ... % No mex file yet
     % (using vs = true, below)
     vs = true;
     t_SppX   = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
-    if Xvec
-        t_X = coder.typeof(0, [nk, 1], [vs, vs]);
-    else
-        t_X = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
-    end
+    t_X = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
     nij = ni * nj;
     t_x    = coder.typeof(0, [ni, nj], [vs, vs]);
     t_A    = coder.typeof(0, [9, nij, nj], [true, vs, vs]); % [? p nij] or [? p ni p nj]

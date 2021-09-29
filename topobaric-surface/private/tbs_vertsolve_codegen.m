@@ -1,15 +1,10 @@
-function tbs_vertsolve_codegen(nk, ni, nj, Pvec, OPTS)
+function tbs_vertsolve_codegen(nk, ni, nj, OPTS)
 %TBS_VERTSOLVE_CODEGEN  Create MEX function for tbs_vertsolve
 %
 %
-% tbs_vertsolve_codegen(nk, ni, nj, false)
+% tbs_vertsolve_codegen(nk, ni, nj)
 % runs codegen on tbs_vertsolve.m, appropriate for a grid of ni by nj
 % points in the horizontal and nk points in the vertical.
-%
-% tbs_vertsolve_codegen(nk, ni, nj, true)
-% specifies that X in tbs_vertsolve.m is just a vector: X(k) specifies the
-% pressure or depth of all grid points having vertical index k. Use this
-% for simple Z-level models (not hybrid coordinate models).
 %
 % tbs_vertsolve_codegen(..., OPTS)
 % overrides default verbosity by OPTS.VERBOSE and file output by
@@ -68,7 +63,7 @@ try
     m = eos(s, t, p);
     
     % Create textual identifier for this build of the MEX function.
-    build_text = sprintf('%s_k%d_i%d_j%d_%dD_m=%.59e', name, nk, ni, nj, (1-Pvec)*2+1, m);
+    build_text = sprintf('%s_k%d_i%d_j%d_m=%.59e', name, nk, ni, nj, m);
     fileName_build_text = [file_mat.folder V name '_info.txt'];
     fileID_build_text = fopen(fileName_build_text, 'rt');
     
@@ -89,11 +84,7 @@ try
         % (using vs = true, below)
         vs = true;
         t_Sppc   = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
-        if Pvec
-            t_P  = coder.typeof(0, [nk, 1], [vs, false]);
-        else
-            t_P  = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
-        end
+        t_P  = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
         t_BotK   = coder.typeof(0, [ni, nj], [vs, vs]);
         t_p      = coder.typeof(0, [ni, nj], [vs, vs]);
         t_branch = coder.typeof(0, [ni, nj], [vs, vs]);

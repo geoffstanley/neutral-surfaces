@@ -237,13 +237,12 @@ AREA_Ij = autoexp(DIST1_Ij .* DIST2_Ij);   % Area [m^2] centred at (I, J-1/2)
 
 
 %% Just in time code generation
-Pvec = isvector(P);
 ni_ = max(ni, 4096); % using variable size code generation and avoiding
 nj_ = max(nj, 4096); % recompiling all the time
-omega_vertsolve_codegen(nk, ni_, nj_, Pvec, OPTS);
-% bfs_conncomp1_codegen(nk, ni_, nj_, Pvec, OPTS);
+omega_vertsolve_codegen(nk, ni_, nj_, OPTS);
+% bfs_conncomp1_codegen(nk, ni_, nj_, OPTS);
 if ITER_START_WETTING <= ITER_MAX && ITER_STOP_WETTING > 0
-  bfs_conncomp1_wet_codegen(nk, ni_, nj_, Pvec, OPTS)
+  bfs_conncomp1_wet_codegen(nk, ni_, nj_, OPTS)
 end
 
 %% Get ML: the pressure of the mixed layer

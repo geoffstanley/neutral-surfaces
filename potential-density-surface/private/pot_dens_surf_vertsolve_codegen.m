@@ -1,15 +1,10 @@
-function pot_dens_surf_vertsolve_codegen(nk, ni, nj, Pvec, OPTS)
+function pot_dens_surf_vertsolve_codegen(nk, ni, nj, OPTS)
 %POT_DENS_SURF_VERTSOLVE_CODEGEN  Create MEX function for pot_dens_surf_vertsolve
 %
 %
-% pot_dens_surf_vertsolve_codegen(nk, ni, nj, false)
+% pot_dens_surf_vertsolve_codegen(nk, ni, nj)
 % runs codegen on pot_dens_surf_vertsolv.m, appropriate for a grid
 % of ni by nj points in the horizontal and nk points in the vertical.
-%
-% pot_dens_surf_vertsolve_codegen(nk, ni, nj, true)
-% specifies that X in pot_dens_surf_vertsolv.m is just a vector: X(k) specifies
-% the pressure or depth of all grid points having vertical index k. Use
-% this for simple Z-level models (not hybrid coordinate models).
 %
 % pot_dens_surf_vertsolve_codegen(..., OPTS)
 % overrides default verbosity by OPTS.VERBOSE and file output by
@@ -72,7 +67,7 @@ try
     m = eos(s, t, p);
     
     % Create identifier for this build of the MEX function.
-    build_text = sprintf('%s_k%d_i%d_j%d_%dD_m=%.59e', name, nk, ni, nj, (1-Pvec)*2+1, m);
+    build_text = sprintf('%s_k%d_i%d_j%d_m=%.59e', name, nk, ni, nj, m);
     
     BUILD = isempty(file_mex) ... % No mex file yet
         || file_mex.datenum < max([file_mat.datenum, file_eos.datenum]) ... % MEX is too old
@@ -95,11 +90,7 @@ try
         % (using vs = true, below)
         vs = true;
         t_Sppc  = coder.typeof(0, [8, nk-1, ni, nj], [true, vs, vs, vs]);
-        if Pvec
-            t_P = coder.typeof(0, [nk, 1], [vs, vs]);
-        else
-            t_P = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
-        end
+        t_P = coder.typeof(0, [nk, ni, nj], [vs, vs, vs]);
         t_p     = coder.typeof(0, [ni, nj], [vs, vs]);
         t_BotK  = coder.typeof(0, [ni, nj], [vs, vs]);
         

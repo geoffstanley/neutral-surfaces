@@ -129,7 +129,7 @@ DIAGS = nargout >= 7;
 % Run codegen to create MEX function handling the main computation
 ni_ = max(ni, 4096); % using variable size code generation and avoiding
 nj_ = max(nj, 4096); % recompiling all the time
-delta_surf_vertsolve_codegen(nk, ni_, nj_, isvector(P), OPTS);
+delta_surf_vertsolve_codegen(nk, ni_, nj_, OPTS);
 
 % Interpolate S and T as piecewise polynomials of P, or use pre-computed interpolants in OPTS.
 if isfield(OPTS, 'Sppc') && isfield(OPTS, 'Tppc')

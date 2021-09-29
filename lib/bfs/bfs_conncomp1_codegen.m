@@ -1,15 +1,10 @@
-function bfs_conncomp1_codegen(nk, ni, nj, Xvec, OPTS)
+function bfs_conncomp1_codegen(nk, ni, nj, OPTS)
 %BFS_CONNCOMP1_CODEGEN  Create MEX function for bfs_conncomp1
 %
 %
-% bfs_conncomp1_codegen(nk, ni, nj, false)
+% bfs_conncomp1_codegen(nk, ni, nj)
 % runs codegen on bfs_conncomp1.m, appropriate for a grid of ni by nj points
 % in the horizontal and nk points in the vertical.
-%
-% bfs_conncomp1_codegen(nk, ni, nj, true)
-% specifies that P in bfs_conncomp1.m is just a vector: P(k) specifies the
-% pressure or depth of all grid points having vertical index k. Use this
-% for simple Z-level models (not hybrid coordinate models).
 %
 % bfs_conncomp1_codegen(..., OPTS)
 % overrides default verbosity by OPTS.VERBOSE and file output by
@@ -47,7 +42,7 @@ try
     assert(~isempty(file_mat), ['Cannot locate ' name '.m']);
     
     % Create textual identifier for this build of the MEX function.
-    build_text = sprintf('%s_k%d_i%d_j%d_%dD', name_mex, nk, ni, nj, (1-Xvec)*2+1);
+    build_text = sprintf('%s_k%d_i%d_j%d', name_mex, nk, ni, nj);
     fileName_build_text = [file_mat.folder V name_mex '_info.txt'];
     fileID_build_text = fopen(fileName_build_text, 'rt');
 
@@ -67,7 +62,7 @@ try
         vs = true;
         t_G    = coder.typeof(true, [ni, nj], [vs, vs]);
         nij = ni * nj;
-        t_A    = coder.typeof(0, [9, nij, nj], [true, vs, vs]); % [? p nij] or [? p ni p nj]
+        t_A    = coder.typeof(0, [9, nij, nj], [true, vs, vs]); % handle [? x nij] or [? x ni x nj]
         t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
         
         args = {t_G, t_A, 0, t_q};
