@@ -17,12 +17,15 @@ PATH_PROJECT = [fileparts(mfilename('fullpath')) V];
 addpath(PATH_PROJECT);
 
 addpath([PATH_PROJECT 'lib']);
+addpath([PATH_PROJECT 'lib' V 'binsrch']);
 addpath([PATH_PROJECT 'lib' V 'bfs']);
+addpath([PATH_PROJECT 'lib' V 'columncalculus']); % less used now, favouring ppc
 addpath([PATH_PROJECT 'lib' V 'dat']);
 addpath([PATH_PROJECT 'lib' V 'file-ops']);
 addpath([PATH_PROJECT 'lib' V 'fzero_cg']);
 addpath([PATH_PROJECT 'lib' V 'gsf']);
 addpath([PATH_PROJECT 'lib' V 'ntp']);
+addpath([PATH_PROJECT 'lib' V 'ppc']);
 
 FEX_DIR = dir([PATH_PROJECT 'fex']); % rather than genpath, only go one level deep: avoid codegen folders
 for i = 1 : length(FEX_DIR)
