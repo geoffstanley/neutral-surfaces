@@ -1,10 +1,13 @@
-function [y,z] = ppc_val2(X, C, D, x) %#codegen
-%PPVALQ2  Piecewise Polynomial Evaluation, quick and twice
+function [y,z] = ppc_val2(X, C, D, x, d) %#codegen
+%PPC_VAL2  Piecewise Polynomial Evaluation, quick and twice
 %
 %
 % [y,z] = ppc_val2(X, C, D, x)
 % evaluates the piecewise polynomials whose coefficients are C and D and
 % whose knots are X, at data sites x.
+%
+% [y,z] = ppc_val2(..., d)
+% as above but evaluates the d'th derivative.
 %
 %
 % --- Input:
@@ -12,6 +15,8 @@ function [y,z] = ppc_val2(X, C, D, x) %#codegen
 % C [O x K-1 x N], coefficients of the first piecewise polynomial
 % D [O x K-1 x N], coefficients of the second piecewise polynomial
 % x [    L   x M], evaluation sites
+% d [1, 1]       , order of derivative to evaluate; defaults to 0 if not
+%                  given, which means to evaluate with no differentiation.
 %
 %
 % --- Output:
@@ -42,6 +47,11 @@ function [y,z] = ppc_val2(X, C, D, x) %#codegen
 % Email     : geoffstanley@gmail.com
 % Version   : 1.0
 % History   : 24/10/2019 - initial release
+
+% Set default to evaluate, not differentiate:
+if nargin < 5
+    d = 0;
+end
 
 szC = size(C);
 szX = size(X);
@@ -101,8 +111,9 @@ for n = 0:N-1
             ln = l + n * L;
             if i == 1 
                 % Note: X(nX + 1) == xln   is guaranteed
-                y(ln) = C(O + (i-1)*O + n*MC);      % y(l,n) = C(O, i, n);
-                z(ln) = D(O + (i-1)*O + n*MC);
+                p = prod(1 : d); % Build integer multiplying the coefficient
+                y(ln) = C(O - d + (i-1)*O + n*MC) * p; % y(l,n) = C(O - d, i, n) * p;
+                z(ln) = D(O - d + (i-1)*O + n*MC) * p;
             else
                 % Evaluate this piece of the polynomial (see ppval.m)
                 t = xln - X(nX + i-1); % Switch to local coordinates
@@ -111,11 +122,12 @@ for n = 0:N-1
                 % subtract 1 from i so that 1 <= i <= M-1, and X(i) <= xln < X(i+1),
                 % subtract another 1 for indexing. 
                 i = (i-2)*O + n*MC; 
-                y(ln) = C(1 + i);                   % y(l,n) = C(1,i+1,n+1);
-                z(ln) = D(1 + i);
-                for o = 2:O
-                    y(ln) = t * y(ln) + C(o + i);   % y(l,n) = s * y(l,n) + C(o,i+1,n+1);
-                    z(ln) = t * z(ln) + D(o + i);   
+                y(ln) = 0;
+                z(ln) = 0;
+                for o = 1 : O - d
+                    p = prod(O - o - d + 1 : O - o); % Build integer multiplying the coefficient
+                    y(ln) = t * y(ln) + C(o + i) * p; % y(l,n) = t * y(l,n) + C(o,i+1,n+1) * p;
+                    z(ln) = t * z(ln) + D(o + i) * p;   
                 end
             end
 

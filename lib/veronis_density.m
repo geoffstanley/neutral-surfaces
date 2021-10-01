@@ -93,10 +93,6 @@ end
 Sppc = interpfn(P, S);
 Tppc = interpfn(P, T);
 
-% Evaluate the derivatives of these piecewise polynomials as functions of P
-SPppc = ppc_deriv(P, Sppc);
-TPppc = ppc_deriv(P, Tppc);
-
 % Calculate potential density, referenced to p_ref, at p0
 [s0, t0] = ppc_val2(P, Sppc, Tppc, p0);
 d0 = eos(s0, t0, p_ref);
@@ -110,28 +106,28 @@ if isnan(k0) || isnan(k1)
 end
 
 % Integrate from p0 to P(k0+1)
-d1 =   d0 + int_x_kp1(P, p0, k0, dp, Sppc, Tppc, SPppc, TPppc);
+d1 =   d0 + int_x_kp1(P, p0, k0, dp, Sppc, Tppc);
 
 % Integrate from P(k0+1) to P(k1+1)
 for k = k0+1 : k1
-  d1 = d1 + int_x_kp1(P, P(k), k, dp, Sppc, Tppc, SPppc, TPppc);
+  d1 = d1 + int_x_kp1(P, P(k), k, dp, Sppc, Tppc);
 end
 
 % Integrate from p1 to P(k1+1), and subtract this
-d1 =   d1 - int_x_kp1(P, p1, k1, dp, Sppc, Tppc, SPppc, TPppc);
+d1 =   d1 - int_x_kp1(P, p1, k1, dp, Sppc, Tppc);
 
 end
 
 
-function d = int_x_kp1(P, p, k, dp, Sppc, Tppc, SPppc, TPppc)
+function d = int_x_kp1(P, p, k, dp, Sppc, Tppc)
 % Integrate from p to P(k+1) using trapezoidal integration with spacing dp
 
 n = ceil((P(k+1) - p) / dp) + 1; % # points between p and P(k+1), inclusive
 p_ = linspace(p, P(k+1), n);     % intervals are not larger than dp
 
 % Use piecewise polynomial coefficients as provided
-[s_, t_] = ppc_val2_(P, Sppc, Tppc, p_, k+1);
-[dsdp_, dtdp_] = ppc_val2_(P, SPppc, TPppc, p_, k+1);
+[s_, t_] = ppc_val2_(P, Sppc, Tppc, p_, 0, k+1);
+[dsdp_, dtdp_] = ppc_val2_(P, Sppc, Tppc, p_, 1, k+1);
 
 % To use linear interpolation internally, replace the above 2 lines with the following 9 lines:
 % S = Sppc(end,:);
@@ -151,7 +147,7 @@ d = trapz(p_, y_);
 end
 
 
-function [y,z] = ppc_val2_(X, C, D, x, i)
+function [y,z] = ppc_val2_(X, C, D, x, d, i)
 % like pcc_val2, but supplies i such that
 % i = 1                      if x <= X(1), or
 % i = M                      if X(M) < x
@@ -169,20 +165,21 @@ z = nan(size(x));
 
 if i == 1
   % Note: X(1) == x   is guaranteed
-  y(:) = C(O, i);
-  z(:) = D(O, i);
+  p = prod(1 : d); % Build integer multiplying the coefficient
+  y(:) = C(O - d, i) * p;
+  z(:) = D(O - d, i) * p;
   
 else
   
   % Evaluate this piece of the polynomial
   t = x - X(i-1); % Switch to local coordinates
   
-  y(:) = C(1, i-1);
-  z(:) = D(1, i-1);
-  
-  for o = 2:O
-    y = t .* y + C(o, i-1);
-    z = t .* z + D(o, i-1);
+  y(:) = 0;
+  z(:) = 0;
+  for o = 1 : O - d
+    p = prod(O - o - d + 1 : O - o); % Build integer multiplying the coefficient
+    y = t .* y + C(o, i-1) * p;
+    z = t .* z + D(o, i-1) * p;
   end
 end
 end
