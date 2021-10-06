@@ -106,7 +106,7 @@ DEFS.DIST2_iJ = 1;   % Distance [m] in 2nd dimension centred at (I-1/2, J)
 DEFS.DIST1_Ij = 1;   % Distance [m] in 1st dimension centred at (I, J-1/2)
 
 % Override any options with user-specified OPTS
-if nargin < 6 || isempty(OPTS)
+if nargin < 7 || isempty(OPTS)
   OPTS = DEFS;
 else
   OPTS = catstruct(DEFS, OPTS); 
