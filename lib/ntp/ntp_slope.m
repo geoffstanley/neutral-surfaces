@@ -69,6 +69,12 @@ narginchk(4, 7);
 if nargin < 5 || isempty(tolz)
   tolz = 1e-5;
 end
+if nargin < 6 || isempty(dx)
+  dx = 1;
+end
+if nargin < 7 || isempty(dy)
+  dy = 1;
+end
 
 [ni,nj] = size(z);
 
