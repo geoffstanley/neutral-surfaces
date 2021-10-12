@@ -11,14 +11,18 @@ function phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WR
 %  s [ni, nj]: practical / Absolute Salinity on the surface
 %  t [ni, nj]: potential / Conservative Temperature on the surface
 %  p [ni, nj]: pressure (or depth) on the surface
-% DIST2on1_iJ [ni, nj]: the area of a grid cell centred at (I-1/2, J),
-%   divided by the distance, squared, from (I-1,J) to (I,J).  Equivalently,
-%   this is the grid distance in second dimension divided by grid distance
-%   in first dimension, both centred at (I-1/2, J).
-% DIST1on2_Ij [ni, nj]: the area of a grid cell centred at (I, J-1/2),
-%   divided by the distance, squared, from (I,J-1) to (I,J).  Equivalently,
-%   this is the grid distance in first dimension divided by grid distance
-%   in second dimension, both centred at (I, J-1/2).
+% sqrtDIST2on1_iJ [ni, nj]: The square-root of a ratio of distances,
+%   specifically the grid distance in the second dimension divided by grid
+%   distance in the first dimension, both centred at (I-1/2, J).  This
+%   ratio of distances is, equivalently, the area area of a grid cell
+%   centred at (I-1/2, J) divided by the square of the grid distance in the
+%   first dimension centred at (I-1/2,J).
+% sqrtDIST1on2_Ij [ni, nj]: The square-root of a ratio of distances,
+%   specifically the grid distance in first dimension divided by grid
+%   distance in second dimension, both centred at (I, J-1/2).  This ratio
+%   of distances is, equivalently, the area area of a grid cell centred at
+%   (I, J-1/2) divided by the square of the grid distance in the second
+%   dimension centred at (I,J-1/2).
 % WRAP [2 element array]: WRAP(i) is true iff the domain is periodic in the
 %                         i'th lateral dimension.  
 % A4 [4, ni*nj]: adjacency matrix  (see grid_adjacency.m)
