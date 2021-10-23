@@ -42,7 +42,7 @@ function [p, s, t] = omega_vertsolve(Sppc, Tppc, P, BotK, s, t, p, tolp, phi) %#
 %       in total.
 %
 % Note: BotK should be given by
-%           BotK = squeeze(sum(uint16(isfinite(S)), 1, 'native'));
+%           BotK = squeeze(sum(isfinite(S), 1));
 %
 %
 % --- Output
