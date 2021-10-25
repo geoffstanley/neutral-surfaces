@@ -131,7 +131,8 @@ function out = diff_p0(p, Sppc, Tppc, P, r0, p0, d)
 [s,t] = ppc_val2(P, Sppc, Tppc, p);
 
 % Calculate the potential density or potential specific volume difference
-out =  eos(s, t, p0) - d - r0 ;
+%out =  eos(s, t, p0) - d - r0 ;
+out =  eos(s, t, p0) - r0 - d ;
 
 end
 
