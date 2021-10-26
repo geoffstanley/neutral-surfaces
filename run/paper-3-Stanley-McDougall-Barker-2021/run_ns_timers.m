@@ -111,6 +111,7 @@ for iDATA = 1 : nDATA
     nj = ni;
     nk = 50;
     
+    rng(0);
     [S, T, Z, g] = synthocean_rand(ni, nj, nk, WRAP);
     g.DXC = repmat(g.DXCvec, ni, 1);
     g.DYC = repmat(g.DYCsc, ni, nj);
