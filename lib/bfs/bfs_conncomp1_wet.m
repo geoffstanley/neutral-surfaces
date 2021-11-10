@@ -3,19 +3,20 @@ function [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet(Sppc, Tppc, P, s, t,
 %                   and test neutral tangent plane connections from the perimeter
 %
 %
-% [s, t, p, freshly_wet] = bfs_conncomp1_wet(Sppc, Tppc, P, s, t, p, TOL_P, A, BotK, r, qu)
+% [s, t, p, freshly_wet] = bfs_conncomp1_wet(Sppc, Tppc, P, s, t, p, ML, TOL_P, A, BotK, r, qu)
 % works as bfs_conncomp1.m, with G in that function given by isfinite(p).
 % That is, nodes in the surface are walked from the root node r.  Where an
-% invalid node is reached, that is not part of the surface but nonetheless
+% invalid node is reached which is not part of the surface but nonetheless
 % ocean (BotK > 1 here), a neutral tangent plane calculation is performed
-% from the surface to the cast at this node.  If successful, this node is
-% added to the surface, the salinity and temperature are interpolated using
-% the piecewise polynomials Sppc and Tppc with knots at P, and the BFS
-% continues.  NTP connections are accurate to a pressure or depth of TOL_P.
-% The input qu is optional, simply to save memory by working in-place.  On
-% output, qu(1:qt) are linear indices to the nodes on the surface (whether
-% or not they are freshly wet), in the order that they were added to the
-% queue.  Note qu(1) == r.
+% from the surface to the cast at this node.  If successful, and if the NTP
+% link reaches this neighbouring cast below the mixed layer, then this node
+% is added to the surface, the salinity and temperature are interpolated
+% using the piecewise polynomials Sppc and Tppc with knots at P, and the
+% BFS continues.  NTP connections are accurate to a pressure or depth of
+% TOL_P. The input qu is optional, simply to save memory by working
+% in-place.  On output, qu(1:qt) are linear indices to the nodes on the
+% surface (whether or not they are freshly wet), in the order that they
+% were added to the queue.  Note qu(1) == r.
 %
 %
 % --- Input:
@@ -27,6 +28,7 @@ function [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet(Sppc, Tppc, P, s, t,
 % s [ni,nj]: practical / Absolute salinity on the surface
 % t [ni,nj]: potential / Conservative temperature on the surface
 % p [ni,nj]: pressure or depth on the surface
+% ML [ni,nj]: pressure or depth of the mixed layer.
 % TOL_P [1,1]: tolerance in p for finding neutral connections
 % A [D, ni*nj]: adjacency, where D is the most neighbours possible
 % qu [N,1]: vector to work in-place (optional)
