@@ -75,7 +75,7 @@ if isempty(file_mex) ... % No mex file yet
     t_BotK = coder.typeof(0, [ni, nj], [vs, vs]);
     t_q    = coder.typeof(0, [nij, 1], [vs, vs]);
     
-    args = {t_SppX, t_SppX, t_X, t_x, t_x, t_x, 0, t_A, t_BotK, 0, t_q};
+    args = {t_SppX, t_SppX, t_X, t_x, t_x, t_x, t_x, 0, t_A, t_BotK, 0, t_q};
     
     % Configure MEX for speed.
     mexconfig = coder.config('mex');

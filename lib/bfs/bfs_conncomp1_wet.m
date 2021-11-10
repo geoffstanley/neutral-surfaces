@@ -1,4 +1,4 @@
-function [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet(Sppc, Tppc, P, s, t, p, TOL_P, A, BotK, r, qu) %#codegen
+function [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet(Sppc, Tppc, P, s, t, p, ML, TOL_P, A, BotK, r, qu) %#codegen
 %BFS_CONNCOMP1_WET  Find one connected component using Breadth First Search,
 %                   and test neutral tangent plane connections from the perimeter
 %
@@ -96,8 +96,9 @@ while qt > qh
           Pn = P(:,n);
         end
         p(n) = ntp_bottle_to_cast(Sppc(:,:,n), Tppc(:,:,n), Pn, BotK(n), s(m), t(m), p(m), TOL_P);
-        if isfinite(p(n))
-          % The NTP connection was successful
+        if isfinite(p(n)) && p(n) > ML(n)
+          % The NTP connection was successful, and its location on the
+          % neighbouring cast is below the mixed layer.
 
           [s(n), t(n)] = ppc_val2(Pn, Sppc(:,:,n), Tppc(:,:,n), p(n));
 

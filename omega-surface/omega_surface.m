@@ -249,11 +249,14 @@ end
 if ITER_MAX > 1
   if isempty(OPTS.ML)
     % Do not remove the mixed layer
-    ML = [];
+    REMOVE_MIXED_LAYER = false;
+    ML = -inf(ni, nj);  % this deactivates mixed layer removal in bfs_conncomp1_wet
   elseif isstruct(OPTS.ML)
+    REMOVE_MIXED_LAYER = true;
     ML = mixed_layer(S, T, P, OPTS.ML);
   else
     % Use a pre-computed mixed layer
+    REMOVE_MIXED_LAYER = true;
     ML = OPTS.ML;
   end
 end
@@ -323,7 +326,7 @@ for iter = 1 : ITER_MAX
   % --- Remove the Mixed Layer
   % But keep it for the first iteration, which may be initialized from a
   % not very neutral surface
-  if iter > 1 && ~isempty(ML)
+  if REMOVE_MIXED_LAYER && iter > 1
     p(p < ML) = nan;
   end
   
@@ -331,7 +334,7 @@ for iter = 1 : ITER_MAX
   % --- Determine the connected component containing the reference cast, via Breadth First Search
   mytic = tic;
   if iter >= ITER_START_WETTING && iter <= ITER_STOP_WETTING
-    [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(Sppc, Tppc, P, s, t, p, TOL_P_UPDATE, A4, BotK, ref_cast, qu);
+    [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(Sppc, Tppc, P, s, t, p, ML, TOL_P_UPDATE, A4, BotK, ref_cast, qu);
   else
     [qu, qt] = bfs_conncomp1(isfinite(p), A4, ref_cast, qu);
     freshly_wet = 0;
