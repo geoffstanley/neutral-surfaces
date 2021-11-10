@@ -376,15 +376,18 @@ if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX && OPTS.ITER_STOP_WETTING > 0
   bfs_conncomp1_wet_codegen(nk, ni_, nj_, Pvec, OPTS)
 end
 
-%% Get ML: the pressure (or depth) of the mixed layer
-if OPTS.ITER_MAX > 1
+%% Get ML: the pressure of the mixed layer
+if ITER_MAX > 1
   if isempty(OPTS.ML)
     % Do not remove the mixed layer
-    ML = [];
+    REMOVE_MIXED_LAYER = false;
+    ML = -inf(ni, nj);  % this deactivates mixed layer removal in bfs_conncomp1_wet
   elseif isstruct(OPTS.ML)
+    REMOVE_MIXED_LAYER = true;
     ML = mixed_layer(S, T, P, OPTS.ML);
   else
     % Use a pre-computed mixed layer
+    REMOVE_MIXED_LAYER = true;
     ML = OPTS.ML;
   end
 end
@@ -468,7 +471,7 @@ for iter = 1 : OPTS.ITER_MAX
   % --- Remove the Mixed Layer
   % But keep it for the first iteration, which may be initialized from a
   % not very neutral surface
-  if iter > 1 && ~isempty(ML)
+  if REMOVE_MIXED_LAYER && iter > 1
     p(p < ML) = nan;
   end
   
@@ -477,7 +480,7 @@ for iter = 1 : OPTS.ITER_MAX
   % via Breadth First Search, and do wetting while at it
   mytic = tic();
   if iter >= OPTS.ITER_START_WETTING && iter <= OPTS.ITER_STOP_WETTING
-    [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(Sppc, Tppc, P, s, t, p, OPTS.TOL_P_UPDATE, A4, BotK, ref_cast, qu);
+    [s, t, p, freshly_wet, qu, qt] = bfs_conncomp1_wet_mex(Sppc, Tppc, P, s, t, p, ML, OPTS.TOL_P_UPDATE, A4, BotK, ref_cast, qu);
   else
     [qu, qt] = bfs_conncomp1(isfinite(p), A4, ref_cast, qu);
     freshly_wet = 0;
