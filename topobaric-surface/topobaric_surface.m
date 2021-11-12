@@ -53,6 +53,9 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 % >> p_ = p(RG.wet);                                     % get p just on the valid surface
 % >> d_fn_at_p = ppval(d_fn1, p);                        % evaluate the function for delta in terms of p
 %
+% [..., diags] = topobaric_surface(...)
+% also returns diagnostic information about the solution at each iteration.
+%
 %
 % --- Sizes:  below,
 % nk is the maximum number of data points per water column,
@@ -99,6 +102,18 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 %
 % --- Options:
 % OPTS is a struct containing the following fields. See ./private/tbs_defaults.m for default values.
+%   DIST1_iJ [ni, nj]: 
+%     Distance [m] in 1st dimension centred at (I-1/2, J): the distance 
+%     between cell centres at (I,J) and (I-1,J)
+%   DIST2_iJ [ni, nj]:
+%     Distance [m] in 2nd dimension centred at (I-1/2, J): the length of
+%     the face between cells at (I,J) and (I-1,J)
+%   DIST1_Ij [ni, nj]:
+%     Distance [m] in 1st dimension centred at (I, J-1/2): the length of
+%     the face between cells at (I,J) and (I,J-1)
+%   DIST2_Ij [ni, nj]: 
+%     Distance [m] in 2nd dimension centred at (I, J-1/2): the distance 
+%     between cell centres at (I,J) and (I,J-1)
 %   INTERPFN [function handle]: vertical interpolation function, used to
 %       evaluate Sppc and Tppc if those are not provided.  Default:
 %       INTERPFN = @ppc_linterp.

@@ -16,9 +16,12 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 % may be used) and its partial derivatives with respect to S and T are
 % given by the functions eos.m and eos_s_t.m in MATLAB's path.  For units,
 % see "Equation of State" below.
-
+%
 % ... = omega_surface(..., OPTS)
 % specifies algorithmic parameters (see "Options" below for details).  
+%
+% [..., d] = omega_surface(...)
+% also returns diagnostic information about the solution at each iteration.
 %
 %
 % --- Input:
@@ -81,6 +84,18 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 %
 % --- Options:
 % OPTS is a struct containing the following fields. 
+%   DIST1_iJ [ni, nj]: 
+%     Distance [m] in 1st dimension centred at (I-1/2, J): the distance 
+%     between cell centres at (I,J) and (I-1,J)
+%   DIST2_iJ [ni, nj]:
+%     Distance [m] in 2nd dimension centred at (I-1/2, J): the length of
+%     the face between cells at (I,J) and (I-1,J)
+%   DIST1_Ij [ni, nj]:
+%     Distance [m] in 1st dimension centred at (I, J-1/2): the length of
+%     the face between cells at (I,J) and (I,J-1)
+%   DIST2_Ij [ni, nj]: 
+%     Distance [m] in 2nd dimension centred at (I, J-1/2): the distance 
+%     between cell centres at (I,J) and (I,J-1)
 %   FILE_ID [1, 1]: 1 to write any output to MATLAB terminal, or a file
 %       identifier as returned by fopen() to write to a file. Default: 1.
 %   FIGS_SHOW [scalar]: true to show figures of specific volume adjustment
