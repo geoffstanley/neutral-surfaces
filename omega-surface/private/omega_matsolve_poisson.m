@@ -1,4 +1,4 @@
-function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, N, mr)
+function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, N, Iref)
 % OMEGA_MATSOLVE_POISSON  Build & solve the sparse matrix Poisson problem for omega surfaces
 %
 %
@@ -25,7 +25,7 @@ function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 % qu [ni*nj,1]: the nodes visited by the BFS's in order from 1 to N (see bfs_conncomp1.m)
 % N [1,1]: the number of water columns in the region; 
 %          also, the last valid index of qu, i.e. the queue tail (see bfs_conncomp1.m)
-% mr [1,1]  : linear index to a reference cast at which phi will be zero.
+% Iref [1,1]  : linear index to a reference cast at which phi will be zero.
 %
 %
 % --- Output:
@@ -164,27 +164,28 @@ m = sort(qu(1:N));  % sorting here makes matrix better structured; overall speed
 remap = zeros(1, WALL);  % pre-alloc space and leave land as 0.
 remap(m) = 1:N;          % Label the water columns in this region alone by 1, 2, ... N.
 
-% Pin surface at mr by changing the mr'th equation to be 1 * phi[mr] = 0.
-D(mr) = 0;
-L(:,mr) = 0;
-L(IJ,mr) = 1;
+% Pin surface at Iref by changing the Iref'th equation to be 1 * phi[Iref] = 0.
+D(Iref) = 0;
+L(:,Iref) = 0;
+L(IJ,Iref) = 1;
 
-% The above change renders the mr'th column on all rows irrelevant,
-% since phi[mr] will be zero.  So, we may also set this column to 0,
-% which we do here by setting the appropriate links in L to 0. This
-% maintains symmetry of the matrix, and speeds up solution by a
-% factor of about 2.
-if A4(IP,mr) ~= WALL
-  L(IM,A4(IP,mr)) = 0;
+% The above change renders the mr'th column on all rows irrelevant, where
+% mr = remap(Iref) is the index in the matrix problem for the reference
+% cast, since phi[Iref] will be zero.  So, we may also set this column to
+% 0, which we do here by setting the appropriate links in L to 0. This
+% maintains symmetry of the matrix, and speeds up solution by a factor of
+% about 2.
+if A4(IP,Iref) ~= WALL
+  L(IM,A4(IP,Iref)) = 0;
 end
-if A4(PJ,mr) ~= WALL
-  L(MJ,A4(PJ,mr)) = 0;
+if A4(PJ,Iref) ~= WALL
+  L(MJ,A4(PJ,Iref)) = 0;
 end
-if A4(MJ,mr) ~= WALL
-  L(PJ,A4(MJ,mr)) = 0;
+if A4(MJ,Iref) ~= WALL
+  L(PJ,A4(MJ,Iref)) = 0;
 end
-if A4(IM,mr) ~= WALL
-  L(IP,A4(IM,mr)) = 0;
+if A4(IM,Iref) ~= WALL
+  L(IP,A4(IM,Iref)) = 0;
 end
 
 % Build the RHS of the matrix problem
