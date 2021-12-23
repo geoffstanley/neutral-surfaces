@@ -150,14 +150,13 @@ assert(isscalar(use_s_t), 'use_s_t must be a (logical) scalar');
 assert(isscalar(centre), 'centre must be a (logical) scalar');
 assert(numel(wrap) == 2, 'wrap must be a 2 element (logical) vector');
 
-nonBOUSSINESQ = (nargin >= 10) && ~isempty(grav); % grav is given.
-if nonBOUSSINESQ
-  assert(isscalar(grav), 'grav, if non-empty, must be a scalar');
-end
 
 if nargout > 2
   assert(nargin == 13, 'If sx, sy are requested, must provide grav, S, T, P');
-  assert(isscalar(grav), 'grav must be a scalar.');
+  nonBOUSSINESQ = ~isempty(grav); % grav, needed in hydrostatic balance when non-Boussinesq, is given.
+  if nonBOUSSINESQ
+    assert(isscalar(grav), 'grav, if non-empty, must be a scalar');
+  end
   assert(is3Ds(S), 'The last two dimensions of S must match those of s (or be singletons).')
   assert(is3Ds(T), 'The last two dimensions of T must match those of s (or be singletons).')
   assert(is3Ds(P), 'The last two dimensions of P must match those of s (or be singletons).')
@@ -248,7 +247,7 @@ if nargout < 3; return; end
 % potential density or potential specific volume.
 % N^2 = -(g / rho) * d(pot dens)/dz = +(g / v) * d(pot spec vol)/dz,   where v = 1/rho
 N_min = 2e-4;
-thresh = N_min^2 * eos(34.5, 3, 1000) / grav; % > 0
+thresh = N_min^2 * eos(34.5, 3, 1000) / 9.81; % > 0.  Use canonical Earth gravity for this scaling.
 
 
 % Calculate locally referenced potential density (or specific volume)
