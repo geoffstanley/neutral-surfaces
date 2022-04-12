@@ -1,5 +1,5 @@
 function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, N, Iref)
-% OMEGA_MATSOLVE_POISSON  Build & solve the sparse matrix Poisson problem for omega surfaces
+% OMEGA_MATSOLVE_POISSON  Solve the sparse matrix Poisson problem for omega surfaces
 %
 %
 % phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, N, m_ref)
@@ -13,12 +13,12 @@ function phi = omega_matsolve_poisson(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A
 %  p [ni, nj]: pressure (or depth) on the surface
 % DIST2on1_iJ [ni, nj]: The grid distance in the second dimension divided
 %   by the grid distance in the first dimension, both centred at (I-1/2,J).
-%   Equivalently, the square root of the area of a grid cell centred at
-%   (I-1/2,J), divided by the distance from (I-1,J) to (I,J).   
+%   Equivalently, the area of a grid cell centred at (I-1/2,J) divided by
+%   the distance (in the first dimension) from (I-1,J) to (I,J).   
 % DIST1on2_Ij [ni, nj]: The grid distance in the first dimension divided by
 %   the grid distance in the second dimension, both centred at (I-1/2,J).
-%   Equivalently, the square root of the area of a grid cell centred at
-%   (I,J-1/2), divided by the distance from (I,J-1) to (I,J).   
+%   Equivalently, the area of a grid cell centred at (I,J-1/2) divided by
+%   the distance (in the second dimension) from (I,J-1) to (I,J).   
 % WRAP [2 element array]: WRAP(i) is true iff the domain is periodic in the
 %                         i'th lateral dimension.  
 % A4 [4, ni*nj]: adjacency matrix  (see grid_adjacency.m)

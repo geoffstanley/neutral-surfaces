@@ -1,8 +1,8 @@
 function phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WRAP, A4, qu, N, mr)
-% OMEGA_MATSOLVE_GRAD  Build & solve the sparse matrix gradient equations for omega surfaces
+% OMEGA_MATSOLVE_GRAD  Solve the sparse matrix gradient equations for omega surfaces
 %
 %
-% phi = omega_matsolve_grad(s, t, p, DIST2on1_iJ, DIST1on2_Ij, WRAP, A4, qu, N, mr)
+% phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WRAP, A4, qu, N, mr)
 % builds and solves the sparse matrix problem for omega surfaces in
 % gradient equation form, ensuring phi is zero at mr.
 %
@@ -11,18 +11,18 @@ function phi = omega_matsolve_grad(s, t, p, sqrtDIST2on1_iJ, sqrtDIST1on2_Ij, WR
 %  s [ni, nj]: practical / Absolute Salinity on the surface
 %  t [ni, nj]: potential / Conservative Temperature on the surface
 %  p [ni, nj]: pressure (or depth) on the surface
-% sqrtDIST2on1_iJ [ni, nj]: The square-root of a ratio of distances,
-%   specifically the grid distance in the second dimension divided by grid
-%   distance in the first dimension, both centred at (I-1/2, J).  This
-%   ratio of distances is, equivalently, the area area of a grid cell
+% sqrtDIST2on1_iJ [ni, nj]: The square-root of the following distance ratio:
+%   the grid distance in the second dimension divided by grid
+%   distance in the first dimension, both centred at (I-1/2, J).  
+%   Equivalently, the square root of the following: the area of a grid cell
 %   centred at (I-1/2, J) divided by the square of the grid distance in the
 %   first dimension centred at (I-1/2,J).
-% sqrtDIST1on2_Ij [ni, nj]: The square-root of a ratio of distances,
-%   specifically the grid distance in first dimension divided by grid
-%   distance in second dimension, both centred at (I, J-1/2).  This ratio
-%   of distances is, equivalently, the area area of a grid cell centred at
-%   (I, J-1/2) divided by the square of the grid distance in the second
-%   dimension centred at (I,J-1/2).
+% sqrtDIST1on2_Ij [ni, nj]: The square-root of the following distance ratio:
+%   the grid distance in first dimension divided by grid
+%   distance in second dimension, both centred at (I, J-1/2).  
+%   Equivalently, the square root of the following: the area of a grid cell 
+%   centred at (I, J-1/2) divided by the square of the grid distance in the 
+%   second dimension centred at (I,J-1/2).
 % WRAP [2 element array]: WRAP(i) is true iff the domain is periodic in the
 %                         i'th lateral dimension.  
 % A4 [4, ni*nj]: adjacency matrix  (see grid_adjacency.m)
