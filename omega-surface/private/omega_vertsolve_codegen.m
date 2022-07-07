@@ -20,7 +20,7 @@ VERBOSE = 1; % verbose mode
 FILE_ID = 1; % output to MATLAB terminal
 
 % Override defaults
-if nargin == 5 && isstruct(OPTS)
+if nargin == 4 && isstruct(OPTS)
     if isfield(OPTS, 'VERBOSE')
         VERBOSE = OPTS.VERBOSE;
     end
