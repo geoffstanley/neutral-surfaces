@@ -22,9 +22,10 @@ function [p, s, t] = ntp_bottle_to_cast(Sppc, Tppc, P, k, sB, tB, pB, tolp) %#co
 %
 % --- Input:
 % Sppc [O, K-1]: coefficients for piecewise polynomial for practical / 
-%     Absolute Salinity in terms of Z on the cast.  Here, O is the
+%     Absolute Salinity in terms of P on the cast.  Here, O is the
 %     polynomial order and K is the number of data points (including NaN's)
-%     on the cast.
+%     on the cast.  These can be constructed using the `ppc_*` functions
+%     in `neutral-surfaces/lib/ppc/`.
 % Tppc [O, K-1]: as above but for potential / Conservative Temperature.
 % P [K, 1]: pressure or depth data points on the cast.
 % k [1, 1]: number of valid (non-NaN) data points on the cast.
