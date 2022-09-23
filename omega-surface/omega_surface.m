@@ -224,7 +224,7 @@ eos0 = eos(34.5, 3, 1000);
 if eos0 > 1
   TOL_LRPD_L1 = OPTS.TOL_LRPD_L1;          % Density tolerance [kg m^-3]
 else
-  TOL_LRPD_L1 = OPTS.TOL_LRPD_L1 * 1000^2; % Specific volume tolerance [m^3 kg^-1]
+  TOL_LRPD_L1 = OPTS.TOL_LRPD_L1 / 1000^2; % Specific volume tolerance [m^3 kg^-1]
 end
 
 % Soft notation, similar to that in MOM6: i = I - 1/2, j = J - 1/2
