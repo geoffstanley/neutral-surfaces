@@ -7,12 +7,13 @@ function [p,s,t,d0,diags] = pot_dens_surf(S, T, P, pref, var, WRAP, OPTS)
 % of the isosurface d0 of potential density referenced to pref, in the
 % ocean with practical / Absolute salinity S and potential / Conservative
 % temperature T at data sites where the and pressure or depth is P.  The
-% equation of state is given by eos.m in MATLAB's path, which accepts S, T,
-% pref as its 3 inputs. For a non-Boussinesq ocean, p, P, and pref should
-% be pressure [dbar].  For a Boussinesq ocean, p, P, and pref should be
-% depth [m], positive and increasing down.  The domain is periodic in the
-% i'th horizontal dimension iff WRAP(i) is true; this is relevant only to
-% measuring neutrality errors in diags output, not to constructing the
+% equation of state is given by eos.m in MATLAB's path (e.g. in
+% `neutral-surfaces/lib/eos/active/`).  The function eos.m must accept S,
+% T, pref as its 3 inputs. For a non-Boussinesq ocean, p, P, and pref
+% should be pressure [dbar].  For a Boussinesq ocean, p, P, and pref should
+% be depth [m], positive and increasing down.  The domain is periodic in
+% the i'th horizontal dimension iff WRAP(i) is true; this is relevant only
+% to measuring neutrality errors in diags output, not to constructing the
 % surface.
 %
 % [p,s,t,d0] = pot_dens_surf(S, T, P, pref, [i0, j0, p0], WRAP)

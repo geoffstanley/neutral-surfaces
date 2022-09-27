@@ -31,7 +31,7 @@ PATH_OMEGA_KMJ = [PATH_LOCAL 'omega-kmj/'];
 addpath(genpath(PATH_OMEGA_KMJ));
 
 % Folder containing the functions eos.m, eos_p.m, and eos_s_t.m
-PATH_EOS = '~/work/MATLAB/eos/eos/'; % << ADJUST AS NEEDED >>
+PATH_EOS = [PATH_NS '/lib/eos/active/'];
 addpath(PATH_EOS);  % Doing this last to ensure at top of MATLAB's path, above eos fcns in other dirs
 
 % Folder containing .nc data files

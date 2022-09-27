@@ -14,8 +14,9 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 % neutrality error.  The domain is periodic in the i'th horizontal
 % dimension iff WRAP(i) is true.  The density or specific volume (either
 % may be used) and its partial derivatives with respect to S and T are
-% given by the functions eos.m and eos_s_t.m in MATLAB's path.  For units,
-% see "Equation of State" below.
+% given by the functions eos.m and eos_s_t.m in MATLAB's path (e.g. in
+% `neutral-surfaces/lib/eos/active/`).  For units, see "Equation of State"
+% below.
 %
 % ... = omega_surface(..., OPTS)
 % specifies algorithmic parameters (see "Options" below for details).  

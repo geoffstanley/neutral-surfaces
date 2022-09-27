@@ -26,6 +26,7 @@ addpath([PATH_PROJECT 'lib' V 'fzero_cg']);
 addpath([PATH_PROJECT 'lib' V 'gsf']);
 addpath([PATH_PROJECT 'lib' V 'ntp']);
 addpath([PATH_PROJECT 'lib' V 'ppc']);
+addpath([PATH_PROJECT 'lib' V 'eos' V 'active']);
 
 FEX_DIR = dir([PATH_PROJECT 'fex']); % rather than genpath, only go one level deep: avoid codegen folders
 for i = 1 : length(FEX_DIR)

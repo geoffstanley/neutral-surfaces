@@ -4,18 +4,19 @@ function [p,s,t,d0,s_ref,t_ref,diags] = delta_surf(S, T, P, s_ref, t_ref, var, W
 %
 % [p,s,t] = delta_surf(S, T, P, s_ref, t_ref, d0, WRAP)
 % finds pressure or depth p -- and its salinity s and temperature t -- of
-% the isosurface d0 of delta = eos(S,T,P) - eos(s_ref,t_ref,P) with reference
-% practical / Absolute salinity s_ref and reference potential / Conservative
-% temperature t_ref, in an ocean with practical / Absolute salinity S and
-% potential / Conservative temperature T at data sites where the pressure
-% or depth is P.  The equation of state is given by eos.m in MATLAB's path,
-% which accepts S, T, and P as its 3 inputs.  For a non-Boussinesq ocean, p
-% and P are pressure [dbar] and eos gives the specific volume.  For a
-% Boussinesq ocean, p and P are depth [m] positive and increasing down, and
-% eos gives the in-situ density.  The domain is periodic in the
+% the isosurface d0 of delta = eos(S,T,P) - eos(s_ref,t_ref,P) with
+% reference practical / Absolute salinity s_ref and reference potential /
+% Conservative temperature t_ref, in an ocean with practical / Absolute
+% salinity S and potential / Conservative temperature T at data sites where
+% the pressure or depth is P.  The equation of state is given by eos.m in
+% MATLAB's path (e.g. in `neutral-surfaces/lib/eos/active/`).  The function
+% eos.m must accept S, T, and P as its 3 inputs.  For a non-Boussinesq
+% ocean, p and P are pressure [dbar] and eos gives the specific volume.
+% For a Boussinesq ocean, p and P are depth [m] positive and increasing
+% down, and eos gives the in-situ density.  The domain is periodic in the
 % i'th horizontal dimension iff WRAP(i) is true; this is relevant only to
 % measuring neutrality errors in diags output, not to constructing the
-% surface. 
+% surface.
 %
 % [p, s, t, d0] = delta_surf(S, T, P, s_ref, t_ref, [i0, j0, p0], WRAP)
 % as above but finds the delta isosurface, delta = d0, that intersects the

@@ -30,7 +30,7 @@ PATH_OUT = [PATH_OUT datestr(now, 'dd-mm-yyyy') '/'];
 if ~exist(PATH_OUT, 'dir'); mkdir(PATH_OUT); end
 
 % Folder containing the functions eos.m, eos_p.m, and eos_s_t.m
-PATH_EOS = '~/work/MATLAB/eos/eos/';
+PATH_EOS = [PATH_NS '/lib/eos/active/'];
 addpath(PATH_EOS);  % Doing this last to ensure at top of MATLAB's path, above eos fcns in other dirs
 
 % Read path to OCCA data from PATH_OCCA.txt
