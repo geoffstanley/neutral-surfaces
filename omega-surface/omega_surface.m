@@ -124,6 +124,8 @@ function [p, s, t, diags] = omega_surface(S, T, P, p, ref_cast, WRAP, OPTS)
 %   Tppc [O, nk-1, ni, nj]: Coefficients for piecewise polynomials, whose
 %       knots are at P, that interpolate T as a function of P in each water
 %       column.  E.g. Tppc = ppc_linterp(P, T);
+%   TOL_P_UPDATE [1, 1]: error tolerance, in the same units as P [dbar] or
+%       [m], when root-finding to update the surface.
 %   TOL_LRPD_L1 [scalar]: Error tolerance in Locally Referenced Potential Density [kg m^-3].
 %       Iterations stop when the Mean Absolute Value of the LRPD change of the surface
 %       is below this value. Even if eos gives specific volume, specify
@@ -191,8 +193,9 @@ assert(length(WRAP) == 2, 'WRAP must be a two element vector');
 lead1 = @(x) reshape(x, [1 size(x)]);
 autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
 
-msg1 = 'Initial surface has  log_10(|eps|_2) == %9.6f .................. \n';
-msg2 = 'Iter %2d (%6.2f sec) log_10(|eps|_2) == %9.6f by |phi''|_1 = %.6e; %4d casts freshly wet; |Delta_p|_2 = %.6e\n';
+msg0 = "iter |    MAV(phi)    |    RMS(Δp)     | # wet casts (# new) |     RMS(eps)   |  time (s)\n";
+msg1 = "%4d |                                 | %11d         | %.8e |\n";
+msg2 = "%4d | %.8e | %.8e | %11d (%5d) | %.8e | %.3f\n";
 
 p_change_L2 = 0; % ensure this is defined; needed if OPTS.TOL_P_CHANGE_L2 == 0
 %% Process OPTS
@@ -305,6 +308,7 @@ if DIAGS
   %diags.mean_eos     = nan(ITER_MAX + 1, 1);
   diags.epsL1         = nan(ITER_MAX + 1, 1);
   diags.epsL2         = nan(ITER_MAX + 1, 1);
+  diags.n_wet         = nan(ITER_MAX + 1, 1);
   
   diags.phi_L1        = nan(ITER_MAX, 1);
   diags.p_change_L1   = nan(ITER_MAX, 1);
@@ -318,17 +322,19 @@ if DIAGS
   diags.timer_update  = nan(ITER_MAX, 1);
   
   % Diagnostics about state BEFORE this (first) iteration
+  n_wet = sum(isfinite(p(:)));
   [epsL2, epsL1] = eps_norms(s, t, p, true, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
   %mean_p = nanmean(p(:));
   %mean_eos = nanmean(eos(s(:), t(:), p(:)));
+  diags.n_wet(1) = n_wet;
   diags.epsL1(1) = epsL1;
   diags.epsL2(1) = epsL2;
   %diags.mean_p(1) = mean_p;
   %diags.mean_eos(1) = mean_eos;
   
   if VERBOSE > 0
-    %fprintf(FILE_ID, msg1, log10(epsL2), mean_p, mean_eos);
-    fprintf(FILE_ID, msg1, log10(epsL2));
+    fprintf(FILE_ID, msg0);
+    fprintf(FILE_ID, msg1, 0, n_wet, epsL2);
   end
   
 end
@@ -414,6 +420,8 @@ for iter = 1 : ITER_MAX
     diags.timer_update(iter)  = timer_update;
     
     % Diagnostics about the state AFTER this iteration
+    n_wet = sum(isfinite(p(:)));
+    diags.n_wet(iter) = n_wet;
     [epsL2, epsL1] = eps_norms(s, t, p, true, WRAP, {}, DIST1_iJ, DIST2_Ij, DIST2_iJ, DIST1_Ij, AREA_iJ, AREA_Ij);
     %mean_p = nanmean(p(:));
     %mean_eos = nanmean(eos(s(:),t(:),p(:)));
@@ -424,8 +432,7 @@ for iter = 1 : ITER_MAX
     
     
     if VERBOSE > 0
-      %fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), phi_L1, freshly_wet, p_change_L2, mean_p, mean_eos);
-      fprintf(FILE_ID, msg2, iter, diags.clocktime(iter), log10(epsL2), phi_L1, freshly_wet, p_change_L2);
+      fprintf(FILE_ID, msg2, iter, phi_L1, p_change_L2, n_wet, freshly_wet, epsL2, diags.clocktime(iter));
     end
   end
   
