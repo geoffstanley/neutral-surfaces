@@ -1,5 +1,8 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4615747.svg)](https://doi.org/10.5281/zenodo.4615747)
 
+This is the MATLAB version.
+For the Python version, see https://github.com/geoffstanley/neutralocean
+
 # Neutral Surfaces
 ## Software for approximately neutral surfaces and geostrophic streamfunctions
 
