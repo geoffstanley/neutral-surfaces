@@ -663,6 +663,7 @@ for it = 1:nit
     %fprintf('%03d - |phi|_1 = %.6e\n', it, phiL1); % GJS
     
     % --- Check for convergence % GJS 
+    nanrms = @(x) sqrt(nanmean(x(:) .* conj(x(:)))); % GJS root mean square, ignoring nans
     x_change = pns_i - pns_old; % GJS
     x_change_L2   = nanrms(x_change(:)); % GJS
     fprintf('%3d - |Delta x|_2 = %.6e\n', it, x_change_L2); % GJS
