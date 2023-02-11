@@ -8,7 +8,7 @@ For the Python version, see https://github.com/geoffstanley/neutralocean
 
 ### Approximately Neutral Surfaces
 
-In the absence of irreversible mixing, fluid parcels in the ocean move such that they are always at their level of neutral buoyancy with their environment.  This constrains the direction of flow lie in a plane, called the neutral tangent plane. This plane is well-defined at every point in the ocean.  A neutral surface is an extensive 2D surface that is everywhere aligned with the neutral tangent plane (McDougall 1987).  However, neutral surfaces are not well-defined 2D surfaces -- a consequence of the non-linear equation of state for the density of seawater, and the resulting non-zero neutral helicity in the ocean (McDougall and Jackett 1988).  Hence, physical oceanographers craft approximately neutral surfaces, which are well-defined extensive 2D surfaces that are everywhere approximately aligned with the neutral tangent plane.  The following approximately neutral surfaces may be calculated with this software package. 
+In the absence of irreversible mixing, fluid parcels in the ocean move such that they are always at their level of neutral buoyancy with their environment.  This constrains the flow such that infinitesimal displacements lie in a plane, called the neutral tangent plane. This plane is well-defined at every point in the ocean.  A neutral surface is an extensive 2D surface that is everywhere aligned with the neutral tangent plane (McDougall 1987).  However, neutral surfaces are not well-defined 2D surfaces -- a consequence of the non-linear equation of state for the density of seawater, and the resulting non-zero neutral helicity in the ocean (McDougall and Jackett 1988).  Hence, physical oceanographers craft approximately neutral surfaces, which are well-defined extensive 2D surfaces that are everywhere approximately aligned with the neutral tangent plane.  The following approximately neutral surfaces may be calculated with this software package. 
 
 #### Potential density surfaces
 
@@ -129,7 +129,7 @@ Zhang, H.-M., Hogg, N.G., 1992. Circulation and water mass balance in the Brazil
 ## Copyright:
 MIT License
 
-Copyright (c) 2021 Geoff Stanley
+Copyright (c) 2023 Geoff Stanley
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:  
 
@@ -139,6 +139,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 Author(s) : Geoff Stanley
 
-Email     : g.stanley@unsw.edu.au
+Email     : gstanley@uvic.ca
 
 Email     : geoffstanley@gmail.com
