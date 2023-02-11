@@ -1,7 +1,7 @@
 % Comparison of the various surfaces in the Neutral-Surfaces toolbox
 
 % Author(s) : Geoff Stanley
-% Email     : g.stanley@unsw.edu.au
+% Email     : gstanley@uvic.ca
 % Email     : geoffstanley@gmail.com
 
 
@@ -67,6 +67,7 @@ db2Pa = 1e4; % dbar to Pa conversion
 Pa2db = 1e-4; % Pa to dbar conversion
 
 lead1 = @(x) reshape(x, [1 size(x)]);
+flat = @(x) x(:);
 
 % Choose vertical interpolation method
 INTERPFN = @ppc_linterp;
@@ -628,7 +629,7 @@ for iDATA = 1 : nDATA
     d = diags{iDATA, iS};
     if isempty(d); continue; end
     if iS == iSURF('OMEGAGRAD') || iS == iSURF('OMEGA')|| iS == iSURF('TOPOB')
-      i = find(d.x_change_L2 <= 1e-3, 1, 'first');
+      i = find(d.p_change_L2 <= 1e-3, 1, 'first');
       if isempty(i)
         iters(iDATA, iS) = 99; % flag.  shouldn't happen.
       else
@@ -873,7 +874,7 @@ for iS = [iSURF('SIGMA'), iSURF('DELTA'), iSURF('GAMMA'), iSURF('KMJ'), iSURF('T
     elseif iS == iSURF('OMEGAGRAD') || iS == iSURF('OMEGA') || iS == iSURF('TOPOB')
       % Find iteration at which algorithm actually deemed converged, which may be less than OPTS.ITER_MIN
       % +1 epsL2 has one extra element, giving epsL2 on the initial surface (corresponding with clocktime(1) == 0). 
-      j = 1 + find(d.x_change_L2 <= OPTS.TOL_P_CHANGE_L2, 1, 'first');
+      j = 1 + find(d.p_change_L2 <= OPTS.TOL_P_CHANGE_L2, 1, 'first');
     end
     
     semilogy(ax, clocktime{iS}(1:j), d.epsL2(1:j), '-', 'Color', cm(iS,:), 'LineWidth', 2, 'Marker', markers(iS), 'MarkerSize', markersize(iS), 'MarkerFace', cm(iS,:));

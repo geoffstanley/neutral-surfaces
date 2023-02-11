@@ -386,13 +386,13 @@ if OPTS.REEB
 else
   obs_vertsolve_codegen(nk, ni_, nj_, OPTS);
 end
-% bfs_conncomp1_codegen(nk, ni_, nj_, Xvec, OPTS);
+% bfs_conncomp1_codegen(nk, ni_, nj_, OPTS);
 if OPTS.ITER_START_WETTING <= OPTS.ITER_MAX && OPTS.ITER_STOP_WETTING > 0
-  bfs_conncomp1_wet_codegen(nk, ni_, nj_, Pvec, OPTS)
+  bfs_conncomp1_wet_codegen(nk, ni_, nj_, OPTS)
 end
 
 %% Get ML: the pressure of the mixed layer
-if ITER_MAX > 1
+if OPTS.ITER_MAX > 1
   if isempty(OPTS.ML)
     % Do not remove the mixed layer
     REMOVE_MIXED_LAYER = false;
