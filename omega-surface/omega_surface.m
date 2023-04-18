@@ -349,7 +349,7 @@ for iter = 1 : ITER_MAX
   % --- Remove the Mixed Layer
   % But keep it for the first iteration, which may be initialized from a
   % not very neutral surface
-  if REMOVE_MIXED_LAYER && iter > 1
+  if iter > 1 && REMOVE_MIXED_LAYER
     p(p < ML) = nan;
   end
   
