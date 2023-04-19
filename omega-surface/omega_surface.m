@@ -192,6 +192,7 @@ assert(length(WRAP) == 2, 'WRAP must be a two element vector');
 % Setup anonymous functions:
 lead1 = @(x) reshape(x, [1 size(x)]);
 autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
+nanmean = @(x) mean(x, 'omitnan');
 nanrms = @(x) sqrt(nanmean(x(:) .* conj(x(:)))); % root mean square, ignoring nans
 
 msg0 = "iter |    MAV(phi)    |    RMS(Δp)     | # wet casts (# new) |     RMS(eps)   |  time (s)\n";

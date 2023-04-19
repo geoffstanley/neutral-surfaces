@@ -66,6 +66,7 @@ Z = -g.RC(:); % We are going to be Z > 0 people!
 Z2P = Pa2db * rho_c * grav ; % Note > 0
 WRAP = g.WRAP;
 lead1 = @(x) reshape(x, [1 size(x)]);
+nanmean = @(x) mean(x, 'omitnan'); % mean, ignoring nans
 
 neigh = grid_adjacency([ni,nj], 4, WRAP);
 interpfn = @ppc_linterp; % linear interpolation

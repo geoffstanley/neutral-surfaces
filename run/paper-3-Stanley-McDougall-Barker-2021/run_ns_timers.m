@@ -68,6 +68,7 @@ Pa2db = 1e-4; % Pa to dbar conversion
 
 lead1 = @(x) reshape(x, [1 size(x)]);
 flat = @(x) x(:);
+nanmean = @(x) mean(x, 'omitnan');
 
 % Choose vertical interpolation method
 INTERPFN = @ppc_linterp;

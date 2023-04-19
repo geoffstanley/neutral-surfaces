@@ -344,6 +344,7 @@ assert(length(WRAP) == 2, 'WRAP must be provided as a vector of length 2');
 
 % Simple anonymous functions
 lead1 = @(x) reshape(x, [1 size(x)]); % augment with leading singleton dimension
+nanmean = @(x) mean(x, 'omitnan'); % mean, ignoring nans
 nanrms = @(x) sqrt(nanmean(x(:) .* conj(x(:)))); % root mean square, ignoring nans
 autoexp = @(x) repmat(x, ni / size(x,1), nj / size(x,2)); % automatic expansion to [ni,nj]
 

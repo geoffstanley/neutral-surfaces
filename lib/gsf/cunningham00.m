@@ -88,7 +88,7 @@ narginchk(7,9);
 nk = size(P,1);
 is4D = @(F) ndims(F) == 4 && size(F,2) == nk-1 && size(F,3) == ni && size(F,4) == nj;
 lead1 = @(p) reshape(p, [1 size(p)]);
-
+nanmean = @(x) mean(x, 'omitnan');
 
 if is4D(s) % Evaluate interpolants for S and T onto the surface
     [s,t] = ppc_val2(P, s, t, lead1(p));
