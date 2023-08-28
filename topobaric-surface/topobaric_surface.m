@@ -197,7 +197,7 @@ function [p, s, t, RG, s0, t0, d_fn, diags] = topobaric_surface(S, T, P, p, ref_
 %   The 2D index of the pixel associated with this vertex is
 %     [i,j] = v2ij(RG.node_v(n));
 %   where
-%     v2ij = @(v) sub2ind([ni, nj], v2I(v));
+%     v2ij = @(v) ind2sub([ni, nj], v2I(v));
 %   maps from vertex space to pixel space with 2D coordinates.
 % node_fn [N,1]: node_fn(n) is the critical value (pressure or depth)
 %   associated with node n. For any node n, 1 <= n <= N,

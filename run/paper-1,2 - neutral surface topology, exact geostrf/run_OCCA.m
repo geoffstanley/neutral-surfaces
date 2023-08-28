@@ -71,10 +71,10 @@ interpfn = @ppc_linterp; % linear interpolation
 
 %% Set alias functions.  << ENSURE THIS GETS DONE >>
 % Choose the Boussinesq densjmd95 and set grav and rho_c in eos.m and eos_p.m
-if false % only need to do this once!  Doing every time makes codegen run every time
-  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], grav, rho_c); %#ok<UNRCH>
-  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_p.m'], grav, rho_c);
-  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_s_t.m'], [PATH_EOS 'eos_s_t.m'], grav, rho_c);
+if true % only need to do this once!  Doing every time makes codegen run every time
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq.m'   ] , [PATH_EOS 'eos.m'  ], g.grav, g.rho_c);
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_dz.m'] , [PATH_EOS 'eos_p.m'], g.grav, g.rho_c);
+  eoscg_set_bsq_param([PATH_NS 'lib/eos/eoscg_densjmd95_bsq_s_t.m'], [PATH_EOS 'eos_s_t.m'], g.grav, g.rho_c);
 end
 clear eos eos_p eos_s_t % Make sure the copied files get used
 

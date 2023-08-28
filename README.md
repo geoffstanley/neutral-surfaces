@@ -3,6 +3,8 @@
 This is the MATLAB version.
 For the Python version, see https://github.com/geoffstanley/neutralocean
 
+If anyone is interested in helping translate Topobaric Surfaces and Geostrophic Streamfunctions from here to the Python version, please contact me. 
+
 # Neutral Surfaces
 ## Software for approximately neutral surfaces and geostrophic streamfunctions
 
@@ -20,7 +22,7 @@ The specific volume anomaly (Montgomery 1937) is the difference between the  in-
 
 #### Omega surfaces
 
-Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
+Omega surfaces (Klocker et al., 2009; Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
 
 #### Topobaric surfaces
 
