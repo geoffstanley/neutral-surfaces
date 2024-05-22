@@ -89,8 +89,7 @@ To reproduce the figures of Stanley (2019a,b) exactly, use the v1.0 Topobaric-Su
 ## ReCon
 Topobaric Surface uses ReCon to compute the Reeb Graph.
 
-ReCon is available at
-http://vgl.serc.iisc.ernet.in/software/software.php?pid=003
+ReCon is available at [http://vgl.serc.iisc.ernet.in/software/software.php?pid=003](https://vgl.csa.iisc.ac.in/softwares.php?pid=003)
 
 For more information on ReCon, see
 Doraiswamy, H. & Natarajan, V. Computing Reeb Graphs as a Union of Contour Trees. IEEE Transactions on Visualization and Computer Graphics 19, 249–262 (2013).
